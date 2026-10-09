@@ -1,0 +1,22 @@
+/* Statistics for Cybersecurity - Main Styles */
+
+body {
+  font-family: Arial, sans-serif;
+  max-width: 900px;
+  margin: 60px auto;
+  padding: 20px;
+  background: #f5f7fb;
+  color: #202938;
+}
+
+h1 {
+  color: #174ea6;
+}
+
+.card {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  margin-top: 24px;
+  box-shadow: 0 2px 8px #00000012;
+}
