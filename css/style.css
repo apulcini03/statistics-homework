@@ -1,22 +1,113 @@
-/* Statistics for Cybersecurity - Main Styles */
+
+/* Global styles */
+
+* {
+  box-sizing: border-box;
+}
 
 body {
+  margin: 0;
   font-family: Arial, sans-serif;
-  max-width: 900px;
-  margin: 60px auto;
-  padding: 20px;
-  background: #f5f7fb;
-  color: #202938;
+  background-color: #f4f7fb;
+  color: #253044;
+  line-height: 1.6;
 }
 
-h1 {
-  color: #174ea6;
+/* Header */
+
+header {
+  background: linear-gradient(135deg, #163b73, #2563a6);
+  color: white;
+  text-align: center;
+  padding: 65px 20px;
 }
+
+header h1 {
+  margin: 0;
+  font-size: 2.4rem;
+}
+
+header p {
+  margin: 8px 0;
+  color: #e1eaf5;
+}
+
+/* Main content */
+
+main {
+  max-width: 1000px;
+  margin: 50px auto;
+  padding: 0 20px;
+}
+
+.homework-section h2 {
+  font-size: 1.7rem;
+  margin-bottom: 25px;
+}
+
+/* Homework cards */
 
 .card {
   background: white;
-  padding: 24px;
+  padding: 28px;
   border-radius: 12px;
-  margin-top: 24px;
-  box-shadow: 0 2px 8px #00000012;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5eaf1;
+  transition: transform 0.2s ease;
 }
+
+.card:hover {
+  transform: translateY(-3px);
+}
+
+.card h3 {
+  margin-top: 0;
+  color: #174ea6;
+}
+
+.card p {
+  color: #606d80;
+}
+
+/* Homework status */
+
+.status {
+  display: inline-block;
+  background-color: #edf2f7;
+  color: #64748b;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+/* Footer */
+
+footer {
+  text-align: center;
+  padding: 25px;
+  color: #778399;
+  font-size: 0.9rem;
+}
+
+/* Responsive layout */
+
+@media (max-width: 600px) {
+  header {
+    padding: 45px 15px;
+  }
+
+  header h1 {
+    font-size: 1.8rem;
+  }
+
+  main {
+    margin: 30px auto;
+  }
+
+  .card {
+    padding: 20px;
+  }
+}
+
