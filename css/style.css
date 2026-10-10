@@ -208,3 +208,27 @@ button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+
+
+/* Statistical exploration */
+
+#xChart,
+#yChart {
+  display: block;
+  width: 100%;
+  max-width: 700px;
+  height: auto;
+  margin: 20px auto 35px;
+  border: 1px solid #e5eaf1;
+  border-radius: 10px;
+}
+
+#statisticsResults {
+  margin-top: 20px;
+  padding: 14px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  font-family: monospace;
+  line-height: 1.8;
+}
