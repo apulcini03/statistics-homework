@@ -133,3 +133,135 @@ generateBtn.addEventListener("click", () => {
 
 });
 
+
+
+// 7. Animated elliptic curve visualization
+
+const canvas = document.getElementById("curveCanvas");
+const ctx = canvas.getContext("2d");
+const animateBtn = document.getElementById("animateBtn");
+const animationStatus = document.getElementById("animationStatus");
+
+const margin = 45;
+const scale = (canvas.width - 2 * margin) / 16;
+let animationTimer = null;
+
+// Convert mathematical coordinates to canvas coordinates
+function canvasPosition(P) {
+  return {
+    x: margin + P.x * scale,
+    y: canvas.height - margin - P.y * scale
+  };
+}
+
+// Draw all valid finite points of the curve
+function drawCurve(highlight = null) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Background
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Grid
+  ctx.strokeStyle = "#e5e7eb";
+  ctx.lineWidth = 1;
+
+  for (let i = 0; i <= 16; i++) {
+    const pos = margin + i * scale;
+
+    ctx.beginPath();
+    ctx.moveTo(pos, margin);
+    ctx.lineTo(pos, canvas.height - margin);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(margin, pos);
+    ctx.lineTo(canvas.width - margin, pos);
+    ctx.stroke();
+
+    ctx.fillStyle = "#475569";
+    ctx.font = "11px Arial";
+    ctx.fillText(i, pos - 4, canvas.height - 18);
+    ctx.fillText(i, 15, canvas.height - pos + 4);
+  }
+
+  // Find and draw all points satisfying the equation
+  for (let x = 0; x < p; x++) {
+    for (let y = 0; y < p; y++) {
+      if (mod(y * y - x * x * x - 7, p) === 0) {
+        const pos = canvasPosition({ x, y });
+
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 4, 0, 2 * Math.PI);
+        ctx.fillStyle = "#2563eb";
+        ctx.fill();
+      }
+    }
+  }
+
+  // Highlight the current point
+  if (highlight !== null) {
+    const pos = canvasPosition(highlight);
+
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 9, 0, 2 * Math.PI);
+    ctx.fillStyle = "#f59e0b";
+    ctx.fill();
+
+    ctx.fillStyle = "#111827";
+    ctx.font = "bold 14px Arial";
+    ctx.fillText(
+      `(${highlight.x}, ${highlight.y})`,
+      pos.x + 12,
+      pos.y - 12
+    );
+  }
+}
+
+// Start animation
+animateBtn.addEventListener("click", () => {
+  clearInterval(animationTimer);
+
+  const input = document.getElementById("privateKey");
+  const k = Number(input.value);
+
+  if (
+    input.value.trim() === "" ||
+    !Number.isInteger(k) ||
+    k < 1 ||
+    k > 1000
+  ) {
+    animationStatus.textContent =
+      "Enter an integer between 1 and 1000.";
+    return;
+  }
+
+  let current = null;
+  let step = 0;
+
+  animateBtn.disabled = true;
+  drawCurve();
+
+  animationStatus.textContent = "Starting animation...";
+
+  animationTimer = setInterval(() => {
+    current = pointAdd(current, G);
+    step++;
+
+    drawCurve(current);
+
+    animationStatus.textContent = current === null
+      ? `${step}G = O (Point at Infinity)`
+      : `${step}G = (${current.x}, ${current.y})`;
+
+    if (step >= k) {
+      clearInterval(animationTimer);
+      animationTimer = null;
+      animateBtn.disabled = false;
+      animationStatus.textContent += " — Completed!";
+    }
+  }, 700);
+});
+
+// Initial curve rendering
+drawCurve();
