@@ -83,8 +83,53 @@ function scalarMultiply(k, G) {
   return result;
 }
 
-// 6. Execute the experiment
-const publicKey = scalarMultiply(privateKey, G);
 
-console.log("Private Key:", privateKey);
-console.log("Toy Public Key:", publicKey);
+// 6. Interactive public key generator
+const generateBtn = document.getElementById("generateBtn");
+
+generateBtn.addEventListener("click", () => {
+
+  const input = document.getElementById("privateKey");
+  const k = Number(input.value);
+
+  const resultDiv = document.getElementById("result");
+  const stepsDiv = document.getElementById("steps");
+
+  resultDiv.textContent = "";
+  stepsDiv.innerHTML = "";
+
+  // Validate the private key
+  if (
+    input.value.trim() === "" ||
+    !Number.isInteger(k) ||
+    k < 1 ||
+    k > 1000
+  ) {
+    resultDiv.textContent =
+      "Please enter an integer between 1 and 1000.";
+    return;
+  }
+
+  // Compute all intermediate points
+  let currentPoint = null;
+
+  for (let i = 1; i <= k; i++) {
+
+    currentPoint = pointAdd(currentPoint, G);
+
+    const step = document.createElement("p");
+
+    step.textContent = currentPoint === null
+      ? `${i}G = O (Point at Infinity)`
+      : `${i}G = (${currentPoint.x}, ${currentPoint.y})`;
+
+    stepsDiv.appendChild(step);
+  }
+
+  // Display the final public key
+  resultDiv.textContent = currentPoint === null
+    ? "Toy Public Key: O (Point at Infinity)"
+    : `Toy Public Key: (${currentPoint.x}, ${currentPoint.y})`;
+
+});
+
