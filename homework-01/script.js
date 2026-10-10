@@ -274,93 +274,90 @@ drawCurve();
 const statisticsBtn =
   document.getElementById("statisticsBtn");
 
+
+// Chart.js instances
+const histogramCharts = {};
+
 function drawHistogram(canvasId, frequencies, title) {
+
+  // Destroy the previous chart before drawing a new one
+  if (histogramCharts[canvasId]) {
+    histogramCharts[canvasId].destroy();
+  }
+
   const canvas = document.getElementById(canvasId);
 
-  // Fixed drawing resolution
-  canvas.width = 700;
-  canvas.height = 350;
+  histogramCharts[canvasId] = new Chart(canvas, {
+    type: "bar",
 
-  const ctx = canvas.getContext("2d");
+    data: {
+      labels: Array.from(
+        { length: 17 },
+        (_, i) => i.toString()
+      ),
 
-  const marginLeft = 55;
-  const marginBottom = 45;
-  const marginTop = 35;
-  const marginRight = 15;
+      datasets: [{
+        label: "Frequency",
+        data: frequencies,
+        backgroundColor: "#2563eb",
+        hoverBackgroundColor: "#f59e0b",
+        borderRadius: 4
+      }]
+    },
 
-  const chartWidth =
-    canvas.width - marginLeft - marginRight;
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
 
-  const chartHeight =
-    canvas.height - marginTop - marginBottom;
+      animation: {
+        duration: 700
+      },
 
-  const maxFrequency = Math.max(1, ...frequencies);
-  const barWidth = chartWidth / frequencies.length;
+      plugins: {
+        title: {
+          display: true,
+          text: title
+        },
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tooltip: {
+          enabled: true,
+          callbacks: {
+            title: (items) =>
+              `Coordinate: ${items[0].label}`,
 
-  // White background
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+            label: (item) =>
+              `Frequency: ${item.raw}`
+          }
+        },
 
-  // Chart title
-  ctx.fillStyle = "#253044";
-  ctx.font = "bold 16px Arial";
-  ctx.fillText(title, marginLeft, 22);
+        legend: {
+          display: false
+        }
+      },
 
-  // Horizontal axis
-  ctx.strokeStyle = "#94a3b8";
-  ctx.beginPath();
-  ctx.moveTo(marginLeft, marginTop + chartHeight);
-  ctx.lineTo(
-    marginLeft + chartWidth,
-    marginTop + chartHeight
-  );
-  ctx.stroke();
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: "Coordinate value"
+          }
+        },
 
-  // Bars for values 0 through 16
-  frequencies.forEach((frequency, value) => {
-    const height =
-      (frequency / maxFrequency) * chartHeight;
-
-    const x = marginLeft + value * barWidth;
-    const y = marginTop + chartHeight - height;
-
-    ctx.fillStyle = "#2563eb";
-    ctx.fillRect(
-      x + 3,
-      y,
-      Math.max(1, barWidth - 6),
-      height
-    );
-
-    ctx.fillStyle = "#475569";
-    ctx.font = "11px Arial";
-    ctx.textAlign = "center";
-
-    ctx.fillText(
-      value,
-      x + barWidth / 2,
-      marginTop + chartHeight + 18
-    );
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0
+          },
+          title: {
+            display: true,
+            text: "Frequency"
+          }
+        }
+      }
+    }
   });
-
-  // Vertical axis labels
-  ctx.fillStyle = "#475569";
-  ctx.textAlign = "right";
-
-  for (let i = 0; i <= 4; i++) {
-    const frequency = maxFrequency * i / 4;
-    const y =
-      marginTop + chartHeight * (1 - i / 4);
-
-    ctx.fillText(
-      frequency.toFixed(0),
-      marginLeft - 8,
-      y + 4
-    );
-  }
 }
+
 
 // Run the statistical experiment
 statisticsBtn.addEventListener("click", () => {
