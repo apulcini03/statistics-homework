@@ -213,16 +213,18 @@ button:disabled {
 
 /* Statistical exploration */
 
+
+/* Interactive statistical charts */
+
 #xChart,
 #yChart {
   display: block;
-  width: 100%;
+  width: 100% !important;
   max-width: 700px;
-  height: auto;
+  height: 320px !important;
   margin: 20px auto 35px;
-  border: 1px solid #e5eaf1;
-  border-radius: 10px;
 }
+
 
 #statisticsResults {
   margin-top: 20px;
