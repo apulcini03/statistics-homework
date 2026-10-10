@@ -265,3 +265,159 @@ animateBtn.addEventListener("click", () => {
 
 // Initial curve rendering
 drawCurve();
+
+
+
+ 
+// 8. Statistical exploration: coordinate frequencies
+
+const statisticsBtn =
+  document.getElementById("statisticsBtn");
+
+function drawHistogram(canvasId, frequencies, title) {
+  const canvas = document.getElementById(canvasId);
+
+  // Fixed drawing resolution
+  canvas.width = 700;
+  canvas.height = 350;
+
+  const ctx = canvas.getContext("2d");
+
+  const marginLeft = 55;
+  const marginBottom = 45;
+  const marginTop = 35;
+  const marginRight = 15;
+
+  const chartWidth =
+    canvas.width - marginLeft - marginRight;
+
+  const chartHeight =
+    canvas.height - marginTop - marginBottom;
+
+  const maxFrequency = Math.max(1, ...frequencies);
+  const barWidth = chartWidth / frequencies.length;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // White background
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Chart title
+  ctx.fillStyle = "#253044";
+  ctx.font = "bold 16px Arial";
+  ctx.fillText(title, marginLeft, 22);
+
+  // Horizontal axis
+  ctx.strokeStyle = "#94a3b8";
+  ctx.beginPath();
+  ctx.moveTo(marginLeft, marginTop + chartHeight);
+  ctx.lineTo(
+    marginLeft + chartWidth,
+    marginTop + chartHeight
+  );
+  ctx.stroke();
+
+  // Bars for values 0 through 16
+  frequencies.forEach((frequency, value) => {
+    const height =
+      (frequency / maxFrequency) * chartHeight;
+
+    const x = marginLeft + value * barWidth;
+    const y = marginTop + chartHeight - height;
+
+    ctx.fillStyle = "#2563eb";
+    ctx.fillRect(
+      x + 3,
+      y,
+      Math.max(1, barWidth - 6),
+      height
+    );
+
+    ctx.fillStyle = "#475569";
+    ctx.font = "11px Arial";
+    ctx.textAlign = "center";
+
+    ctx.fillText(
+      value,
+      x + barWidth / 2,
+      marginTop + chartHeight + 18
+    );
+  });
+
+  // Vertical axis labels
+  ctx.fillStyle = "#475569";
+  ctx.textAlign = "right";
+
+  for (let i = 0; i <= 4; i++) {
+    const frequency = maxFrequency * i / 4;
+    const y =
+      marginTop + chartHeight * (1 - i / 4);
+
+    ctx.fillText(
+      frequency.toFixed(0),
+      marginLeft - 8,
+      y + 4
+    );
+  }
+}
+
+// Run the statistical experiment
+statisticsBtn.addEventListener("click", () => {
+
+  const input = document.getElementById("sampleSize");
+  const N = Number(input.value);
+
+  const results =
+    document.getElementById("statisticsResults");
+
+  if (
+    input.value.trim() === "" ||
+    !Number.isInteger(N) ||
+    N < 1 ||
+    N > 10000
+  ) {
+    results.textContent =
+      "Enter an integer between 1 and 10000.";
+    return;
+  }
+
+  const xFrequencies = Array(17).fill(0);
+  const yFrequencies = Array(17).fill(0);
+
+  let point = null;
+  let infinityCount = 0;
+
+  for (let k = 1; k <= N; k++) {
+
+    point = pointAdd(point, G);
+
+    // The point at infinity has no coordinates
+    if (point === null) {
+      infinityCount++;
+      continue;
+    }
+
+    xFrequencies[point.x]++;
+    yFrequencies[point.y]++;
+  }
+
+  const finiteCount = N - infinityCount;
+
+  results.textContent =
+    `Keys tested: ${N} | ` +
+    `Finite points: ${finiteCount} | ` +
+    `Points at infinity: ${infinityCount}`;
+
+  drawHistogram(
+    "xChart",
+    xFrequencies,
+    "X Coordinate Frequencies"
+  );
+
+  drawHistogram(
+    "yChart",
+    yFrequencies,
+    "Y Coordinate Frequencies"
+  );
+});
