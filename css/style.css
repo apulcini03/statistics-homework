@@ -181,3 +181,30 @@ button:hover {
   margin: 5px 0;
   font-family: monospace;
 }
+
+
+
+/* Animated elliptic curve visualization */
+
+#curveCanvas {
+  display: block;
+  width: 100%;
+  max-width: 540px;
+  height: auto;
+  margin: 20px auto;
+  background: white;
+  border: 1px solid #e5eaf1;
+  border-radius: 10px;
+}
+
+#animationStatus {
+  padding: 12px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  font-family: monospace;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
