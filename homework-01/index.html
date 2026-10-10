@@ -95,6 +95,44 @@
       </div>
 
 
+      
+      <h2>Statistical Exploration</h2>
+      
+      <div class="card">
+        <h3>Coordinate Frequency Distribution</h3>
+      
+        <p>
+          Explore the frequency distribution of public key
+          coordinates generated from different private keys.
+        </p>
+      
+        <label for="sampleSize">
+          Number of private keys:
+        </label>
+      
+        <input
+          type="number"
+          id="sampleSize"
+          min="1"
+          max="10000"
+          value="100"
+        >
+      
+        <button id="statisticsBtn">
+          Run Statistical Analysis
+        </button>
+      
+        <div id="statisticsResults"></div>
+      
+        <h3>X Coordinate Distribution</h3>
+        <canvas id="xChart"></canvas>
+      
+        <h3>Y Coordinate Distribution</h3>
+        <canvas id="yChart"></canvas>
+      </div>
+
+
+
       <h2>Results and Conclusions</h2>
       <div class="card">
         <p>Results and observations will be presented here.</p>
