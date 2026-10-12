@@ -30,10 +30,92 @@
         <p>Waiting for the official assignment.</p>
       </div>
 
+      
       <h2>Theoretical Background</h2>
       <div class="card">
-        <p>The theory will be explained here.</p>
+      
+        <h3>Elliptic Curve Cryptography</h3>
+      
+        <p>
+          Elliptic Curve Cryptography (ECC) is a form of
+          public-key cryptography based on mathematical
+          operations involving points on elliptic curves
+          over finite fields.
+        </p>
+      
+        <p>
+          A private key is an integer k, while the public
+          key is a point Q obtained through elliptic-curve
+          scalar multiplication:
+        </p>
+      
+        <p><strong>Q = kG</strong></p>
+      
+        <p>
+          Here, G is a publicly known base point.
+          Scalar multiplication consists of repeatedly
+          adding G to itself according to the elliptic
+          curve point-addition rules.
+        </p>
+      
+        <h3>The Toy Elliptic Curve</h3>
+      
+        <p>
+          This application uses the curve:
+        </p>
+      
+        <p><strong>y² = x³ + 7 (mod 17)</strong></p>
+      
+        <p>
+          The base point is G = (1, 5).
+          Since computations are performed modulo 17,
+          the coordinates belong to the finite field F17.
+        </p>
+      
+        <p>
+          The point G has order 9, meaning that 9G = O,
+          where O is the point at infinity.
+          Therefore, the generated points repeat every
+          nine scalar multiplications.
+        </p>
+      
+        <h3>The One-Way Property</h3>
+      
+        <p>
+          Computing Q = kG is efficient, while recovering
+          k from Q is computationally difficult for
+          appropriately chosen cryptographic curves
+          and sufficiently large parameters.
+          This is known as the Elliptic Curve Discrete
+          Logarithm Problem (ECDLP).
+        </p>
+      
+        <p>
+          Our toy curve is not cryptographically secure:
+          its small subgroup makes it easy to recover
+          the private key by testing possible values.
+        </p>
+      
+        <h3>Connection to Ethereum</h3>
+      
+        <p>
+          Ethereum uses the secp256k1 elliptic curve
+          for its traditional externally owned account
+          signature scheme.
+          Its equation has the same general form:
+          y² = x³ + 7, but calculations are performed
+          over a much larger finite field.
+        </p>
+      
+        <p>
+          This application demonstrates the underlying
+          scalar multiplication principle, without
+          implementing real Ethereum cryptography,
+          addresses or digital signatures.
+        </p>
+      
       </div>
+
 
       
       <h2>Interactive Simulation</h2>
