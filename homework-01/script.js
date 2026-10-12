@@ -111,6 +111,7 @@ generateBtn.addEventListener("click", () => {
 
   resultDiv.textContent = "";
   stepsDiv.innerHTML = "";
+  document.getElementById("keyInfo").textContent = "";
 
   // Validate the private key
   if (
@@ -144,6 +145,24 @@ generateBtn.addEventListener("click", () => {
   resultDiv.textContent = currentPoint === null
     ? "Toy Public Key: O (Point at Infinity)"
     : `Toy Public Key: (${currentPoint.x}, ${currentPoint.y})`;
+
+  
+  // Explain the toy private key behavior
+  const keyInfo = document.getElementById("keyInfo");
+  const reducedKey = k % 9;
+  
+  if (reducedKey === 0) {
+    keyInfo.textContent =
+      "This private key produces the point at infinity " +
+      "and is not valid for a public key.";
+  } else if (k > 8) {
+    keyInfo.textContent =
+      `This key is equivalent to k = ${reducedKey} ` +
+      "because G has order 9. The public key repeats.";
+  } else {
+    keyInfo.textContent =
+      "Valid toy private key in the range 1–8.";
+  }
 
 });
 
