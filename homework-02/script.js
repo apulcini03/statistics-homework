@@ -116,3 +116,52 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+
+// Step 3 - secp256k1 public key generation
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const publicKeyBtn =
+    document.getElementById("generatePublicKeyBtn");
+
+  const result =
+    document.getElementById("publicKeyResult");
+
+  publicKeyBtn.addEventListener("click", async () => {
+
+    publicKeyBtn.disabled = true;
+    result.textContent = "Generating public key...";
+
+    try {
+      // Recreate the deterministic test seed
+      const seedHex = await mnemonicToSeed(TEST_MNEMONIC);
+      const seedBytes = ethers.getBytes("0x" + seedHex);
+
+      // Derive the private key
+      const masterNode =
+        ethers.HDNodeWallet.fromSeed(seedBytes);
+
+      const derivedWallet =
+        masterNode.derivePath(DERIVATION_PATH);
+
+      // Compute the uncompressed secp256k1 public key
+      const publicKey = ethers.SigningKey.computePublicKey(
+        derivedWallet.privateKey,
+        false
+      );
+
+      result.textContent =
+        `Uncompressed Public Key (65 bytes):\n` +
+        `${publicKey}`;
+
+    } catch (error) {
+      result.textContent = "Public key generation failed.";
+      console.error(error);
+
+    } finally {
+      publicKeyBtn.disabled = false;
+    }
+  });
+});
+
+
