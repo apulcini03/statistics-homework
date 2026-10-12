@@ -14,9 +14,9 @@
 
   <header>
     <h1>Homework 02</h1>
-    <p>From Wallet Seed to Ethereum Address</p>
-    <p>Alberto Pulcini - 2046542</p>
-    <p>Statistics for Cybersecurity - 2026/2027</p>
+    <p>Statistics for Cybersecurity</p>
+    <p>Alberto Pulcini — 2046542</p>
+    <p>Academic Year 2026/2027</p>
   </header>
 
   <main>
@@ -43,13 +43,32 @@
         </p>
       </div>
 
+      
       <h2>Interactive Wallet Pipeline</h2>
       <div class="card">
+        <h3>Step 1 — BIP-39: Mnemonic to Seed</h3>
+      
         <p>
-          Wallet derivation demonstration
-          will be implemented here.
+          Convert a public test mnemonic into a
+          512-bit seed using PBKDF2-HMAC-SHA512.
         </p>
+      
+        <label for="mnemonicInput">Test Mnemonic</label>
+      
+        <textarea id="mnemonicInput" rows="3" readonly>
+      abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about</textarea>
+      
+        <p>
+          <button id="generateSeedBtn">
+            Generate Seed
+          </button>
+        </p>
+      
+        <div id="seedResult"
+             class="analysis-summary"
+             aria-live="polite"></div>
       </div>
+
 
       <h2>Statistical Exploration</h2>
       <div class="card">
