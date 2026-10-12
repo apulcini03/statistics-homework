@@ -368,7 +368,6 @@ button:disabled {
 }
 
 
-
 /* Homework 02 - Ethereum address */
 
 #addressResult {
@@ -380,3 +379,17 @@ button:disabled {
 #addressResult:empty {
   display: none;
 }
+
+
+/* Homework 02 - EIP-55 checksum */
+
+#checksumResult {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+}
+
+#checksumResult:empty {
+  display: none;
+}
+
