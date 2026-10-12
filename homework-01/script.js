@@ -13,6 +13,20 @@ function mod(n, p) {
   return ((n % p) + p) % p;
 }
 
+
+/* Validate that a point belongs to the toy curve */
+function isOnCurve(P) {
+  if (P === null) return true;
+
+  return mod(P.y * P.y - P.x * P.x * P.x - 7, p) === 0;
+}
+
+// Validate the base point
+if (!isOnCurve(G)) {
+  throw new Error("Invalid base point G");
+}
+
+
 // 3. Modular multiplicative inverse
 function modInverse(a, p) {
   a = mod(a, p);
