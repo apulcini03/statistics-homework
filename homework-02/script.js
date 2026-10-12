@@ -165,3 +165,70 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+
+// Step 4 - Keccak-256 Ethereum address derivation
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const addressBtn =
+    document.getElementById("generateAddressBtn");
+
+  const result =
+    document.getElementById("addressResult");
+
+  addressBtn.addEventListener("click", async () => {
+
+    addressBtn.disabled = true;
+    result.textContent = "Generating Ethereum address...";
+
+    try {
+      // Derive the same deterministic test private key
+      const seedHex = await mnemonicToSeed(TEST_MNEMONIC);
+      const seedBytes = ethers.getBytes("0x" + seedHex);
+
+      const masterNode =
+        ethers.HDNodeWallet.fromSeed(seedBytes);
+
+      const wallet =
+        masterNode.derivePath(DERIVATION_PATH);
+
+      // Generate the 65-byte uncompressed public key
+      const publicKey = ethers.SigningKey.computePublicKey(
+        wallet.privateKey,
+        false
+      );
+
+      // Remove the first byte (04 prefix).
+      // Hash only the 64 bytes of X and Y coordinates.
+      const coordinates = "0x" + publicKey.slice(4);
+
+      const hash = ethers.keccak256(coordinates);
+
+      // Last 20 bytes = last 40 hexadecimal digits
+      const address = "0x" + hash.slice(-40);
+
+      // Independent consistency check
+      const expected = ethers.computeAddress(
+        wallet.privateKey
+      );
+
+      if (address.toLowerCase() !== expected.toLowerCase()) {
+        throw new Error("Address verification failed");
+      }
+
+      result.textContent =
+        `Keccak-256 Hash (32 bytes):\n${hash}\n\n` +
+        `Ethereum Address (20 bytes):\n${address}`;
+
+    } catch (error) {
+      result.textContent =
+        "Ethereum address generation failed.";
+      console.error(error);
+
+    } finally {
+      addressBtn.disabled = false;
+    }
+  });
+});
+
+
