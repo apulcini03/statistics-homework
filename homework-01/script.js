@@ -450,6 +450,11 @@ statisticsBtn.addEventListener("click", () => {
     yFrequencies,
     "Y Coordinate Frequencies"
   );
+
+  
+  // Run uniformity analysis
+  analyzeUniformity(N);
+
 });
 
 
