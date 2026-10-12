@@ -174,6 +174,51 @@
           <canvas id="correlationChart"></canvas>
         </div>
 
+        
+        <h3>Avalanche-like Behaviour</h3>
+        
+        <p>
+          Flip one bit of the private key and observe
+          how the public key coordinates change.
+          Compare the 10-bit representations using
+          Hamming distance.
+        </p>
+        
+        <label for="avalancheKey">
+          Original private key (k):
+        </label>
+        
+        <input
+          type="number"
+          id="avalancheKey"
+          min="1"
+          max="8"
+          step="1"
+          value="6"
+        >
+        
+        <label for="bitPosition">
+          Bit position to flip (0 = least significant):
+        </label>
+        
+        <select id="bitPosition">
+          <option value="0">Bit 0</option>
+          <option value="1">Bit 1</option>
+          <option value="2">Bit 2</option>
+          <option value="3">Bit 3</option>
+          <option value="4">Bit 4</option>
+        </select>
+        
+        <button id="avalancheBtn">
+          Run Bit Flip Experiment
+        </button>
+        
+        <div
+          id="avalancheResults"
+          class="analysis-summary"
+          aria-live="polite">
+        </div>
+
 
 
       </div>
