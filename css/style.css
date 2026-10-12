@@ -340,3 +340,16 @@ button:disabled {
 #seedResult:empty {
   display: none;
 }
+
+
+/* Homework 02 - Private key derivation */
+
+#privateKeyResult {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+}
+
+#privateKeyResult:empty {
+  display: none;
+}
