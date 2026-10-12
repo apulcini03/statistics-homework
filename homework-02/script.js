@@ -378,3 +378,244 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+
+
+// Step 7 - Ethereum address statistical exploration
+
+let walletBitChartInstance = null;
+let walletHammingChartInstance = null;
+
+// Number of 1 bits in a hexadecimal string
+function countOneBits(hex) {
+  const digits = hex.replace(/^0x/i, "");
+  let ones = 0;
+
+  for (const digit of digits) {
+    const value = parseInt(digit, 16);
+
+    if (Number.isNaN(value)) {
+      throw new Error("Invalid hexadecimal value");
+    }
+
+    for (let bit = 0; bit < 4; bit++) {
+      ones += (value >> bit) & 1;
+    }
+  }
+
+  return ones;
+}
+
+// Hamming distance between two Ethereum addresses
+function addressHammingDistance(a, b) {
+  const hexA = a.slice(2).toLowerCase();
+  const hexB = b.slice(2).toLowerCase();
+
+  if (hexA.length !== 40 || hexB.length !== 40) {
+    throw new Error("Expected 160-bit addresses");
+  }
+
+  let distance = 0;
+
+  for (let i = 0; i < 40; i++) {
+    const difference =
+      parseInt(hexA[i], 16) ^ parseInt(hexB[i], 16);
+
+    distance += countOneBits(
+      difference.toString(16)
+    );
+  }
+
+  return distance;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const button =
+    document.getElementById("runWalletStatsBtn");
+
+  const input =
+    document.getElementById("statsAccountCount");
+
+  const results =
+    document.getElementById("walletStatsResults");
+
+  button.addEventListener("click", async () => {
+    const N = Number(input.value);
+
+    if (
+      input.value.trim() === "" ||
+      !Number.isInteger(N) ||
+      N < 2 ||
+      N > 100
+    ) {
+      results.textContent =
+        "Please enter an integer between 2 and 100.";
+      return;
+    }
+
+    button.disabled = true;
+    results.textContent = "Running statistical analysis...";
+
+    try {
+      const seedHex = await mnemonicToSeed(TEST_MNEMONIC);
+
+      const master = ethers.HDNodeWallet.fromSeed(
+        ethers.getBytes("0x" + seedHex)
+      );
+
+      const addresses = [];
+
+      for (let i = 0; i < N; i++) {
+        const path = `m/44'/60'/0'/0/${i}`;
+        addresses.push(
+          master.derivePath(path).address
+        );
+      }
+
+      // Bit frequency analysis
+      const totalBits = N * 160;
+
+      const ones = addresses.reduce(
+        (sum, address) => sum + countOneBits(address),
+        0
+      );
+
+      const zeros = totalBits - ones;
+
+      // Hamming distances between consecutive addresses
+      const distances = [];
+
+      for (let i = 1; i < N; i++) {
+        distances.push(
+          addressHammingDistance(
+            addresses[i - 1],
+            addresses[i]
+          )
+        );
+      }
+
+      const mean = distances.reduce(
+        (sum, value) => sum + value, 0
+      ) / distances.length;
+
+      const min = Math.min(...distances);
+      const max = Math.max(...distances);
+
+      results.textContent =
+        `Addresses analyzed: ${N}\n` +
+        `Total bits: ${totalBits}\n` +
+        `Bit 0: ${zeros}\n` +
+        `Bit 1: ${ones}\n` +
+        `Bit 1 percentage: ${(ones / totalBits * 100).toFixed(2)}%\n` +
+        `Consecutive comparisons: ${distances.length}\n` +
+        `Mean Hamming distance: ${mean.toFixed(2)} / 160\n` +
+        `Minimum Hamming distance: ${min}\n` +
+        `Maximum Hamming distance: ${max}`;
+
+      // Remove previous charts before recreating them
+      if (walletBitChartInstance) {
+        walletBitChartInstance.destroy();
+      }
+
+      if (walletHammingChartInstance) {
+        walletHammingChartInstance.destroy();
+      }
+
+      // Chart 1: bit frequencies
+      walletBitChartInstance = new Chart(
+        document.getElementById("walletBitChart"),
+        {
+          type: "bar",
+          data: {
+            labels: ["Bit 0", "Bit 1"],
+            datasets: [{
+              label: "Frequency",
+              data: [zeros, ones],
+              backgroundColor: ["#2563eb", "#f59e0b"],
+              hoverBackgroundColor: ["#1d4ed8", "#d97706"]
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { enabled: true },
+              title: {
+                display: true,
+                text: "Address Bit Frequencies"
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { precision: 0 }
+              }
+            }
+          }
+        }
+      );
+
+      // Chart 2: consecutive Hamming distances
+      walletHammingChartInstance = new Chart(
+        document.getElementById("walletHammingChart"),
+        {
+          type: "line",
+          data: {
+            labels: distances.map(
+              (_, i) => `${i} → ${i + 1}`
+            ),
+            datasets: [
+              {
+                label: "Observed Hamming Distance",
+                data: distances,
+                borderColor: "#2563eb",
+                backgroundColor: "#2563eb",
+                tension: 0.2,
+                pointRadius: 4
+              },
+              {
+                label: "Theoretical Mean (80 bits)",
+                data: Array(distances.length).fill(80),
+                borderColor: "#f59e0b",
+                borderDash: [6, 5],
+                pointRadius: 0
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              tooltip: { enabled: true }
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: "Consecutive Derivation Indices"
+                }
+              },
+              y: {
+                min: 0,
+                max: 160,
+                title: {
+                  display: true,
+                  text: "Different Bits (out of 160)"
+                }
+              }
+            }
+          }
+        }
+      );
+
+    } catch (error) {
+      results.textContent =
+        "Statistical analysis failed. Check the console.";
+      console.error(error);
+    } finally {
+      button.disabled = false;
+    }
+  });
+});
