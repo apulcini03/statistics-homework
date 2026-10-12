@@ -452,9 +452,10 @@ statisticsBtn.addEventListener("click", () => {
   );
 
   
-  // Run uniformity and bit distribution analysis
+  // Run analysis
   analyzeUniformity(N);
   analyzeBitDistribution(N);
+  analyzeCorrelation(N);
 
 
 });
@@ -618,3 +619,140 @@ function analyzeBitDistribution(N) {
     }
   );
 }
+
+
+
+// 11. Input-output correlation analysis
+
+let correlationChartInstance = null;
+
+// Pearson correlation coefficient
+function pearsonCorrelation(x, y) {
+  const n = x.length;
+
+  if (n < 2) return null;
+
+  const meanX = x.reduce((a, b) => a + b, 0) / n;
+  const meanY = y.reduce((a, b) => a + b, 0) / n;
+
+  let numerator = 0;
+  let sumX = 0;
+  let sumY = 0;
+
+  for (let i = 0; i < n; i++) {
+    const dx = x[i] - meanX;
+    const dy = y[i] - meanY;
+
+    numerator += dx * dy;
+    sumX += dx * dx;
+    sumY += dy * dy;
+  }
+
+  if (sumX === 0 || sumY === 0) return null;
+
+  return numerator / Math.sqrt(sumX * sumY);
+}
+
+function analyzeCorrelation(N) {
+  const keys = [];
+  const xCoordinates = [];
+  const yCoordinates = [];
+
+  let point = null;
+
+  for (let k = 1; k <= N; k++) {
+    point = pointAdd(point, G);
+
+    if (point === null) continue;
+
+    keys.push(k);
+    xCoordinates.push(point.x);
+    yCoordinates.push(point.y);
+  }
+
+  const rX = pearsonCorrelation(keys, xCoordinates);
+  const rY = pearsonCorrelation(keys, yCoordinates);
+
+  const format = r =>
+    r === null ? "Undefined" : r.toFixed(4);
+
+  const results = document.getElementById(
+    "correlationResults"
+  );
+
+  results.textContent =
+    `Finite points analyzed: ${keys.length} | ` +
+    `Pearson r(k, X): ${format(rX)} | ` +
+    `Pearson r(k, Y): ${format(rY)}`;
+
+  if (correlationChartInstance) {
+    correlationChartInstance.destroy();
+  }
+
+  correlationChartInstance = new Chart(
+    document.getElementById("correlationChart"),
+    {
+      type: "scatter",
+
+      data: {
+        datasets: [
+          {
+            label: "X coordinate",
+            data: keys.map((k, i) => ({
+              x: k,
+              y: xCoordinates[i]
+            })),
+            backgroundColor: "#2563eb",
+            pointRadius: 5
+          },
+          {
+            label: "Y coordinate",
+            data: keys.map((k, i) => ({
+              x: k,
+              y: yCoordinates[i]
+            })),
+            backgroundColor: "#f59e0b",
+            pointRadius: 5
+          }
+        ]
+      },
+
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+
+        plugins: {
+          title: {
+            display: true,
+            text: "Private Key vs Public Key Coordinates"
+          },
+          tooltip: {
+            callbacks: {
+              label: context =>
+                `${context.dataset.label}: ` +
+                `k=${context.parsed.x}, ` +
+                `value=${context.parsed.y}`
+            }
+          }
+        },
+
+        scales: {
+          x: {
+            type: "linear",
+            title: {
+              display: true,
+              text: "Private Key (k)"
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Public Key Coordinate"
+            }
+          }
+        }
+      }
+    }
+  );
+}
+
