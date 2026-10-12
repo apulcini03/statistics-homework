@@ -232,3 +232,67 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+
+// Step 5 - EIP-55 checksum encoding
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const checksumBtn =
+    document.getElementById("checksumBtn");
+
+  const result =
+    document.getElementById("checksumResult");
+
+  checksumBtn.addEventListener("click", async () => {
+
+    checksumBtn.disabled = true;
+    result.textContent = "Generating checksum...";
+
+    try {
+      // Derive the wallet from the public test mnemonic
+      const seedHex = await mnemonicToSeed(TEST_MNEMONIC);
+      const seedBytes = ethers.getBytes("0x" + seedHex);
+
+      const masterNode =
+        ethers.HDNodeWallet.fromSeed(seedBytes);
+
+      const wallet =
+        masterNode.derivePath(DERIVATION_PATH);
+
+      // Derive the Ethereum address
+      const publicKey = ethers.SigningKey.computePublicKey(
+        wallet.privateKey,
+        false
+      );
+
+      const coordinates = "0x" + publicKey.slice(4);
+      const hash = ethers.keccak256(coordinates);
+
+      const address = "0x" + hash.slice(-40);
+
+      // Apply EIP-55 checksum encoding
+      const checksummedAddress = ethers.getAddress(address);
+
+      // Verify that the underlying address is unchanged
+      if (checksummedAddress.toLowerCase() !== address) {
+        throw new Error("Checksum verification failed");
+      }
+
+      result.textContent =
+        `Original Address:\n${address}\n\n` +
+        `EIP-55 Checksummed Address:\n` +
+        `${checksummedAddress}\n\n` +
+        `Checksum Validation: PASSED`;
+
+    } catch (error) {
+      result.textContent =
+        "Checksum generation failed.";
+      console.error(error);
+
+    } finally {
+      checksumBtn.disabled = false;
+    }
+  });
+});
+
+
