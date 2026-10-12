@@ -35,13 +35,228 @@
         </p>
       </div>
 
+      
       <h2>Theoretical Background</h2>
       <div class="card">
+      
+        <h3>Overview: Ethereum Wallet Derivation</h3>
+      
         <p>
-          BIP-39, BIP-32, BIP-44, secp256k1,
-          Keccak-256 and EIP-55.
+          Ethereum wallets combine several cryptographic
+          standards and primitives to derive addresses
+          from a mnemonic recovery phrase.
+          Each component has a distinct purpose:
+          key management, deterministic derivation,
+          public-key cryptography, hashing or error detection.
         </p>
+      
+        <h3>BIP-39 — Mnemonic and Seed Generation</h3>
+      
+        <p>
+          BIP-39 defines how random entropy is encoded
+          into a human-readable mnemonic sentence,
+          including checksum information.
+        </p>
+      
+        <p>
+          The mnemonic, together with an optional passphrase,
+          is converted into a 512-bit seed using
+          PBKDF2-HMAC-SHA512 with 2048 iterations.
+        </p>
+      
+        <p>
+          The mnemonic represents secret recovery information.
+          The resulting seed is deterministic and can be
+          used to reconstruct the wallet.
+        </p>
+      
+        <h3>BIP-32 — Hierarchical Deterministic Derivation</h3>
+      
+        <p>
+          BIP-32 defines hierarchical deterministic (HD)
+          wallets, allowing multiple child keys to be
+          derived from a single master key.
+        </p>
+      
+        <p>
+          The master node is derived from the seed using
+          HMAC-SHA512 and contains a private key and
+          a chain code. Child keys are then derived
+          through a hierarchical key derivation process.
+        </p>
+      
+        <p>
+          The same seed and derivation path always produce
+          the same derived key, allowing wallet recovery.
+        </p>
+      
+        <h3>BIP-44 — Standard Derivation Paths</h3>
+      
+        <p>
+          BIP-44 defines a standardized organization
+          for HD wallet derivation paths:
+        </p>
+      
+        <p>
+          <strong>
+            m / purpose' / coin_type' / account'
+            / change / address_index
+          </strong>
+        </p>
+      
+        <p>
+          A common Ethereum path is m/44'/60'/0'/0/0,
+          where 44' identifies BIP-44 and 60'
+          identifies Ethereum.
+        </p>
+      
+        <p>
+          The apostrophe indicates hardened derivation.
+          Changing the final address index allows
+          multiple addresses to be derived from the
+          same seed. BIP-44 defines path conventions,
+          not a new cryptographic algorithm.
+        </p>
+      
+        <h3>secp256k1 — Public-Key Cryptography</h3>
+      
+        <p>
+          secp256k1 is the elliptic curve used in
+          Ethereum's traditional externally owned
+          account cryptography.
+        </p>
+      
+        <p>
+          A private key k is a scalar, while the
+          corresponding public key is a curve point:
+        </p>
+      
+        <p><strong>Q = kG</strong></p>
+      
+        <p>
+          Here, G is the fixed generator point.
+          Computing the public key is efficient,
+          whereas recovering the private scalar
+          from the public point is computationally
+          difficult for real cryptographic parameters.
+        </p>
+      
+        <p>
+          Ethereum traditionally uses ECDSA over
+          secp256k1 to authorize transactions
+          through digital signatures.
+        </p>
+      
+        <h3>Keccak-256 — Ethereum Address Hashing</h3>
+      
+        <p>
+          Keccak-256 is a cryptographic hash function
+          producing a 256-bit digest.
+        </p>
+      
+        <p>
+          To derive an Ethereum address, the 64 bytes
+          representing the X and Y coordinates of the
+          uncompressed public key are hashed using
+          Keccak-256, excluding the 04 prefix.
+        </p>
+      
+        <p>
+          The last 20 bytes of the digest form
+          the 160-bit Ethereum address.
+        </p>
+      
+        <p>
+          Ethereum uses Keccak-256, which is not
+          identical to NIST SHA3-256. Although both
+          share the Keccak sponge construction,
+          they use different domain-separation
+          conventions and produce different digests.
+        </p>
+      
+        <h3>EIP-55 — Address Checksum Encoding</h3>
+      
+        <p>
+          EIP-55 defines a mixed-case hexadecimal
+          representation for Ethereum addresses.
+        </p>
+      
+        <p>
+          The capitalization of hexadecimal letters
+          is determined using Keccak-256 applied to
+          the lowercase address text.
+        </p>
+      
+        <p>
+          This provides additional error detection
+          without changing the underlying 20-byte address.
+          It is not a digital signature or an
+          authentication mechanism.
+        </p>
+      
+        <h3>Key Generation vs Key Derivation</h3>
+      
+        <p>
+          Key generation introduces new secret randomness,
+          such as the entropy used to create a BIP-39
+          mnemonic.
+        </p>
+      
+        <p>
+          Key derivation deterministically computes
+          keys from existing secret material.
+          BIP-32 performs this role using the seed
+          and a hierarchical derivation path.
+        </p>
+      
+        <h3>Hashing, Checksums and Encoding</h3>
+      
+        <p>
+          Hashing transforms input data into a
+          fixed-length digest. Keccak-256 performs
+          this function during address derivation.
+        </p>
+      
+        <p>
+          A checksum helps detect accidental errors,
+          while encoding specifies how information
+          is represented or displayed.
+        </p>
+      
+        <p>
+          EIP-55 combines checksum information with
+          mixed-case hexadecimal encoding.
+          These operations serve purposes different
+          from asymmetric cryptography and key derivation.
+        </p>
+      
+        <h3>Why Multiple Cryptographic Primitives?</h3>
+      
+        <p>
+          A single cryptographic algorithm cannot
+          efficiently provide all the different
+          functions required by an Ethereum wallet.
+        </p>
+      
+        <p>
+          BIP-39 supports mnemonic recovery,
+          BIP-32 and BIP-44 organize deterministic
+          key derivation, secp256k1 provides the
+          private/public key relationship and
+          digital signatures, Keccak-256 provides
+          hashing, and EIP-55 supports address
+          error detection.
+        </p>
+      
+        <p>
+          Combining specialized components enables
+          reproducible wallet recovery, multiple
+          derived addresses, transaction authorization
+          and more reliable address representation.
+        </p>
+      
       </div>
+
 
       
       <h2>Interactive Wallet Pipeline</h2>
