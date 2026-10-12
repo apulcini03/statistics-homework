@@ -393,3 +393,48 @@ button:disabled {
   display: none;
 }
 
+
+
+/* Homework 02 - HD address derivation */
+
+.accounts-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+#accountsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+#accountsTable th,
+#accountsTable td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+#accountsTable th {
+  background: #f1f5f9;
+  color: #174ea6;
+}
+
+#accountsTable tbody tr:hover {
+  background: #f8fafc;
+}
+
+#accountsTable td {
+  overflow-wrap: anywhere;
+}
+
+.wallet-note {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin-top: 18px;
+}
+
+#accountsSummary:empty {
+  display: none;
+}
