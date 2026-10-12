@@ -353,3 +353,17 @@ button:disabled {
 #privateKeyResult:empty {
   display: none;
 }
+
+
+/* Homework 02 - Public key generation */
+
+#publicKeyResult {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+}
+
+#publicKeyResult:empty {
+  display: none;
+}
+
