@@ -108,6 +108,25 @@
              class="analysis-summary"
              aria-live="polite"></div>
 
+        <hr>
+        
+        <h3>Step 4 — Keccak-256: Ethereum Address Derivation</h3>
+        
+        <p>
+          Hash the 64-byte public key coordinates
+          (without the 04 prefix) using Keccak-256,
+          then take the last 20 bytes of the hash.
+        </p>
+        
+        <button id="generateAddressBtn">
+          Generate Ethereum Address
+        </button>
+        
+        <div id="addressResult"
+             class="analysis-summary"
+             aria-live="polite"></div>
+
+
         
         
       </div>
