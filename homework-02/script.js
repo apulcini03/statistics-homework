@@ -619,3 +619,94 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+
+
+// Step 8 - Cryptographic hash comparison
+
+function hexFromBytes(buffer) {
+  return Array.from(new Uint8Array(buffer))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+// Hamming distance between equal-length hex digests
+function digestHammingDistance(a, b) {
+  if (a.length !== b.length) {
+    throw new Error("Digest lengths must match");
+  }
+
+  let distance = 0;
+
+  for (let i = 0; i < a.length; i++) {
+    const xor = parseInt(a[i], 16) ^ parseInt(b[i], 16);
+
+    for (let bit = 0; bit < 4; bit++) {
+      distance += (xor >> bit) & 1;
+    }
+  }
+
+  return distance;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const button = document.getElementById(
+    "compareHashesBtn"
+  );
+
+  const input = document.getElementById("hashInput");
+  const results = document.getElementById(
+    "hashComparisonResults"
+  );
+
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    results.textContent = "Computing hashes...";
+
+    try {
+      if (typeof sha3_256 !== "function") {
+        throw new Error("SHA3 library is unavailable");
+      }
+
+      const message = input.value;
+      const messageBytes = new TextEncoder().encode(message);
+
+      // Ethereum Keccak-256
+      const keccak = ethers.keccak256(
+        messageBytes
+      ).slice(2);
+
+      // NIST SHA3-256
+      const sha3 = sha3_256(message);
+
+      // SHA-512 from the SHA-2 family
+      const sha512Buffer = await crypto.subtle.digest(
+        "SHA-512",
+        messageBytes
+      );
+
+      const sha512 = hexFromBytes(sha512Buffer);
+
+      // Compare only equal-length 256-bit hashes
+      const distance = digestHammingDistance(
+        keccak,
+        sha3
+      );
+
+      results.textContent =
+        `Input: ${JSON.stringify(message)}\n\n` +
+        `Keccak-256 (256 bits):\n0x${keccak}\n\n` +
+        `SHA3-256 (256 bits):\n0x${sha3}\n\n` +
+        `SHA-512 / SHA-2 (512 bits):\n0x${sha512}\n\n` +
+        `Keccak vs SHA3 Hamming distance: ` +
+        `${distance} / 256 bits`;
+
+    } catch (error) {
+      results.textContent =
+        "Hash comparison failed. Check the console.";
+      console.error(error);
+    } finally {
+      button.disabled = false;
+    }
+  });
+});
