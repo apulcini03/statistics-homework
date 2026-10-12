@@ -268,3 +268,28 @@ button:disabled {
   display: none;
 }
 
+
+
+/* Uniformity and periodicity summary */
+
+.analysis-summary {
+  margin: 24px 0;
+  padding: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.analysis-summary h3 {
+  margin-top: 0;
+  color: #174ea6;
+}
+
+.analysis-summary p {
+  margin: 8px 0;
+  font-size: 0.95rem;
+}
+
+.analysis-summary:empty {
+  display: none;
+}
