@@ -543,3 +543,32 @@ button:disabled {
     gap: 5px;
   }
 }
+
+
+
+/* Homework 02 - Keccak avalanche experiment */
+
+#keccakAvalancheResults {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+  line-height: 1.8;
+}
+
+#keccakAvalancheResults:empty {
+  display: none;
+}
+
+#avalancheTrialCount {
+  margin-bottom: 16px;
+}
+
+#runKeccakAvalancheBtn {
+  margin-bottom: 12px;
+}
+
+@media (max-width: 600px) {
+  #keccakAvalancheResults {
+    font-size: 0.82rem;
+  }
+}
