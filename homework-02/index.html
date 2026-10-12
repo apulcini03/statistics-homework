@@ -523,6 +523,79 @@
 
 
       
+      <h2>Keccak-256 Avalanche Effect</h2>
+      <div class="card">
+      
+        <h3>Single-Bit Input Changes</h3>
+      
+        <p>
+          This experiment investigates how Keccak-256
+          responds when exactly one bit of its input
+          is modified.
+        </p>
+      
+        <p>
+          We use a fixed 256-bit (32-byte) test message.
+          For each trial, one randomly selected input bit
+          is flipped and both hashes are compared.
+        </p>
+      
+        <p>
+          A cryptographic hash with good diffusion is
+          expected to change approximately half of
+          its 256 output bits when one input bit changes.
+        </p>
+      
+        <label for="avalancheTrialCount">
+          Number of trials (10–1000):
+        </label>
+      
+        <input
+          type="number"
+          id="avalancheTrialCount"
+          min="10"
+          max="1000"
+          step="1"
+          value="200"
+        >
+      
+        <button id="runKeccakAvalancheBtn">
+          Run Avalanche Experiment
+        </button>
+      
+        <div
+          id="keccakAvalancheResults"
+          class="analysis-summary"
+          aria-live="polite">
+        </div>
+      
+        <h3>Hamming Distance Distribution</h3>
+      
+        <p>
+          The histogram shows the number of output bits
+          that differ from the original Keccak-256 digest.
+          The dashed reference marks the theoretical
+          mean of 128 bits.
+        </p>
+      
+        <div class="chart-container">
+          <canvas id="keccakAvalancheChart"></canvas>
+        </div>
+      
+        <p class="wallet-note">
+          Each modified input is exactly one bit away
+          from the original message. Trials may select
+          the same bit more than once. The theoretical
+          reference assumes ideal random-looking outputs;
+          this experiment does not prove cryptographic
+          security.
+        </p>
+      
+      </div>
+
+
+
+      
       <h2>Historical Timeline</h2>
       <div class="card">
       
