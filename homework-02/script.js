@@ -296,3 +296,85 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+
+// Step 6 - Multiple HD wallet address derivation
+
+document.addEventListener("DOMContentLoaded", () => {
+  const button =
+    document.getElementById("deriveAccountsBtn");
+
+  const input =
+    document.getElementById("accountCount");
+
+  const summary =
+    document.getElementById("accountsSummary");
+
+  const tableBody =
+    document.getElementById("accountsTableBody");
+
+  button.addEventListener("click", async () => {
+    const count = Number(input.value);
+
+    if (
+      input.value.trim() === "" ||
+      !Number.isInteger(count) ||
+      count < 1 ||
+      count > 10
+    ) {
+      summary.textContent =
+        "Please enter an integer between 1 and 10.";
+      tableBody.replaceChildren();
+      return;
+    }
+
+    button.disabled = true;
+    summary.textContent = "Deriving addresses...";
+    tableBody.replaceChildren();
+
+    try {
+      // Derive one seed and one BIP-32 master node
+      const seedHex = await mnemonicToSeed(TEST_MNEMONIC);
+
+      const master = ethers.HDNodeWallet.fromSeed(
+        ethers.getBytes("0x" + seedHex)
+      );
+
+      const addresses = new Set();
+
+      for (let i = 0; i < count; i++) {
+        const path = `m/44'/60'/0'/0/${i}`;
+        const wallet = master.derivePath(path);
+
+        addresses.add(wallet.address.toLowerCase());
+
+        const row = document.createElement("tr");
+
+        for (const value of [
+          i,
+          path,
+          wallet.address
+        ]) {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          row.appendChild(cell);
+        }
+
+        tableBody.appendChild(row);
+      }
+
+      summary.textContent =
+        `Seed: unchanged | ` +
+        `Addresses derived: ${count} | ` +
+        `Unique addresses: ${addresses.size}`;
+
+    } catch (error) {
+      summary.textContent =
+        "Address derivation failed.";
+      tableBody.replaceChildren();
+      console.error(error);
+
+    } finally {
+      button.disabled = false;
+    }
+  });
+});
