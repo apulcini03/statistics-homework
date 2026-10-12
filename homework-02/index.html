@@ -69,6 +69,36 @@
           The resulting seed is deterministic and can be
           used to reconstruct the wallet.
         </p>
+
+        
+        <h4>Mnemonic Checksum and Entropy</h4>
+        
+        <p>
+          A typical 12-word BIP-39 mnemonic encodes
+          128 bits of initial entropy and 4 checksum bits.
+        </p>
+        
+        <p>
+          The checksum is obtained from the first 4 bits
+          of SHA-256 applied to the original entropy.
+          The resulting 132 bits are divided into
+          12 groups of 11 bits, each selecting
+          one word from a 2048-word list.
+        </p>
+        
+        <p>
+          This checksum helps detect invalid mnemonic
+          phrases, but it does not provide authentication
+          or protect against deliberate manipulation.
+        </p>
+        
+        <p>
+          The subsequent 512-bit seed is derived using
+          PBKDF2-HMAC-SHA512 with 2048 iterations.
+          The mnemonic checksum and seed derivation
+          are separate operations.
+        </p>
+
       
         <h3>BIP-32 — Hierarchical Deterministic Derivation</h3>
       
@@ -850,6 +880,49 @@
           and key derivation cannot replace
           secure random entropy generation.
         </p>
+
+        
+        <h3>Keccak-256 Avalanche Effect Experiment</h3>
+        
+        <p>
+          An additional experiment investigated the
+          diffusion properties of Keccak-256 by modifying
+          exactly one bit of a fixed 256-bit input.
+        </p>
+        
+        <p>
+          In a sample of 200 trials, 132 distinct
+          input-bit positions were tested.
+          The observed mean Hamming distance was
+          128.63 out of 256 output bits, compared
+          with a theoretical mean of 128.
+        </p>
+        
+        <p>
+          The observed standard deviation was 7.96,
+          close to the ideal theoretical value of 8.
+          The observed distances ranged from
+          105 to 151 bits.
+        </p>
+        
+        <p>
+          These observations are consistent with
+          the diffusion behaviour expected from
+          a cryptographic hash function: changing
+          one input bit typically changes approximately
+          half of the output bits.
+        </p>
+        
+        <p>
+          Since input-bit positions were selected
+          with replacement, some trials repeated
+          the same modification. Consequently,
+          the observations are not all independent.
+          The experiment illustrates avalanche-like
+          behaviour but does not prove cryptographic
+          security or the strict avalanche criterion.
+        </p>
+
       
         <h3>Final Conclusion</h3>
       
