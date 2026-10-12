@@ -710,3 +710,208 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+
+
+// Homework 02 - Keccak-256 avalanche experiment
+
+let keccakAvalancheChartInstance = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const button = document.getElementById(
+    "runKeccakAvalancheBtn"
+  );
+
+  const input = document.getElementById(
+    "avalancheTrialCount"
+  );
+
+  const results = document.getElementById(
+    "keccakAvalancheResults"
+  );
+
+  button.addEventListener("click", async () => {
+    const N = Number(input.value);
+
+    if (
+      input.value.trim() === "" ||
+      !Number.isInteger(N) ||
+      N < 10 ||
+      N > 1000
+    ) {
+      results.textContent =
+        "Enter an integer between 10 and 1000.";
+      return;
+    }
+
+    button.disabled = true;
+    results.textContent = "Running avalanche experiment...";
+
+    try {
+      // Fixed, non-secret 32-byte test message
+      const original = new Uint8Array(32);
+
+      for (let i = 0; i < original.length; i++) {
+        original[i] = i;
+      }
+
+      // 32 bytes = 256 input bits
+      const inputBitCount = original.length * 8;
+
+      const originalHash = ethers.keccak256(
+        original
+      ).slice(2);
+
+      const distances = [];
+      const selectedBits = [];
+
+      for (let i = 0; i < N; i++) {
+        // Select a bit uniformly at random
+        const random = new Uint32Array(1);
+        crypto.getRandomValues(random);
+
+        const bitIndex =
+          random[0] % inputBitCount;
+
+        selectedBits.push(bitIndex);
+
+        // Copy original message and flip exactly one bit
+        const modified = new Uint8Array(original);
+
+        const byteIndex = Math.floor(bitIndex / 8);
+        const bitWithinByte = bitIndex % 8;
+
+        modified[byteIndex] ^= (1 << bitWithinByte);
+
+        const modifiedHash = ethers.keccak256(
+          modified
+        ).slice(2);
+
+        const distance = digestHammingDistance(
+          originalHash,
+          modifiedHash
+        );
+
+        distances.push(distance);
+      }
+
+      // Descriptive statistics
+      const mean = distances.reduce(
+        (sum, value) => sum + value, 0
+      ) / N;
+
+      const variance = distances.reduce(
+        (sum, value) => sum + (value - mean) ** 2,
+        0
+      ) / N;
+
+      const stdDev = Math.sqrt(variance);
+
+      const min = Math.min(...distances);
+      const max = Math.max(...distances);
+
+      const uniqueBits = new Set(selectedBits).size;
+
+      // Build histogram: one bin per 8 Hamming bits
+      const binWidth = 8;
+      const binCount = 256 / binWidth + 1;
+      const frequencies = Array(binCount).fill(0);
+
+      for (const d of distances) {
+        const bin = Math.floor(d / binWidth);
+        frequencies[bin]++;
+      }
+
+      const labels = frequencies.map((_, i) => {
+        const lower = i * binWidth;
+        const upper = Math.min(lower + binWidth - 1, 256);
+        return `${lower}-${upper}`;
+      });
+
+      // Normal approximation of Binomial(256, 0.5)
+      // Mean = 128, theoretical standard deviation = 8
+      const theoreticalMean = 128;
+      const theoreticalStdDev = 8;
+
+      const meanDeviation = mean - theoreticalMean;
+
+      results.textContent =
+        `Trials: ${N}\n` +
+        `Input size: ${inputBitCount} bits\n` +
+        `Digest size: 256 bits\n` +
+        `Unique input bit positions: ${uniqueBits}\n` +
+        `Mean Hamming distance: ${mean.toFixed(2)} / 256\n` +
+        `Theoretical mean: ${theoreticalMean} / 256\n` +
+        `Mean deviation: ${meanDeviation.toFixed(2)} bits\n` +
+        `Observed standard deviation: ${stdDev.toFixed(2)}\n` +
+        `Theoretical standard deviation: ${theoreticalStdDev}\n` +
+        `Minimum distance: ${min}\n` +
+        `Maximum distance: ${max}`;
+
+      if (keccakAvalancheChartInstance) {
+        keccakAvalancheChartInstance.destroy();
+      }
+
+      keccakAvalancheChartInstance = new Chart(
+        document.getElementById(
+          "keccakAvalancheChart"
+        ),
+        {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [{
+              label: "Observed Frequency",
+              data: frequencies,
+              backgroundColor: labels.map((_, i) =>
+                i === 16 ? "#f59e0b" : "#2563eb"
+              ),
+              hoverBackgroundColor: "#1d4ed8"
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              tooltip: { enabled: true },
+              title: {
+                display: true,
+                text:
+                  "Keccak-256 Avalanche: Hamming Distances"
+              }
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: "Hamming Distance (bits)"
+                },
+                ticks: {
+                  maxTicksLimit: 12
+                }
+              },
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: "Frequency"
+                },
+                ticks: {
+                  precision: 0
+                }
+              }
+            }
+          }
+        }
+      );
+
+    } catch (error) {
+      results.textContent =
+        "Avalanche experiment failed. Check the console.";
+      console.error(error);
+
+    } finally {
+      button.disabled = false;
+    }
+  });
+});
