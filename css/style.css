@@ -466,3 +466,27 @@ button:disabled {
     font-size: 0.82rem;
   }
 }
+
+
+/* Homework 02 - Hash comparison */
+
+#hashInput {
+  display: block;
+  width: 100%;
+  max-width: 450px;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+#hashComparisonResults {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+}
+
+#hashComparisonResults:empty {
+  display: none;
+}
