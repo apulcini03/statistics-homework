@@ -756,3 +756,100 @@ function analyzeCorrelation(N) {
   );
 }
 
+
+
+// 12. Avalanche-like behaviour
+
+function to5Bits(value) {
+  return value.toString(2).padStart(5, "0");
+}
+
+function encodePoint(P) {
+  return to5Bits(P.x) + to5Bits(P.y);
+}
+
+function hammingDistance(a, b) {
+  let distance = 0;
+
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) distance++;
+  }
+
+  return distance;
+}
+
+document.getElementById("avalancheBtn")
+  .addEventListener("click", () => {
+
+    const input = document.getElementById("avalancheKey");
+    const k = Number(input.value);
+
+    const bitPosition = Number(
+      document.getElementById("bitPosition").value
+    );
+
+    const results = document.getElementById(
+      "avalancheResults"
+    );
+
+    results.replaceChildren();
+
+    if (
+      input.value.trim() === "" ||
+      !Number.isInteger(k) ||
+      k < 1 ||
+      k > 8
+    ) {
+      results.textContent =
+        "Enter a private key between 1 and 8.";
+      return;
+    }
+
+    // Flip exactly one bit of the private key
+    const modifiedKey = k ^ (1 << bitPosition);
+
+    const originalPoint = scalarMultiply(k, G);
+    const modifiedPoint = scalarMultiply(modifiedKey, G);
+
+    // Handle invalid / infinity results
+    if (
+      modifiedKey === 0 ||
+      originalPoint === null ||
+      modifiedPoint === null
+    ) {
+      results.textContent =
+        `Modified key: ${modifiedKey}. ` +
+        "At least one public point is at infinity. " +
+        "Hamming distance is not computed.";
+      return;
+    }
+
+    const originalBinary = encodePoint(originalPoint);
+    const modifiedBinary = encodePoint(modifiedPoint);
+
+    const distance = hammingDistance(
+      originalBinary,
+      modifiedBinary
+    );
+
+    const percentage = (distance / 10) * 100;
+
+    const observations = [
+      `Original private key: ${k} (${to5Bits(k)})`,
+      `Modified private key: ${modifiedKey} (${to5Bits(modifiedKey)})`,
+      `Bit flipped: ${bitPosition}`,
+      `Original public key: (${originalPoint.x}, ${originalPoint.y})`,
+      `Modified public key: (${modifiedPoint.x}, ${modifiedPoint.y})`,
+      `Original binary output: ${originalBinary}`,
+      `Modified binary output: ${modifiedBinary}`,
+      `Hamming distance: ${distance} / 10 bits`,
+      `Changed bits: ${percentage.toFixed(1)}%`
+    ];
+
+    observations.forEach(message => {
+      const paragraph = document.createElement("p");
+      paragraph.textContent = message;
+      results.appendChild(paragraph);
+    });
+  });
+
