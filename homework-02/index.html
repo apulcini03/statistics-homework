@@ -142,10 +142,64 @@
         
         <div id="checksumResult"
              class="analysis-summary"
-             aria-live="polite"></div>
+             aria-live="polite"></div>  
+        
+      </div>
 
-        
-        
+      
+      <h2>HD Wallet — Multiple Account Derivation</h2>
+      <div class="card">
+        <h3>One Seed, Multiple Ethereum Addresses</h3>
+      
+        <p>
+          Explore how a single BIP-39 seed can derive
+          multiple Ethereum addresses using BIP-32 and
+          different BIP-44 address indices.
+        </p>
+      
+        <p>
+          Derivation path:
+          <strong>m/44'/60'/0'/0/index</strong>
+        </p>
+      
+        <label for="accountCount">
+          Number of addresses (1–10):
+        </label>
+      
+        <input
+          type="number"
+          id="accountCount"
+          min="1"
+          max="10"
+          step="1"
+          value="5"
+        >
+      
+        <button id="deriveAccountsBtn">
+          Derive Addresses
+        </button>
+      
+        <div id="accountsSummary"
+             class="analysis-summary"
+             aria-live="polite"></div>
+      
+        <div class="accounts-table-wrapper">
+          <table id="accountsTable">
+            <thead>
+              <tr>
+                <th>Index</th>
+                <th>Derivation Path</th>
+                <th>Ethereum Address</th>
+              </tr>
+            </thead>
+            <tbody id="accountsTableBody"></tbody>
+          </table>
+        </div>
+      
+        <p class="wallet-note">
+          Public test mnemonic only.
+          Never send real funds to these addresses.
+        </p>
       </div>
 
 
