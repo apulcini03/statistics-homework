@@ -46,6 +46,7 @@
       
       <h2>Interactive Wallet Pipeline</h2>
       <div class="card">
+        
         <h3>Step 1 — BIP-39: Mnemonic to Seed</h3>
       
         <p>
@@ -67,6 +68,31 @@
         <div id="seedResult"
              class="analysis-summary"
              aria-live="polite"></div>
+        
+        <hr>
+        
+        <h3>Step 2 — BIP-32 / BIP-44: Private Key Derivation</h3>
+        
+        <p>
+          Derive an Ethereum private key from the BIP-39 seed
+          using a hierarchical deterministic wallet.
+        </p>
+        
+        <p>
+          Derivation Path:
+          <strong>m/44'/60'/0'/0/0</strong>
+        </p>
+        
+        <button id="deriveKeyBtn">
+          Derive Private Key
+        </button>
+        
+        <div id="privateKeyResult"
+             class="analysis-summary"
+             aria-live="polite"></div>
+
+
+        
       </div>
 
 
