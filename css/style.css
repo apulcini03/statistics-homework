@@ -490,3 +490,56 @@ button:disabled {
 #hashComparisonResults:empty {
   display: none;
 }
+
+
+
+/* Homework 02 - Historical timeline */
+
+.crypto-timeline {
+  margin-top: 25px;
+  padding-left: 20px;
+  border-left: 3px solid #2563eb;
+}
+
+.timeline-item {
+  position: relative;
+  display: flex;
+  gap: 20px;
+  margin-bottom: 28px;
+  padding-left: 15px;
+}
+
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: -28px;
+  top: 8px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #2563eb;
+  border: 3px solid white;
+}
+
+.timeline-year {
+  min-width: 55px;
+  color: #174ea6;
+  font-weight: bold;
+}
+
+.timeline-item h3 {
+  margin: 0 0 8px;
+  color: #174ea6;
+}
+
+.timeline-item p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .timeline-item {
+    flex-direction: column;
+    gap: 5px;
+  }
+}
