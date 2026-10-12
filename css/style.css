@@ -367,3 +367,16 @@ button:disabled {
   display: none;
 }
 
+
+
+/* Homework 02 - Ethereum address */
+
+#addressResult {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+}
+
+#addressResult:empty {
+  display: none;
+}
