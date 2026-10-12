@@ -438,3 +438,31 @@ button:disabled {
 #accountsSummary:empty {
   display: none;
 }
+
+
+
+/* Homework 02 - Statistical exploration */
+
+#walletStatsResults {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+}
+
+#walletStatsResults:empty {
+  display: none;
+}
+
+#statsAccountCount {
+  margin-bottom: 16px;
+}
+
+#runWalletStatsBtn {
+  margin-bottom: 10px;
+}
+
+@media (max-width: 600px) {
+  #walletStatsResults {
+    font-size: 0.82rem;
+  }
+}
