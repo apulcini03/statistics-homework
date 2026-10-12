@@ -66,3 +66,53 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+
+// Step 2 - BIP-32 / BIP-44 private key derivation
+
+const DERIVATION_PATH = "m/44'/60'/0'/0/0";
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const deriveBtn =
+    document.getElementById("deriveKeyBtn");
+
+  const result =
+    document.getElementById("privateKeyResult");
+
+  deriveBtn.addEventListener("click", async () => {
+
+    deriveBtn.disabled = true;
+    result.textContent = "Deriving private key...";
+
+    try {
+      // Generate the same deterministic BIP-39 seed
+      const seedHex = await mnemonicToSeed(TEST_MNEMONIC);
+
+      // Convert the hexadecimal seed into bytes
+      const seedBytes = ethers.getBytes("0x" + seedHex);
+
+      // Generate the BIP-32 master node
+      const masterNode =
+        ethers.HDNodeWallet.fromSeed(seedBytes);
+
+      // Derive the child key using the BIP-44 path
+      const derivedWallet =
+        masterNode.derivePath(DERIVATION_PATH);
+
+      result.textContent =
+        `Derivation Path: ${DERIVATION_PATH}\n` +
+        `Private Key (256 bits):\n` +
+        derivedWallet.privateKey;
+
+    } catch (error) {
+      result.textContent =
+        "Private key derivation failed. Check the console.";
+      console.error(error);
+
+    } finally {
+      deriveBtn.disabled = false;
+    }
+  });
+});
+
