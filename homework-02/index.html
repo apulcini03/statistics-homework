@@ -640,13 +640,175 @@
       </div>
 
 
+      
       <h2>Results and Conclusions</h2>
       <div class="card">
+      
+        <h3>Deterministic Wallet Derivation</h3>
+      
         <p>
-          Results and observations
-          will be presented here.
+          The experiment demonstrates that a single BIP-39
+          mnemonic can deterministically generate an entire
+          hierarchy of Ethereum keys and addresses.
         </p>
+      
+        <p>
+          Using the same mnemonic and derivation path always
+          produces the same private key, public key and
+          Ethereum address. Changing the final BIP-44
+          address index generates a different derived key
+          while preserving the original seed.
+        </p>
+      
+        <h3>Statistical Results — 20 Ethereum Addresses</h3>
+      
+        <p>
+          The experiment analyzed 20 addresses obtained
+          from consecutive derivation indices.
+          Each address contains 160 bits, for a total
+          of 3,200 bits.
+        </p>
+      
+        <p>
+          The observed distribution contained 1,588 zero
+          bits and 1,612 one bits, corresponding to
+          49.625% zeros and 50.375% ones.
+        </p>
+      
+        <p>
+          The observed proportions are close to the
+          theoretical 50/50 distribution expected under
+          an ideal model of uniformly random bits.
+        </p>
+      
+        <h3>Hamming Distance Analysis</h3>
+      
+        <p>
+          The 20 addresses produced 19 consecutive
+          address comparisons.
+          Their mean Hamming distance was 79.74 bits
+          out of 160, with a minimum of 69 and
+          a maximum of 91.
+        </p>
+      
+        <p>
+          Under a model of independent uniformly random
+          160-bit addresses, the expected Hamming distance
+          is 80 bits, with standard deviation approximately
+          6.32 bits.
+        </p>
+      
+        <p>
+          The observed mean is close to this theoretical
+          reference. However, the experiment uses only
+          a small deterministic sample, so it does not
+          prove statistical independence, unpredictability
+          or cryptographic security.
+        </p>
+      
+        <p>
+          Furthermore, changing a derivation index does
+          not correspond to changing exactly one bit
+          of the mnemonic or seed. Therefore, this
+          experiment should not be interpreted as a
+          formal test of the avalanche effect.
+        </p>
+      
+        <h3>Hash Function Comparison</h3>
+      
+        <p>
+          Hashing the same input with Keccak-256, SHA3-256
+          and SHA-512 produces different digests.
+        </p>
+      
+        <p>
+          Keccak-256 and SHA3-256 produce 256-bit outputs
+          but differ in domain separation and padding
+          conventions. For the test message "abc",
+          their outputs differ in 138 out of 256 bits.
+        </p>
+      
+        <p>
+          SHA-512 belongs to the SHA-2 family and
+          produces a 512-bit digest. In the wallet
+          pipeline, HMAC-SHA512 is used within
+          key derivation, while Keccak-256 is used
+          for Ethereum address generation.
+        </p>
+      
+        <p>
+          The observed Hamming distance between Keccak-256
+          and SHA3-256 is a descriptive comparison of
+          two outputs, not a security comparison
+          between the algorithms.
+        </p>
+      
+        <h3>Why Different Cryptographic Primitives?</h3>
+      
+        <p>
+          Ethereum wallets combine multiple cryptographic
+          techniques because each solves a different
+          problem.
+        </p>
+      
+        <p>
+          BIP-39 provides a mnemonic representation
+          and seed derivation mechanism. BIP-32
+          enables hierarchical deterministic key
+          derivation, while BIP-44 standardizes
+          the organization of derivation paths.
+        </p>
+      
+        <p>
+          secp256k1 establishes the mathematical
+          relationship between private and public
+          keys and supports digital signatures.
+          Keccak-256 provides cryptographic hashing
+          for address derivation.
+          EIP-55 adds error-detection information
+          through mixed-case hexadecimal encoding.
+        </p>
+      
+        <p>
+          These operations are complementary:
+          hashing cannot replace asymmetric
+          digital signatures, checksum encoding
+          cannot replace cryptographic security,
+          and key derivation cannot replace
+          secure random entropy generation.
+        </p>
+      
+        <h3>Final Conclusion</h3>
+      
+        <p>
+          The Ethereum wallet pipeline illustrates
+          how cryptographic standards and primitives
+          work together to transform secret recovery
+          information into deterministic public
+          addresses.
+        </p>
+      
+        <p>
+          The statistical exploration showed
+          approximately balanced address bits and
+          Hamming distances close to the ideal
+          random-output reference.
+          These observations are useful for
+          understanding output distributions,
+          but they are not sufficient to establish
+          cryptographic security.
+        </p>
+      
+        <p>
+          The main lesson is that secure wallet
+          operation depends on the correct use of
+          specialized cryptographic components,
+          rather than a single algorithm
+          performing every function.
+        </p>
+      
       </div>
+
 
     </section>
   </main>
