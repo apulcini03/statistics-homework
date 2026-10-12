@@ -452,8 +452,10 @@ statisticsBtn.addEventListener("click", () => {
   );
 
   
-  // Run uniformity analysis
+  // Run uniformity and bit distribution analysis
   analyzeUniformity(N);
+  analyzeBitDistribution(N);
+
 
 });
 
@@ -525,4 +527,94 @@ function analyzeUniformity(N) {
     paragraph.textContent = message;
     summary.appendChild(paragraph);
   });
+}
+
+
+
+// 10. Bit distribution analysis
+
+let bitChartInstance = null;
+
+function analyzeBitDistribution(N) {
+  const xBits = [0, 0]; // [zeros, ones]
+  const yBits = [0, 0];
+
+  let point = null;
+  let finiteCount = 0;
+
+  for (let k = 1; k <= N; k++) {
+    point = pointAdd(point, G);
+
+    if (point === null) continue;
+
+    finiteCount++;
+
+    const xBinary = point.x.toString(2).padStart(5, "0");
+    const yBinary = point.y.toString(2).padStart(5, "0");
+
+    for (const bit of xBinary) {
+      xBits[Number(bit)]++;
+    }
+
+    for (const bit of yBinary) {
+      yBits[Number(bit)]++;
+    }
+  }
+
+  const summary = document.getElementById("bitResults");
+
+  summary.textContent =
+    `Finite points: ${finiteCount} | ` +
+    `X: ${xBits[0]} zeros, ${xBits[1]} ones | ` +
+    `Y: ${yBits[0]} zeros, ${yBits[1]} ones`;
+
+  // Replace the previous chart
+  if (bitChartInstance) {
+    bitChartInstance.destroy();
+  }
+
+  bitChartInstance = new Chart(
+    document.getElementById("bitChart"),
+    {
+      type: "bar",
+      data: {
+        labels: ["X coordinate", "Y coordinate"],
+        datasets: [
+          {
+            label: "Bit 0",
+            data: [xBits[0], yBits[0]],
+            backgroundColor: "#2563eb",
+            hoverBackgroundColor: "#1d4ed8"
+          },
+          {
+            label: "Bit 1",
+            data: [xBits[1], yBits[1]],
+            backgroundColor: "#f59e0b",
+            hoverBackgroundColor: "#d97706"
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          tooltip: { enabled: true },
+          title: {
+            display: true,
+            text: "Binary Digit Frequencies"
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 },
+            title: {
+              display: true,
+              text: "Frequency"
+            }
+          }
+        }
+      }
+    }
+  );
 }
