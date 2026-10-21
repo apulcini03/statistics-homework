@@ -605,3 +605,36 @@ button:disabled {
     font-size: 0.82rem;
   }
 }
+
+
+
+/* HW 2 - Caesar Cipher */
+
+.caesar-result {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+  line-height: 1.7;
+}
+
+.caesar-result:empty {
+  display: none;
+}
+
+#caesarMessage,
+#caesarKey {
+  display: block;
+  width: 100%;
+  max-width: 450px;
+  padding: 12px;
+  margin: 12px 0 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+@media (max-width: 600px) {
+  .caesar-result {
+    font-size: 0.82rem;
+  }
+}

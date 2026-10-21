@@ -275,3 +275,123 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
 });
+
+
+
+// HW 2 - Caesar Cipher Encryption and Decryption
+
+let caesarEncryptedMessage = null;
+let caesarEncryptionKey = null;
+
+// Encrypt or decrypt using an integer shift
+function caesarShift(text, shift) {
+  const normalizedShift = ((shift % 26) + 26) % 26;
+
+  return Array.from(text, char => {
+    const code = char.charCodeAt(0);
+
+    // Uppercase letters A-Z
+    if (code >= 65 && code <= 90) {
+      return String.fromCharCode(
+        65 + ((code - 65 + normalizedShift) % 26)
+      );
+    }
+
+    // Lowercase letters a-z
+    if (code >= 97 && code <= 122) {
+      return String.fromCharCode(
+        97 + ((code - 97 + normalizedShift) % 26)
+      );
+    }
+
+    // Preserve spaces, digits and punctuation
+    return char;
+  }).join("");
+}
+
+function getCaesarKey() {
+  const input = document.getElementById("caesarKey");
+  const raw = input.value.trim();
+  const key = Number(raw);
+
+  if (
+    raw === "" ||
+    !Number.isInteger(key) ||
+    key < 0 ||
+    key > 25
+  ) {
+    throw new Error(
+      "Enter an integer shift between 0 and 25."
+    );
+  }
+
+  return key;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const messageInput =
+    document.getElementById("caesarMessage");
+
+  const encryptButton =
+    document.getElementById("caesarEncryptBtn");
+
+  const decryptButton =
+    document.getElementById("caesarDecryptBtn");
+
+  const encryptResult =
+    document.getElementById("caesarEncryptResult");
+
+  const decryptResult =
+    document.getElementById("caesarDecryptResult");
+
+  encryptButton.addEventListener("click", () => {
+    try {
+      const plaintext = messageInput.value;
+      const key = getCaesarKey();
+
+      if (!plaintext.length) {
+        throw new Error("Enter a message to encrypt.");
+      }
+
+      const ciphertext = caesarShift(plaintext, key);
+
+      caesarEncryptedMessage = ciphertext;
+      caesarEncryptionKey = key;
+
+      encryptResult.textContent =
+        `Original plaintext:\n${plaintext}\n\n` +
+        `Encryption key: ${key}\n\n` +
+        `Ciphertext:\n${ciphertext}`;
+
+      decryptResult.textContent = "";
+
+    } catch (error) {
+      caesarEncryptedMessage = null;
+      caesarEncryptionKey = null;
+      encryptResult.textContent = error.message;
+      decryptResult.textContent = "";
+    }
+  });
+
+  decryptButton.addEventListener("click", () => {
+    if (
+      caesarEncryptedMessage === null ||
+      caesarEncryptionKey === null
+    ) {
+      decryptResult.textContent =
+        "Encrypt a message first.";
+      return;
+    }
+
+    const recoveredPlaintext = caesarShift(
+      caesarEncryptedMessage,
+      -caesarEncryptionKey
+    );
+
+    decryptResult.textContent =
+      `Ciphertext:\n${caesarEncryptedMessage}\n\n` +
+      `Decryption key: ${caesarEncryptionKey}\n\n` +
+      `Recovered plaintext:\n${recoveredPlaintext}`;
+  });
+});
+

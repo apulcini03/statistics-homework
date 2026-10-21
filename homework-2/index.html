@@ -187,25 +187,119 @@
                     decrypts the actual message.
                 </p>
 
-                <p class="wallet-note">
-                    Educational demonstration only.
-                    Never use restricted private keys
-                    to protect real information.
-                </p>
-
             </div>
 
 
+            
             <h2>Part 2 — Caesar Cipher</h2>
             <div class="card">
+
                 <h3>Classical Substitution Cipher</h3>
 
                 <p>
-                    Encrypt and decrypt the same message
-                    using a Caesar cipher with a
-                    configurable alphabet shift.
+                    The Caesar cipher is a symmetric substitution cipher
+                    in which each letter is shifted by a fixed number
+                    of positions in the alphabet.
                 </p>
+
+                <p>
+                    Encryption: E(x) = (x + k) mod 26
+                </p>
+
+                <p>
+                    Decryption: D(y) = (y - k) mod 26
+                </p>
+
+                <h3>Step 1 — Select the Message and Key</h3>
+
+                <label for="caesarMessage">Plaintext Message:</label>
+
+                <input
+                    type="text"
+                    id="caesarMessage"
+                    value="HELLO STATISTICS"
+                    maxlength="500"
+                >
+
+                <label for="caesarKey">Caesar Shift (0–25):</label>
+
+                <input
+                    type="number"
+                    id="caesarKey"
+                    min="0"
+                    max="25"
+                    step="1"
+                    value="3"
+                >
+
+                <p>
+                    The key determines how many positions each letter
+                    moves in the English alphabet. Spaces, numbers
+                    and punctuation remain unchanged.
+                </p>
+
+                <hr>
+
+                <h3>Step 2 — Encrypt the Message</h3>
+
+                <p>
+                    Each alphabetical character is shifted forward
+                    by the selected key, with wraparound after Z.
+                </p>
+
+                <button id="caesarEncryptBtn">
+                    Encrypt Message
+                </button>
+
+                <div
+                    id="caesarEncryptResult"
+                    class="analysis-summary caesar-result"
+                    aria-live="polite"></div>
+
+                <hr>
+
+                <h3>Step 3 — Decrypt the Message</h3>
+
+                <p>
+                    Decryption applies the inverse shift to recover
+                    the original plaintext using the same secret key.
+                </p>
+
+                <button id="caesarDecryptBtn">
+                    Decrypt Message
+                </button>
+
+                <div
+                    id="caesarDecryptResult"
+                    class="analysis-summary caesar-result"
+                    aria-live="polite"></div>
+
+                <hr>
+
+                <h3>Role of the Key</h3>
+
+                <p>
+                    The Caesar cipher uses the same key for encryption
+                    and decryption. Its key space contains only
+                    26 possible shifts, including the identity
+                    transformation when k = 0.
+                </p>
+
+                <p>
+                    Because the key space is extremely small,
+                    an attacker can test every candidate.
+                    Furthermore, the substitution preserves
+                    the frequency distribution of letters,
+                    allowing statistical cryptanalysis.
+                </p>
+
+                <p class="wallet-note">
+                    The Caesar cipher is historically significant
+                    but provides no practical cryptographic security.
+                </p>
+
             </div>
+
 
             <h2>Part 3 — Cryptosystem Comparison</h2>
             <div class="card">
