@@ -572,3 +572,36 @@ button:disabled {
     font-size: 0.82rem;
   }
 }
+
+
+
+/* HW 2 - ECC Encryption and Decryption */
+
+.ecc-result {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+  line-height: 1.7;
+}
+
+.ecc-result:empty {
+  display: none;
+}
+
+#eccPrivateKey,
+#eccMessage {
+  display: block;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  max-width: 450px;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .ecc-result {
+    font-size: 0.82rem;
+  }
+}

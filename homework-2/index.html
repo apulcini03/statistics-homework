@@ -13,152 +13,263 @@
 
 <body>
 
-  <header>
-    <h1>HW 2 — ECC vs Caesar Cipher</h1>
-    <p>Statistics for Cybersecurity</p>
-    <p>Alberto Pulcini — 2046542</p>
-    <p>Academic Year 2026/2027</p>
-  </header>
+    <header>
+        <h1>HW 2 — ECC vs Caesar Cipher</h1>
+        <p>Statistics for Cybersecurity</p>
+        <p>Alberto Pulcini — 2046542</p>
+        <p>Academic Year 2026/2027</p>
+    </header>
 
-  <main>
-    <a href="../index.html" class="homework-button">
-      ← Back to homepage
-    </a>
-
-    <section class="homework-section">
-
-      <h2>Assignment Overview</h2>
-
-      <div class="card">
-        <h3>Objective</h3>
-
-        <p>
-          This homework compares a toy
-          elliptic-curve-based encryption scheme
-          with the classical Caesar cipher.
-        </p>
-
-        <p>
-          The study explores encryption and
-          decryption procedures, the role of
-          cryptographic keys, key-space sizes,
-          and statistical properties.
-        </p>
-
-        <p>
-          It also investigates two attacks:
-          statistical key recovery against
-          Caesar-encrypted text and exhaustive
-          private-key search against a
-          deliberately restricted ECC key space.
-        </p>
-      </div>
-
-      <h2>Part 1 — ECC Encryption and Decryption</h2>
-
-      <div class="card">
-        <h3>Toy ECC-Based Encryption</h3>
-
-        <p>
-          An educational hybrid encryption scheme
-          will use the secp256k1 elliptic curve
-          with a deliberately restricted
-          recipient private-key range.
-        </p>
-
-        <p>
-          The demonstration will explain
-          public and private keys, shared-secret
-          derivation, encryption and decryption.
-        </p>
-      </div>
-
-      <h2>Part 2 — Caesar Cipher</h2>
-
-      <div class="card">
-        <h3>Classical Substitution Cipher</h3>
-
-        <p>
-          Encrypt and decrypt the same message
-          using a Caesar cipher with a
-          configurable alphabet shift.
-        </p>
-      </div>
-
-      <h2>Part 3 — Cryptosystem Comparison</h2>
-
-      <div class="card">
-        <h3>Procedures, Keys and Statistics</h3>
-
-        <p>
-          Compare asymmetric key agreement
-          and symmetric message encryption
-          with classical letter substitution,
-          focusing on key management,
-          key-space size and observable patterns.
-        </p>
-      </div>
-
-      <h2>Part 4 — Statistical Cryptanalysis</h2>
-
-      <div class="card">
-        <h3>Recovering the Caesar Key</h3>
-
-        <p>
-          Estimate the Caesar cipher key
-          from ciphertext using letter-frequency
-          statistics from a known language.
-        </p>
-
-        <p>
-          Study how ciphertext length
-          affects the reliability of
-          statistical key recovery.
-        </p>
-      </div>
-
-      <h2>Part 5 — Restricted ECC Key-Space Attack</h2>
-
-      <div class="card">
-        <h3>Private-Key Recovery</h3>
-
-        <p>
-          Recover an intentionally small
-          ECC private key using exhaustive search.
-          Compare its computational cost with
-          statistical cryptanalysis of Caesar.
-        </p>
-      </div>
-
-      <h2>Results and Conclusions</h2>
-
-      <div class="card">
-        <h3>Experimental Findings</h3>
-
-        <p>
-          Results, statistical observations
-          and security limitations will
-          be discussed after the experiments.
-        </p>
-      </div>
-
-      <div class="card">
-        <a href="../index.html"
-           class="homework-button">
-          ← Back to Home
+    <main>
+        <a href="../index.html" class="homework-button">
+            ← Back to homepage
         </a>
-      </div>
 
-    </section>
+        <section class="homework-section">
 
-  </main>
+            <h2>Assignment Overview</h2>
+            <div class="card">
+                <h3>Objective</h3>
 
-  <footer>
-    <p>Statistics for Cybersecurity — 2026/2027</p>
-    <p>Educational demonstration only</p>
-  </footer>
+                <p>
+                    This homework compares a toy
+                    elliptic-curve-based encryption scheme
+                    with the classical Caesar cipher.
+                </p>
 
-  <script src="script.js"></script>
+                <p>
+                    The study explores encryption and
+                    decryption procedures, the role of
+                    cryptographic keys, key-space sizes,
+                    and statistical properties.
+                </p>
+
+                <p>
+                    It also investigates two attacks:
+                    statistical key recovery against
+                    Caesar-encrypted text and exhaustive
+                    private-key search against a
+                    deliberately restricted ECC key space.
+                </p>
+            </div>
+
+            
+            <h2>Part 1 — ECC Encryption and Decryption</h2>
+            <div class="card">
+
+                <h3>Toy ECC-Based Hybrid Encryption</h3>
+
+                <p>
+                    This demonstration uses the real secp256k1
+                    elliptic curve with an intentionally restricted
+                    recipient private-key space.
+                </p>
+
+                <p>
+                    Elliptic-curve Diffie-Hellman (ECDH) establishes
+                    a shared secret. HKDF-SHA256 derives a symmetric
+                    encryption key, and AES-256-GCM encrypts the message.
+                </p>
+
+                <h3>Step 1 — Recipient Key Generation</h3>
+
+                <p>
+                    The private key is a scalar d, and the public key
+                    is computed as Q = dG. For this experiment,
+                    the recipient private key is limited to 1–1000.
+                </p>
+
+                <label for="eccPrivateKey">
+                    Recipient Private Key (1–1000):
+                </label>
+
+                <input
+                    type="number"
+                    id="eccPrivateKey"
+                    min="1"
+                    max="1000"
+                    step="1"
+                    value="123"
+                >
+
+                <p>
+                    <button id="eccGenerateKeysBtn">
+                    Generate ECC Keys
+                    </button>
+                </p>
+
+                <div id="eccKeysResult"
+                    class="analysis-summary ecc-result"
+                    aria-live="polite"></div>
+
+                <hr>
+
+                <h3>Step 2 — Encrypt a Message</h3>
+
+                <p>
+                    The sender generates a fresh ephemeral key pair,
+                    computes an ECDH shared secret using the
+                    recipient's public key, and encrypts the message.
+                </p>
+
+                <label for="eccMessage">Plaintext Message:</label>
+
+                <input
+                    type="text"
+                    id="eccMessage"
+                    value="HELLO STATISTICS"
+                    maxlength="200"
+                >
+
+                <p>
+                    <button id="eccEncryptBtn">
+                    Encrypt Message
+                    </button>
+                </p>
+
+                <div id="eccEncryptionResult"
+                    class="analysis-summary ecc-result"
+                    aria-live="polite"></div>
+
+                <hr>
+
+                <h3>Step 3 — Decrypt the Message</h3>
+
+                <p>
+                    The recipient uses the private key and the
+                    sender's ephemeral public key to reconstruct
+                    the same shared secret and symmetric key.
+                </p>
+
+                <p>
+                    <button id="eccDecryptBtn">
+                    Decrypt Message
+                    </button>
+                </p>
+
+                <div id="eccDecryptionResult"
+                    class="analysis-summary ecc-result"
+                    aria-live="polite"></div>
+
+                <hr>
+
+                <h3>Role of the Cryptographic Keys</h3>
+
+                <p>
+                    <strong>Recipient private key:</strong>
+                    Secret scalar used to decrypt messages.
+                    In this toy scheme, its small key space
+                    makes exhaustive recovery feasible.
+                </p>
+
+                <p>
+                    <strong>Recipient public key:</strong>
+                    Public curve point used by the sender
+                    to establish a shared secret.
+                </p>
+
+                <p>
+                    <strong>Ephemeral private key:</strong>
+                    Fresh randomly generated sender secret
+                    used for one encryption operation.
+                </p>
+
+                <p>
+                    <strong>Ephemeral public key:</strong>
+                    Included with the ciphertext so that
+                    the recipient can reconstruct the shared secret.
+                </p>
+
+                <p>
+                    <strong>AES key:</strong>
+                    A 256-bit symmetric key derived from ECDH
+                    using HKDF-SHA256. It encrypts and
+                    decrypts the actual message.
+                </p>
+
+                <p class="wallet-note">
+                    Educational demonstration only.
+                    Never use restricted private keys
+                    to protect real information.
+                </p>
+
+            </div>
+
+
+            <h2>Part 2 — Caesar Cipher</h2>
+            <div class="card">
+                <h3>Classical Substitution Cipher</h3>
+
+                <p>
+                    Encrypt and decrypt the same message
+                    using a Caesar cipher with a
+                    configurable alphabet shift.
+                </p>
+            </div>
+
+            <h2>Part 3 — Cryptosystem Comparison</h2>
+            <div class="card">
+                <h3>Procedures, Keys and Statistics</h3>
+
+                <p>
+                    Compare asymmetric key agreement
+                    and symmetric message encryption
+                    with classical letter substitution,
+                    focusing on key management,
+                    key-space size and observable patterns.
+                </p>
+            </div>
+
+            <h2>Part 4 — Statistical Cryptanalysis</h2>
+            <div class="card">
+                <h3>Recovering the Caesar Key</h3>
+
+                <p>
+                    Estimate the Caesar cipher key
+                    from ciphertext using letter-frequency
+                    statistics from a known language.
+                </p>
+
+                <p>
+                    Study how ciphertext length
+                    affects the reliability of
+                    statistical key recovery.
+                </p>
+            </div>
+
+            <h2>Part 5 — Restricted ECC Key-Space Attack</h2>
+            <div class="card">
+                <h3>Private-Key Recovery</h3>
+
+                <p>
+                    Recover an intentionally small
+                    ECC private key using exhaustive search.
+                    Compare its computational cost with
+                    statistical cryptanalysis of Caesar.
+                </p>
+            </div>
+
+            <h2>Results and Conclusions</h2>
+            <div class="card">
+                <h3>Experimental Findings</h3>
+
+                <p>
+                    Results, statistical observations
+                    and security limitations will
+                    be discussed after the experiments.
+                </p>
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer>
+        <p>Statistics for Cybersecurity — 2026/2027</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.17.0/dist/ethers.umd.min.js"></script>
+    <script src="script.js"></script>
 
 </body>
 </html>
