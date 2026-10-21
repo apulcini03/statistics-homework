@@ -859,16 +859,547 @@
             </div>
 
 
-            <h2>Results and Conclusions</h2>
+
+            <h2>Part 6 — Attack Comparison and Security Limitations</h2>
             <div class="card">
-                <h3>Experimental Findings</h3>
+
+                <h3>Comparing the Two Cryptanalytic Attacks</h3>
 
                 <p>
-                    Results, statistical observations
-                    and security limitations will
-                    be discussed after the experiments.
+                    The experiments demonstrate two different
+                    cryptanalytic approaches: statistical
+                    analysis of the Caesar cipher and exhaustive
+                    private-key recovery against restricted ECC.
                 </p>
+
+                <p>
+                    Both attacks exploit weaknesses in the
+                    target cryptosystem, but they rely on
+                    different information and assumptions.
+                </p>
+
+                <div class="accounts-table-wrapper">
+                    <table class="crypto-comparison-table">
+                    <thead>
+                        <tr>
+                        <th>Property</th>
+                        <th>Caesar Statistical Attack</th>
+                        <th>Restricted ECC Attack</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                        <td>Attack objective</td>
+                        <td>Recover the alphabet shift</td>
+                        <td>Recover the recipient private key</td>
+                        </tr>
+                        <tr>
+                        <td>Attack technique</td>
+                        <td>
+                            Letter-frequency analysis using
+                            chi-squared scoring
+                        </td>
+                        <td>
+                            Exhaustive search over candidate
+                            private scalars
+                        </td>
+                        </tr>
+                        <tr>
+                        <td>Information required</td>
+                        <td>
+                            Ciphertext and expected English
+                            letter frequencies
+                        </td>
+                        <td>
+                            Public key and knowledge of the
+                            restricted private-key interval
+                        </td>
+                        </tr>
+                        <tr>
+                        <td>Candidate keys</td>
+                        <td>26 possible shifts</td>
+                        <td>1000 possible private scalars</td>
+                        </tr>
+                        <tr>
+                        <td>Attack complexity</td>
+                        <td>
+                            O(26N) for a ciphertext of
+                            N characters
+                        </td>
+                        <td>
+                            O(K) curve multiplications
+                            for K candidate keys
+                        </td>
+                        </tr>
+                        <tr>
+                        <td>Effect of message length</td>
+                        <td>
+                            Longer texts usually improve
+                            frequency-based key recovery
+                        </td>
+                        <td>
+                            Key recovery from the public key
+                            does not depend on message length
+                        </td>
+                        </tr>
+                        <tr>
+                        <td>Experimental result</td>
+                        <td>
+                            236 correct recoveries out of
+                            240 trials (98.33%)
+                        </td>
+                        <td>
+                            Private key 123 recovered
+                            after 123 attempts
+                        </td>
+                        </tr>
+                    </tbody>
+                    </table>
+                </div>
+
+                <h3>Statistical Attack Against Caesar</h3>
+
+                <p>
+                    Caesar encryption applies the same alphabet
+                    permutation to every occurrence of a letter.
+                    Therefore, the statistical structure of
+                    the language remains observable, although
+                    the letter labels are shifted.
+                </p>
+
+                <p>
+                    The chi-squared attack evaluates all 26
+                    possible shifts and selects the candidate
+                    whose frequencies best match written English.
+                </p>
+
+                <p>
+                    In our experiment, the attack recovered
+                    236 out of 240 keys correctly. For samples
+                    containing 20 letters, the success rate
+                    was 90%, while the tested lengths from
+                    50 to 800 letters achieved 100%.
+                </p>
+
+                <p>
+                    These results depend on the chosen corpus,
+                    frequency model and sampled passages.
+                    They do not guarantee successful recovery
+                    for every English ciphertext.
+                </p>
+
+                <h3>Exhaustive Attack Against Restricted ECC</h3>
+
+                <p>
+                    In the ECC experiment, the attacker knows
+                    the recipient's public key Q = dG and
+                    that the private scalar d belongs to
+                    the interval [1, 1000].
+                </p>
+
+                <p>
+                    The attack computes candidate public keys
+                    kG for successive values of k and compares
+                    each point with Q.
+                </p>
+
+                <p>
+                    When the matching candidate is found,
+                    the attacker obtains the private key
+                    needed to reconstruct the ECDH shared
+                    secret and decrypt the AES-GCM ciphertext.
+                </p>
+
+                <p>
+                    With d = 123, the attack recovered
+                    the private key after 123 attempts
+                    and decrypted "HELLO STATISTICS".
+                </p>
+
+                <p>
+                    This attack does not require knowledge
+                    of the plaintext or its language.
+                    It exploits the small private-key space
+                    rather than statistical patterns
+                    within the ciphertext.
+                </p>
+
+                <h3>Why Properly Configured ECC Is Different</h3>
+
+                <p>
+                    Standard secp256k1 private keys are selected
+                    from a group whose order is approximately
+                    2^256, rather than from only 1000 values.
+                </p>
+
+                <p>
+                    Exhaustively enumerating that full key
+                    space would be computationally infeasible.
+                </p>
+
+                <p>
+                    Generic algorithms for the elliptic-curve
+                    discrete logarithm problem, such as
+                    Pollard's rho, have a computational
+                    complexity on the order of 2^128
+                    group operations for secp256k1.
+                </p>
+
+                <p>
+                    This is still far beyond currently
+                    practical computational capabilities.
+                    Our successful attack therefore does not
+                    demonstrate a weakness of secp256k1
+                    when keys are generated correctly.
+                </p>
+
+                <h3>Weaknesses of the Toy Scheme</h3>
+
+                <p>
+                    The primary demonstrated weakness is
+                    the restricted recipient private-key
+                    interval. An attacker who knows this
+                    interval can enumerate every possibility.
+                </p>
+
+                <p>
+                    The hybrid construction also relies
+                    on correct implementation choices:
+                    secure ephemeral-key generation,
+                    proper shared-secret handling,
+                    HKDF parameters, unique AES-GCM
+                    nonces and authenticated encryption.
+                </p>
+
+                <p>
+                    The experiment uses established
+                    cryptographic components, but the
+                    overall construction is educational
+                    and has not been independently
+                    reviewed as a secure encryption protocol.
+                </p>
+
+                <h3>Alternative Attack Approaches</h3>
+
+                <p>
+                    Caesar can also be broken through
+                    exhaustive testing of all 26 shifts,
+                    without relying on language statistics.
+                    Additional scoring techniques,
+                    such as bigram or trigram analysis,
+                    may improve the ranking of short
+                    plaintext candidates.
+                </p>
+
+                <p>
+                    For a bounded elliptic-curve private-key
+                    interval, more advanced discrete-logarithm
+                    techniques can exploit the bounded range
+                    more efficiently than naive enumeration
+                    as the interval grows.
+                </p>
+
+                <p>
+                    These alternative approaches do not
+                    change the main conclusion: the
+                    computational feasibility of an attack
+                    depends on the available information,
+                    algorithmic structure and effective
+                    size of the secret-key space.
+                </p>
+
+                <h3>Final Security Comparison</h3>
+
+                <p>
+                    Caesar is fundamentally insecure because
+                    its key space is tiny and its substitution
+                    preserves recognizable language statistics.
+                </p>
+
+                <p>
+                    The ECC-based demonstration is vulnerable
+                    because its recipient private-key space
+                    has deliberately been reduced.
+                </p>
+
+                <p>
+                    The experiments illustrate that
+                    cryptographic security depends not only
+                    on the underlying mathematical primitive,
+                    but also on key generation, parameter
+                    selection and protocol design.
+                </p>
+
             </div>
+
+
+            
+            <h2>Results and Conclusions</h2>
+            <div class="card">
+
+            <h3>Overview of the Experiments</h3>
+
+            <p>
+                This homework investigated encryption,
+                decryption and cryptanalysis using two
+                fundamentally different cryptographic systems:
+                a toy ECC-based hybrid encryption scheme
+                and the classical Caesar cipher.
+            </p>
+
+            <p>
+                Both systems successfully encrypted and
+                decrypted the same test message,
+                "HELLO STATISTICS", but relied on
+                different mathematical operations
+                and key-management mechanisms.
+            </p>
+
+            <h3>ECC Encryption and Decryption</h3>
+
+            <p>
+                The ECC demonstration used the real
+                secp256k1 elliptic curve with a
+                deliberately restricted recipient
+                private-key range from 1 to 1000.
+            </p>
+
+            <p>
+                ECDH was used to establish a shared
+                secret, HKDF-SHA256 derived an AES-256
+                key, and AES-GCM encrypted and
+                authenticated the message.
+            </p>
+
+            <p>
+                The sender and recipient successfully
+                reconstructed the same shared secret,
+                allowing the original plaintext
+                to be recovered.
+            </p>
+
+            <h3>Caesar Encryption and Decryption</h3>
+
+            <p>
+                The Caesar cipher encrypted the same
+                message by shifting each alphabetical
+                character by a fixed number of positions.
+            </p>
+
+            <p>
+                With encryption key k = 3, the message
+                "HELLO STATISTICS" was transformed into
+                "KHOOR VWDWLVWLFV".
+            </p>
+
+            <p>
+                Applying the inverse shift recovered
+                the original plaintext.
+            </p>
+
+            <h3>Statistical Cryptanalysis Results</h3>
+
+            <p>
+                The Caesar key-recovery algorithm tested
+                all 26 possible shifts and ranked the
+                candidate plaintexts using a chi-squared
+                comparison with expected English
+                letter frequencies.
+            </p>
+
+            <p>
+                In the initial experiment, the algorithm
+                correctly recovered the encryption
+                key k = 3 from a ciphertext containing
+                194 alphabetical characters.
+            </p>
+
+            <h3>Effect of Ciphertext Length</h3>
+
+            <p>
+                A second experiment evaluated the
+                statistical attack using ciphertexts
+                of 20, 50, 100, 200, 400 and
+                800 alphabetical characters.
+            </p>
+
+            <p>
+                Forty trials were performed for each
+                length, resulting in 240 attacks.
+                The correct key was recovered in
+                236 cases, corresponding to an
+                overall success rate of 98.33%.
+            </p>
+
+            <p>
+                For 20-character ciphertexts, the
+                success rate was 90%. For the
+                tested lengths from 50 to 800
+                characters, the observed success
+                rate was 100%.
+            </p>
+
+            <p>
+                These results illustrate how longer
+                texts can improve the reliability
+                of letter-frequency analysis.
+                However, they depend on the selected
+                English corpus, the frequency model
+                and the sampled passages.
+            </p>
+
+            <p>
+                In particular, the experiment used
+                a fixed corpus and a reproducible
+                pseudo-random sequence. Its results
+                should not be interpreted as
+                universal success probabilities.
+            </p>
+
+            <h3>Restricted ECC Private-Key Attack</h3>
+
+            <p>
+                The ECC attack exploited the
+                intentionally restricted recipient
+                private-key interval [1, 1000].
+            </p>
+
+            <p>
+                By computing candidate public keys
+                kG and comparing them with the
+                target public key Q, the attacker
+                recovered the private scalar d = 123
+                after exactly 123 sequential attempts.
+            </p>
+
+            <p>
+                The recovered private key was then
+                used to reconstruct the ECDH shared
+                secret, derive the AES encryption
+                key and decrypt the ciphertext.
+            </p>
+
+            <p>
+                The original message,
+                "HELLO STATISTICS", was recovered
+                without reading the recipient's
+                original private key.
+            </p>
+
+            <h3>Comparison of the Attacks</h3>
+
+            <p>
+                The two attacks exploited different
+                weaknesses.
+            </p>
+
+            <p>
+                The Caesar statistical attack used
+                linguistic regularities preserved
+                by the substitution cipher.
+                Its effectiveness depended on
+                how closely the sampled text
+                resembled typical English.
+            </p>
+
+            <p>
+                The ECC attack instead relied
+                on exhaustive enumeration of a
+                small private-key space.
+                Its success did not depend on
+                plaintext length or language.
+            </p>
+
+            <p>
+                Caesar is also vulnerable to
+                exhaustive search because it
+                has only 26 possible shifts.
+            </p>
+
+            <p>
+                In contrast, properly generated
+                secp256k1 private keys come from
+                a much larger space of approximately
+                2^256 possible values.
+            </p>
+
+            <p>
+                Generic discrete-logarithm attacks
+                against the full curve require
+                computational effort on the order
+                of 2^128 group operations.
+                Such attacks are computationally
+                infeasible with current practical
+                capabilities.
+            </p>
+
+            <h3>Security Limitations</h3>
+
+            <p>
+                The experiments demonstrate that
+                cryptographic security depends
+                on both algorithm design and
+                parameter selection.
+            </p>
+
+            <p>
+                The restricted private-key range
+                is an intentional weakness of
+                the educational ECC configuration,
+                not a demonstrated weakness
+                of the secp256k1 curve itself.
+            </p>
+
+            <p>
+                Moreover, the ECC hybrid construction
+                is a custom educational demonstration
+                and has not undergone independent
+                security review.
+            </p>
+
+            <p>
+                Statistical cryptanalysis also
+                has limitations: short ciphertexts,
+                unusual vocabulary and incorrect
+                language assumptions may reduce
+                its effectiveness.
+            </p>
+
+            <h3>Final Conclusion</h3>
+
+            <p>
+                This homework demonstrated how
+                different cryptographic systems
+                can be compared through their
+                encryption procedures, key spaces
+                and statistical properties.
+            </p>
+
+            <p>
+                The Caesar cipher is vulnerable
+                because it combines a very small
+                key space with a substitution
+                that preserves linguistic patterns.
+            </p>
+
+            <p>
+                The toy ECC-based scheme was
+                successfully attacked because
+                its private-key range was
+                artificially restricted.
+            </p>
+
+            <p>
+                The main conclusion is that
+                cryptographic security requires
+                appropriate algorithms, sufficiently
+                large and unpredictable keys,
+                secure implementations and
+                carefully designed protocols.
+            </p>
+
+            </div>
+
 
         </section>
 
