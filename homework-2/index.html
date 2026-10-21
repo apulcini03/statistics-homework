@@ -303,7 +303,6 @@
 
             
             <h2>Part 3 — Cryptosystem Comparison</h2>
-
             <div class="card">
 
                 <h3>ECC-Based Encryption vs Caesar Cipher</h3>
@@ -525,22 +524,114 @@
             </div>
 
 
+            
             <h2>Part 4 — Statistical Cryptanalysis</h2>
             <div class="card">
-                <h3>Recovering the Caesar Key</h3>
+
+                <h3>Recovering the Caesar Key Using Letter Frequencies</h3>
 
                 <p>
-                    Estimate the Caesar cipher key
-                    from ciphertext using letter-frequency
-                    statistics from a known language.
+                    The Caesar cipher preserves the relative
+                    frequencies of letters, although their
+                    positions in the alphabet are shifted.
+                    This makes statistical key recovery possible.
                 </p>
 
                 <p>
-                    Study how ciphertext length
-                    affects the reliability of
-                    statistical key recovery.
+                    Assuming the plaintext is English, the attack
+                    tests all 26 possible shifts and computes
+                    a chi-squared score comparing each decrypted
+                    candidate with expected English letter frequencies.
                 </p>
+
+                <p>
+                    The candidate with the lowest chi-squared
+                    score is selected as the estimated key.
+                    A smaller score indicates a closer match
+                    to the English frequency model.
+                </p>
+
+                <h3>Step 1 — Prepare the Ciphertext</h3>
+
+                <p>
+                    Enter an intercepted Caesar ciphertext.
+                    The attacker does not need to know the
+                    encryption key or original plaintext.
+                </p>
+
+                <label for="caesarAttackCiphertext">
+                    Ciphertext to analyze:
+                </label>
+
+                <textarea
+                    id="caesarAttackCiphertext"
+                    rows="5"
+                    placeholder="Enter an English Caesar ciphertext..."
+                >WKH TXLFN EURZQ IRA MXPSV RYHU WKH ODCB GRJ. WKH SXUSRVH RI WKLV PHVVDJH LV WR WHVW VWDWLVWLFDO FU BSDQDOBVLV.</textarea>
+
+                <p>
+                    <button id="analyzeCaesarBtn">
+                    Recover Caesar Key
+                    </button>
+                </p>
+
+                <div
+                    id="caesarAttackSummary"
+                    class="analysis-summary caesar-result"
+                    aria-live="polite"></div>
+
+                <hr>
+
+                <h3>Step 2 — Compare All Candidate Keys</h3>
+
+                <p>
+                    The algorithm tests all 26 possible shifts,
+                    evaluates their chi-squared scores and ranks
+                    the candidates from best to worst.
+                </p>
+
+                <div class="chart-container">
+                    <canvas id="caesarChiSquareChart"></canvas>
+                </div>
+
+                <div class="accounts-table-wrapper">
+                    <table class="crypto-comparison-table">
+                    <thead>
+                        <tr>
+                        <th>Rank</th>
+                        <th>Key</th>
+                        <th>Chi-squared Score</th>
+                        <th>Decrypted Text Preview</th>
+                        </tr>
+                    </thead>
+                    <tbody id="caesarCandidatesBody"></tbody>
+                    </table>
+                </div>
+
+                <hr>
+
+                <h3>Step 3 — Frequency Distribution</h3>
+
+                <p>
+                    Compare the letter frequencies of the
+                    recovered plaintext with the expected
+                    English distribution.
+                </p>
+
+                <div class="chart-container">
+                    <canvas id="caesarFrequencyChart"></canvas>
+                </div>
+
+                <p class="wallet-note">
+                    Frequency analysis is most reliable for
+                    sufficiently long ciphertexts representative
+                    of the chosen language. Short messages,
+                    unusual vocabulary and non-English text
+                    may lead to incorrect key estimates.
+                </p>
+
             </div>
+
 
             <h2>Part 5 — Restricted ECC Key-Space Attack</h2>
             <div class="card">
@@ -574,6 +665,7 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.17.0/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
     <script src="script.js"></script>
 
 </body>

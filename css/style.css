@@ -682,3 +682,48 @@ button:disabled {
     padding: 10px;
   }
 }
+
+
+
+/* HW 2 - Caesar Statistical Cryptanalysis */
+
+#caesarAttackCiphertext {
+  display: block;
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  margin: 12px 0 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+#caesarAttackSummary {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+  line-height: 1.7;
+}
+
+#caesarAttackSummary:empty {
+  display: none;
+}
+
+.caesar-best-candidate {
+  background: #eff6ff;
+  font-weight: 600;
+}
+
+#caesarCandidatesBody td:last-child {
+  min-width: 220px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  #caesarAttackSummary {
+    font-size: 0.82rem;
+  }
+}

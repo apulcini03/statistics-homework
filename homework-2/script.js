@@ -395,3 +395,268 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+
+
+
+// HW 2 - Statistical Cryptanalysis of the Caesar Cipher
+
+// Approximate English letter frequencies (A-Z), in percentages
+const ENGLISH_FREQUENCIES = [
+  8.17, 1.49, 2.78, 4.25, 12.70, 2.23, 2.02,
+  6.09, 6.97, 0.15, 0.77, 4.03, 2.41, 6.75,
+  7.51, 1.93, 0.10, 5.99, 6.33, 9.06, 2.76,
+  0.98, 2.36, 0.15, 1.97, 0.07
+];
+
+const CAESAR_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+let caesarChiSquareChartInstance = null;
+let caesarFrequencyChartInstance = null;
+
+// Count occurrences of letters A-Z
+function countEnglishLetters(text) {
+  const counts = Array(26).fill(0);
+  const normalized = text.toUpperCase();
+
+  let total = 0;
+
+  for (const char of normalized) {
+    const index = CAESAR_ALPHABET.indexOf(char);
+
+    if (index >= 0) {
+      counts[index]++;
+      total++;
+    }
+  }
+
+  return { counts, total };
+}
+
+// Chi-squared goodness-of-fit score
+function calculateCaesarChiSquare(text) {
+  const { counts, total } = countEnglishLetters(text);
+
+  if (total === 0) {
+    return Infinity;
+  }
+
+  let chiSquare = 0;
+
+  for (let i = 0; i < 26; i++) {
+    const expected =
+      total * ENGLISH_FREQUENCIES[i] / 100;
+
+    const observed = counts[i];
+
+    chiSquare +=
+      ((observed - expected) ** 2) / expected;
+  }
+
+  return chiSquare;
+}
+
+// Try every Caesar key and rank candidate plaintexts
+function recoverCaesarKey(ciphertext) {
+  const candidates = [];
+
+  for (let key = 0; key < 26; key++) {
+    const plaintext = caesarShift(ciphertext, -key);
+
+    candidates.push({
+      key,
+      plaintext,
+      chiSquare: calculateCaesarChiSquare(plaintext)
+    });
+  }
+
+  candidates.sort(
+    (a, b) => a.chiSquare - b.chiSquare
+  );
+
+  return candidates;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById(
+    "caesarAttackCiphertext"
+  );
+
+  const button = document.getElementById(
+    "analyzeCaesarBtn"
+  );
+
+  const summary = document.getElementById(
+    "caesarAttackSummary"
+  );
+
+  const tableBody = document.getElementById(
+    "caesarCandidatesBody"
+  );
+
+  // Reproducible demonstration with known shift k = 3.
+  // This is only used to initialize the example input.
+  const samplePlaintext =
+    "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG. " +
+    "THIS MESSAGE CONTAINS COMMON ENGLISH LETTERS " +
+    "AND WORDS TO TEST STATISTICAL FREQUENCY ANALYSIS. " +
+    "THE ENGLISH LANGUAGE HAS UNEQUAL LETTER " +
+    "FREQUENCIES AND THIS LONGER SAMPLE HELPS " +
+    "THE ATTACK.";
+
+  input.value = caesarShift(samplePlaintext, 3);
+
+  button.addEventListener("click", () => {
+    const ciphertext = input.value;
+
+    const { total } = countEnglishLetters(ciphertext);
+
+    if (total < 1) {
+      summary.textContent =
+        "Enter a ciphertext containing English letters.";
+
+      tableBody.replaceChildren();
+      return;
+    }
+
+    const candidates = recoverCaesarKey(ciphertext);
+    const best = candidates[0];
+
+    summary.textContent =
+      `Letters analyzed: ${total}\n` +
+      `Keys tested: 26\n` +
+      `Estimated key: ${best.key}\n` +
+      `Minimum chi-squared: ${best.chiSquare.toFixed(2)}\n\n` +
+      `Recovered plaintext:\n${best.plaintext}\n\n` +
+      `Note: The estimated key is not guaranteed ` +
+      `to be correct.`;
+
+    // Table of all 26 ranked candidates
+    tableBody.replaceChildren();
+
+    candidates.forEach((candidate, index) => {
+      const row = document.createElement("tr");
+
+      const values = [
+        index + 1,
+        candidate.key,
+        candidate.chiSquare.toFixed(2),
+        candidate.plaintext.slice(0, 90)
+      ];
+
+      values.forEach(value => {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.appendChild(cell);
+      });
+
+      if (index === 0) {
+        row.classList.add("caesar-best-candidate");
+      }
+
+      tableBody.appendChild(row);
+    });
+
+    // Chart 1: chi-squared scores by candidate key
+    const scoresByKey = [...candidates].sort(
+      (a, b) => a.key - b.key
+    );
+
+    if (caesarChiSquareChartInstance) {
+      caesarChiSquareChartInstance.destroy();
+    }
+
+    caesarChiSquareChartInstance = new Chart(
+      document.getElementById("caesarChiSquareChart"),
+      {
+        type: "bar",
+        data: {
+          labels: scoresByKey.map(c => c.key),
+          datasets: [{
+            label: "Chi-squared score",
+            data: scoresByKey.map(c => c.chiSquare),
+            backgroundColor: scoresByKey.map(c =>
+              c.key === best.key ? "#f59e0b" : "#2563eb"
+            )
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: "Chi-Squared Scores for All 26 Keys"
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: "Candidate Caesar Key"
+              }
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Chi-Squared Score (lower is better)"
+              }
+            }
+          }
+        }
+      }
+    );
+
+    // Chart 2: estimated plaintext frequencies
+    const { counts } = countEnglishLetters(best.plaintext);
+
+    const observed = counts.map(
+      count => count / total * 100
+    );
+
+    if (caesarFrequencyChartInstance) {
+      caesarFrequencyChartInstance.destroy();
+    }
+
+    caesarFrequencyChartInstance = new Chart(
+      document.getElementById("caesarFrequencyChart"),
+      {
+        type: "bar",
+        data: {
+          labels: Array.from(CAESAR_ALPHABET),
+          datasets: [
+            {
+              label: "Observed plaintext (%)",
+              data: observed,
+              backgroundColor: "#2563eb"
+            },
+            {
+              label: "Expected English (%)",
+              data: ENGLISH_FREQUENCIES,
+              backgroundColor: "#f59e0b"
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: "Observed vs Expected Letter Frequencies"
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Frequency (%)"
+              }
+            }
+          }
+        }
+      }
+    );
+  });
+});
