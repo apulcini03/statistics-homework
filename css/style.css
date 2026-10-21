@@ -638,3 +638,47 @@ button:disabled {
     font-size: 0.82rem;
   }
 }
+
+
+
+/* HW 2 - Cryptosystem comparison */
+
+.crypto-comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin-top: 15px;
+}
+
+.crypto-comparison-table th,
+.crypto-comparison-table td {
+  padding: 14px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.crypto-comparison-table th {
+  background: #f1f5f9;
+  color: #174ea6;
+}
+
+.crypto-comparison-table td:first-child {
+  font-weight: 600;
+  min-width: 140px;
+}
+
+.crypto-comparison-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+@media (max-width: 600px) {
+  .crypto-comparison-table {
+    font-size: 0.82rem;
+  }
+
+  .crypto-comparison-table th,
+  .crypto-comparison-table td {
+    padding: 10px;
+  }
+}

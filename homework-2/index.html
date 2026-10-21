@@ -301,18 +301,229 @@
             </div>
 
 
+            
             <h2>Part 3 — Cryptosystem Comparison</h2>
+
             <div class="card">
-                <h3>Procedures, Keys and Statistics</h3>
+
+                <h3>ECC-Based Encryption vs Caesar Cipher</h3>
 
                 <p>
-                    Compare asymmetric key agreement
-                    and symmetric message encryption
-                    with classical letter substitution,
-                    focusing on key management,
-                    key-space size and observable patterns.
+                    Both schemes transform plaintext into ciphertext
+                    and allow the original message to be recovered
+                    using appropriate key material. However,
+                    their underlying mathematical constructions,
+                    key management and security properties
+                    are fundamentally different.
                 </p>
+
+                <div class="accounts-table-wrapper">
+                    <table class="crypto-comparison-table">
+                    <thead>
+                        <tr>
+                        <th>Property</th>
+                        <th>Toy ECC-Based Scheme</th>
+                        <th>Caesar Cipher</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                        <td>Cryptographic approach</td>
+                        <td>
+                            Hybrid public-key encryption:
+                            secp256k1 ECDH, HKDF and AES-GCM
+                        </td>
+                        <td>
+                            Classical symmetric substitution
+                        </td>
+                        </tr>
+
+                        <tr>
+                        <td>Encryption</td>
+                        <td>
+                            An ephemeral private key and the
+                            recipient public key establish an
+                            ECDH secret. HKDF derives an AES key
+                            used to encrypt the message.
+                        </td>
+                        <td>
+                            Each alphabetical character is shifted
+                            forward by k positions modulo 26.
+                        </td>
+                        </tr>
+
+                        <tr>
+                        <td>Decryption</td>
+                        <td>
+                            The recipient private key and the
+                            ephemeral public key reconstruct
+                            the shared secret and AES key.
+                        </td>
+                        <td>
+                            The same key k determines the
+                            inverse alphabet shift.
+                        </td>
+                        </tr>
+
+                        <tr>
+                        <td>Key management</td>
+                        <td>
+                            Recipient public/private key pair,
+                            fresh ephemeral sender key pair,
+                            and a derived symmetric AES key
+                        </td>
+                        <td>
+                            One shared integer shift k
+                        </td>
+                        </tr>
+
+                        <tr>
+                        <td>Key space in this experiment</td>
+                        <td>
+                            1000 possible recipient private keys
+                            (d = 1, ..., 1000)
+                        </td>
+                        <td>
+                            26 possible shifts (k = 0, ..., 25)
+                        </td>
+                        </tr>
+
+                        <tr>
+                        <td>Encryption randomness</td>
+                        <td>
+                            Random ephemeral private key,
+                            HKDF salt and AES-GCM nonce
+                        </td>
+                        <td>
+                            Deterministic for a fixed
+                            message and shift
+                        </td>
+                        </tr>
+
+                        <tr>
+                        <td>Statistical properties</td>
+                        <td>
+                            AES-GCM ciphertext does not preserve
+                            the plaintext's letter-frequency
+                            distribution in any direct way.
+                        </td>
+                        <td>
+                            Letter counts and their relative
+                            frequencies are preserved under
+                            a permutation of the alphabet.
+                        </td>
+                        </tr>
+
+                        <tr>
+                        <td>Main weakness</td>
+                        <td>
+                            The artificially restricted
+                            private-key space permits
+                            exhaustive recovery.
+                        </td>
+                        <td>
+                            Tiny key space and preserved
+                            language statistics
+                        </td>
+                        </tr>
+                    </tbody>
+                    </table>
+                </div>
+
+                <h3>Encryption and Decryption Procedures</h3>
+
+                <p>
+                    The Caesar cipher applies a fixed substitution
+                    to each letter independently. Encryption
+                    and decryption require only modular arithmetic,
+                    and the same shift key is used in both directions.
+                </p>
+
+                <p>
+                    The ECC-based experiment uses asymmetric
+                    elliptic-curve keys to establish a shared secret.
+                    The message itself is encrypted symmetrically
+                    with AES-GCM using a key derived via HKDF.
+                    Unlike Caesar, the resulting ciphertext also
+                    contains an authentication tag.
+                </p>
+
+                <h3>Comparison of Key Spaces</h3>
+
+                <p>
+                    Caesar has only 26 possible shifts, one of which
+                    is the identity transformation. Consequently,
+                    all keys can be tested with negligible
+                    computational effort.
+                </p>
+
+                <p>
+                    In our toy ECC-based scheme, the recipient
+                    private key is restricted to 1000 values.
+                    This makes exhaustive private-key recovery
+                    practical despite using the real secp256k1 curve.
+                </p>
+
+                <p>
+                    A correctly generated secp256k1 private key
+                    normally belongs to a much larger space
+                    of approximately 2^256 possible values.
+                    Searching that space exhaustively is infeasible
+                    with currently known practical methods.
+                </p>
+
+                <h3>Statistical Properties</h3>
+
+                <p>
+                    Caesar encryption preserves the relative
+                    frequencies of individual letters because
+                    each plaintext letter is consistently mapped
+                    to exactly one ciphertext letter.
+                </p>
+
+                <p>
+                    For example, a frequent letter such as E
+                    remains frequent after encryption, although
+                    it appears under another letter.
+                    This allows an attacker to exploit the known
+                    statistical distribution of written English.
+                </p>
+
+                <p>
+                    By contrast, the ECC-based hybrid scheme uses
+                    AES-GCM to encrypt the message as bytes.
+                    It does not produce a simple substitution
+                    of the original alphabet, so classical
+                    letter-frequency cryptanalysis is not
+                    directly applicable.
+                </p>
+
+                <h3>Security Implications</h3>
+
+                <p>
+                    The Caesar cipher is insecure because its
+                    entire key space is tiny and its substitution
+                    preserves substantial linguistic structure.
+                </p>
+
+                <p>
+                    The toy ECC-based scheme is insecure because
+                    we deliberately restrict the recipient private
+                    key to a small interval. An attacker can test
+                    candidate keys against the known public key.
+                </p>
+
+                <p>
+                    The restricted key space is a weakness of
+                    this educational configuration, not an
+                    inherent weakness of secp256k1 itself.
+                    The custom hybrid scheme should not be
+                    considered a production encryption protocol.
+                </p>
+
             </div>
+
 
             <h2>Part 4 — Statistical Cryptanalysis</h2>
             <div class="card">
