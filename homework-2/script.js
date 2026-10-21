@@ -960,3 +960,202 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+
+
+// HW 2 - Restricted ECC Private-Key Attack
+
+let eccRecoveredPrivateKey = null;
+let eccAttackedPackage = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const attackButton = document.getElementById(
+    "runEccAttackBtn"
+  );
+
+  const decryptButton = document.getElementById(
+    "eccAttackDecryptBtn"
+  );
+
+  const attackResults = document.getElementById(
+    "eccAttackResults"
+  );
+
+  const decryptResults = document.getElementById(
+    "eccAttackDecryptionResults"
+  );
+
+  // STEP 1 - Exhaustive private-key recovery
+  attackButton.addEventListener("click", async () => {
+    attackButton.disabled = true;
+    decryptButton.disabled = true;
+
+    eccRecoveredPrivateKey = null;
+    eccAttackedPackage = null;
+
+    attackResults.textContent =
+      "Searching the restricted ECC key space...";
+
+    decryptResults.textContent = "";
+
+    try {
+      if (!eccEncryptedPackage) {
+        throw new Error(
+          "First generate ECC keys and encrypt " +
+          "a message in Part 1."
+        );
+      }
+
+      // Copy only public information from
+      // the encryption package.
+      const targetPublicKey =
+        eccEncryptedPackage.recipientPublicKey;
+
+      const targetPackage = {
+        recipientPublicKey: targetPublicKey,
+        ephemeralPublicKey:
+          eccEncryptedPackage.ephemeralPublicKey,
+        salt: new Uint8Array(eccEncryptedPackage.salt),
+        iv: new Uint8Array(eccEncryptedPackage.iv),
+        ciphertext:
+          new Uint8Array(eccEncryptedPackage.ciphertext)
+      };
+
+      const startTime = performance.now();
+
+      let recoveredScalar = null;
+      let recoveredPrivateKey = null;
+      let attempts = 0;
+
+      // The attack NEVER reads eccRecipient.privateKey
+      // or eccRecipient.d.
+      // It uses only the known public key.
+
+      for (let candidate = 1; candidate <= 1000; candidate++) {
+        const privateKey = ethers.toBeHex(
+          BigInt(candidate),
+          32
+        );
+
+        const candidatePublicKey =
+          ethers.SigningKey.computePublicKey(
+            privateKey,
+            false
+          );
+
+        attempts++;
+
+        if (
+          candidatePublicKey.toLowerCase() ===
+          targetPublicKey.toLowerCase()
+        ) {
+          recoveredScalar = candidate;
+          recoveredPrivateKey = privateKey;
+          break;
+        }
+
+        // Yield periodically to keep the UI responsive.
+        if (candidate % 25 === 0) {
+          await new Promise(resolve =>
+            setTimeout(resolve, 0)
+          );
+        }
+      }
+
+      const elapsedMs = performance.now() - startTime;
+
+      if (recoveredPrivateKey === null) {
+        throw new Error(
+          "No matching private key was found " +
+          "in the interval 1–1000."
+        );
+      }
+
+      eccRecoveredPrivateKey = recoveredPrivateKey;
+      eccAttackedPackage = targetPackage;
+
+      attackResults.textContent =
+        `Attack successful!\n\n` +
+        `Target public key:\n${targetPublicKey}\n\n` +
+        `Search interval: 1–1000\n` +
+        `Candidates tested: ${attempts}\n` +
+        `Recovered private scalar: ${recoveredScalar}\n\n` +
+        `Recovered private key (hex):\n` +
+        `${recoveredPrivateKey}\n\n` +
+        `Elapsed time: ${elapsedMs.toFixed(2)} ms\n\n` +
+        `The public key was sufficient to identify ` +
+        `the private key within the restricted range.`;
+
+      decryptButton.disabled = false;
+
+    } catch (error) {
+      attackResults.textContent =
+        "Attack failed: " + error.message;
+      console.error(error);
+
+    } finally {
+      attackButton.disabled = false;
+    }
+  });
+
+  // STEP 2 - Decrypt using recovered private key
+  decryptButton.addEventListener("click", async () => {
+    decryptButton.disabled = true;
+
+    try {
+      if (
+        !eccRecoveredPrivateKey ||
+        !eccAttackedPackage
+      ) {
+        throw new Error(
+          "Recover the private key before decryption."
+        );
+      }
+
+      const recoveredSigningKey =
+        new ethers.SigningKey(eccRecoveredPrivateKey);
+
+      // Compute ECDH from recovered secret and
+      // the sender's PUBLIC ephemeral key.
+      const sharedSecret =
+        recoveredSigningKey.computeSharedSecret(
+          eccAttackedPackage.ephemeralPublicKey
+        );
+
+      const aesKey = await eccDeriveAesKey(
+        sharedSecret,
+        eccAttackedPackage.salt
+      );
+
+      const decryptedBuffer =
+        await crypto.subtle.decrypt(
+          {
+            name: "AES-GCM",
+            iv: eccAttackedPackage.iv
+          },
+          aesKey,
+          eccAttackedPackage.ciphertext
+        );
+
+      const plaintext =
+        new TextDecoder().decode(decryptedBuffer);
+
+      decryptResults.textContent =
+        `Attack decryption successful!\n\n` +
+        `Recovered plaintext:\n${plaintext}\n\n` +
+        `Recovered private key:\n` +
+        `${eccRecoveredPrivateKey}\n\n` +
+        `The message was decrypted without reading ` +
+        `the original recipient private key.`;
+
+    } catch (error) {
+      decryptResults.textContent =
+        "Attack decryption failed: " + error.message;
+      console.error(error);
+
+    } finally {
+      decryptButton.disabled =
+        !eccRecoveredPrivateKey;
+    }
+  });
+});

@@ -740,17 +740,124 @@
 
 
 
+            
             <h2>Part 5 — Restricted ECC Key-Space Attack</h2>
             <div class="card">
-                <h3>Private-Key Recovery</h3>
+
+                <h3>Exhaustive Private-Key Recovery</h3>
 
                 <p>
-                    Recover an intentionally small
-                    ECC private key using exhaustive search.
-                    Compare its computational cost with
-                    statistical cryptanalysis of Caesar.
+                    This experiment demonstrates an attack against
+                    an ECC-based encryption scheme whose recipient
+                    private key is deliberately restricted to
+                    the interval from 1 to 1000.
                 </p>
+
+                <p>
+                    The attacker knows the recipient's public key
+                    Q = dG but does not know the private scalar d.
+                    By computing candidate public keys kG, the
+                    attacker can search for a matching point.
+                </p>
+
+                <h3>Step 1 — Attack Setup</h3>
+
+                <p>
+                    Return to Part 1 and generate an ECC key pair,
+                    then encrypt a message. The encrypted package
+                    contains the public information required
+                    to attempt private-key recovery and decryption.
+                </p>
+
+                <p>
+                    <strong>Known:</strong>
+                    Recipient public key, ephemeral public key,
+                    ciphertext, HKDF salt and AES-GCM IV.
+                </p>
+
+                <p>
+                    <strong>Unknown:</strong>
+                    Recipient private key d.
+                </p>
+
+                <p>
+                    <strong>Search space:</strong>
+                    1000 possible private-key values.
+                </p>
+
+                <hr>
+
+                <h3>Step 2 — Brute-Force Private-Key Search</h3>
+
+                <p>
+                    The attack tests candidate private keys
+                    sequentially until a candidate public key
+                    matches the target.
+                </p>
+
+                <button id="runEccAttackBtn">
+                    Recover ECC Private Key
+                </button>
+
+                <div
+                    id="eccAttackResults"
+                    class="analysis-summary ecc-result"
+                    aria-live="polite"></div>
+
+                <hr>
+
+                <h3>Step 3 — Decrypt with the Recovered Key</h3>
+
+                <p>
+                    Once the private key is recovered, the attacker
+                    computes the ECDH shared secret using the
+                    sender's ephemeral public key. HKDF derives
+                    the AES key needed to decrypt the ciphertext.
+                </p>
+
+                <button id="eccAttackDecryptBtn" disabled>
+                    Decrypt Using Recovered Key
+                </button>
+
+                <div
+                    id="eccAttackDecryptionResults"
+                    class="analysis-summary ecc-result"
+                    aria-live="polite"></div>
+
+                <hr>
+
+                <h3>Security Interpretation</h3>
+
+                <p>
+                    The attack succeeds because the private-key
+                    space contains only 1000 candidates.
+                    The weakness is caused by the artificial
+                    restriction, not by the secp256k1 curve.
+                </p>
+
+                <p>
+                    With properly generated private keys covering
+                    the full secp256k1 range, exhaustive recovery
+                    becomes computationally infeasible.
+                </p>
+
+                <p>
+                    This attack differs from statistical
+                    cryptanalysis of Caesar: it exploits a
+                    restricted cryptographic key space rather
+                    than the frequency distribution of plaintext
+                    letters.
+                </p>
+
+                <p class="wallet-note">
+                    The demonstration attacks only keys generated
+                    by this educational toy scheme.
+                    It is not an attack against properly
+                    configured ECC systems.
+                </p>
+
             </div>
+
 
             <h2>Results and Conclusions</h2>
             <div class="card">
