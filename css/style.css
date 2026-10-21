@@ -727,3 +727,39 @@ button:disabled {
     font-size: 0.82rem;
   }
 }
+
+
+
+/* HW 2 - Caesar ciphertext length experiment */
+
+#caesarExperimentTrials {
+  display: block;
+  width: 100%;
+  max-width: 250px;
+  padding: 12px;
+  margin: 12px 0 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+#caesarLengthSummary {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+  line-height: 1.7;
+}
+
+#caesarLengthSummary:empty {
+  display: none;
+}
+
+#caesarLengthTableBody td {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  #caesarLengthSummary {
+    font-size: 0.82rem;
+  }
+}

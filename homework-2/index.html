@@ -633,6 +633,113 @@
             </div>
 
 
+            <h2>Part 4.1 — Ciphertext Length Experiment</h2>
+            <div class="card">
+
+                <h3>How Does Ciphertext Length Affect Key Recovery?</h3>
+
+                <p>
+                    This experiment evaluates the effectiveness
+                    of chi-squared frequency analysis against
+                    Caesar ciphertexts of different lengths.
+                </p>
+
+                <p>
+                    For each length, we select samples from a
+                    fixed English corpus, encrypt them with
+                    different Caesar keys and attempt to recover
+                    the keys without using the known plaintext.
+                </p>
+
+                <h3>Experimental Setup</h3>
+
+                <p>
+                    Tested lengths: 20, 50, 100, 200, 400
+                    and 800 alphabetical characters.
+                </p>
+
+                <label for="caesarExperimentTrials">
+                    Trials per length (10–100):
+                </label>
+
+                <input
+                    type="number"
+                    id="caesarExperimentTrials"
+                    min="10"
+                    max="100"
+                    step="1"
+                    value="40"
+                >
+
+                <p>
+                    <button id="runCaesarLengthExperimentBtn">
+                    Run Length Experiment
+                    </button>
+                </p>
+
+                <div
+                    id="caesarLengthSummary"
+                    class="analysis-summary caesar-result"
+                    aria-live="polite"></div>
+
+                <hr>
+
+                <h3>Key Recovery Success Rate</h3>
+
+                <p>
+                    The success rate is the percentage of trials
+                    where the estimated Caesar shift equals the
+                    actual encryption key.
+                </p>
+
+                <div class="chart-container">
+                    <canvas id="caesarLengthChart"></canvas>
+                </div>
+
+                <h3>Results by Ciphertext Length</h3>
+
+                <div class="accounts-table-wrapper">
+                    <table class="crypto-comparison-table">
+                    <thead>
+                        <tr>
+                        <th>Length</th>
+                        <th>Trials</th>
+                        <th>Correct Keys</th>
+                        <th>Success Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody id="caesarLengthTableBody"></tbody>
+                    </table>
+                </div>
+
+                <h3>Interpretation and Limitations</h3>
+
+                <p>
+                    Short ciphertexts may have letter frequencies
+                    that differ significantly from the expected
+                    English distribution. This can lead to
+                    incorrect key estimates.
+                </p>
+
+                <p>
+                    Longer samples typically provide more stable
+                    frequency estimates, improving the reliability
+                    of statistical cryptanalysis.
+                </p>
+
+                <p class="wallet-note">
+                    The experiments use samples from one fixed
+                    English corpus. Repeated or overlapping samples
+                    are possible. The random sequence is seeded
+                    for reproducibility, so these results are
+                    illustrative and not a universal estimate
+                    of attack success.
+                </p>
+
+            </div>
+
+
+
             <h2>Part 5 — Restricted ECC Key-Space Attack</h2>
             <div class="card">
                 <h3>Private-Key Recovery</h3>

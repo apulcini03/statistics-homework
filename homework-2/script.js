@@ -660,3 +660,303 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   });
 });
+
+
+
+// HW 2 - Caesar Cryptanalysis vs Ciphertext Length
+
+const CAESAR_TEST_LENGTHS = [20, 50, 100, 200, 400, 800];
+
+const CAESAR_TEST_CORPUS = `
+Statistics helps us understand patterns in data
+and measure uncertainty through mathematical models.
+Large collections of observations often reveal
+regularities that are difficult to identify
+when only a small number of examples is available.
+
+The English language contains many words with
+different lengths, common combinations of letters,
+and recognizable grammatical structures.
+Readers can usually understand a message because
+the language follows familiar conventions.
+
+Cryptography studies methods for protecting
+information during storage and communication.
+Some classical encryption techniques change
+the appearance of written text while preserving
+important statistical relationships.
+
+Frequency analysis takes advantage of the fact
+that letters do not occur equally often in
+natural languages. Certain vowels and consonants
+appear much more frequently than others.
+
+A substitution cipher transforms each symbol
+according to a fixed rule. If the transformation
+is consistent across the entire message, the
+original frequency pattern may remain visible
+after encryption.
+
+Researchers compare observed measurements with
+theoretical models to evaluate competing
+explanations. More data can improve estimates,
+although the quality and representativeness
+of the sample remain important.
+
+The Caesar cipher provides a useful educational
+example because its encryption rule is simple
+and its key space is extremely small.
+Statistical methods may help recover its key
+even without knowing the original message.
+
+Different samples from the same language
+can produce different frequency distributions.
+Short passages may contain unusual words,
+repeated letters or uncommon expressions.
+
+A longer passage often gives a more stable
+estimate of the underlying letter probabilities.
+However, statistical estimates are never
+guaranteed to match their theoretical values.
+
+Security analysis requires careful experiments
+and an understanding of the assumptions used
+to interpret the results. A successful experiment
+on one dataset does not prove that the same
+method will always succeed on every dataset.
+`;
+
+// Keep only A-Z so sample lengths are exact
+const CAESAR_CORPUS_LETTERS =
+  CAESAR_TEST_CORPUS.toUpperCase()
+    .replace(/[^A-Z]/g, "");
+
+// Seeded pseudo-random generator.
+// Used for reproducible experiments, not security.
+function caesarExperimentRandom(seed) {
+  let state = seed >>> 0;
+
+  return function () {
+    state = (Math.imul(1664525, state) + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+// Select a circular window of exactly N letters
+function caesarCorpusSample(start, length) {
+  let sample = "";
+
+  for (let i = 0; i < length; i++) {
+    const index =
+      (start + i) % CAESAR_CORPUS_LETTERS.length;
+
+    sample += CAESAR_CORPUS_LETTERS[index];
+  }
+
+  return sample;
+}
+
+let caesarLengthChartInstance = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById(
+    "caesarExperimentTrials"
+  );
+
+  const button = document.getElementById(
+    "runCaesarLengthExperimentBtn"
+  );
+
+  const summary = document.getElementById(
+    "caesarLengthSummary"
+  );
+
+  const tableBody = document.getElementById(
+    "caesarLengthTableBody"
+  );
+
+  button.addEventListener("click", () => {
+    const raw = input.value.trim();
+    const trials = Number(raw);
+
+    if (
+      raw === "" ||
+      !Number.isInteger(trials) ||
+      trials < 10 ||
+      trials > 100
+    ) {
+      summary.textContent =
+        "Enter an integer between 10 and 100.";
+      return;
+    }
+
+    button.disabled = true;
+    summary.textContent =
+      "Running statistical experiments...";
+
+    try {
+      // Same sequence for repeated runs
+      const random = caesarExperimentRandom(2026);
+
+      const results = [];
+
+      for (const length of CAESAR_TEST_LENGTHS) {
+        let successes = 0;
+
+        for (let trial = 0; trial < trials; trial++) {
+          // Random sample location in the corpus
+          const start = Math.floor(
+            random() * CAESAR_CORPUS_LETTERS.length
+          );
+
+          const plaintext = caesarCorpusSample(
+            start,
+            length
+          );
+
+          // Secret key, known to experiment only
+          const trueKey = Math.floor(random() * 26);
+
+          const ciphertext = caesarShift(
+            plaintext,
+            trueKey
+          );
+
+          // Statistical attack does not see trueKey
+          const candidates = recoverCaesarKey(
+            ciphertext
+          );
+
+          const estimatedKey = candidates[0].key;
+
+          if (estimatedKey === trueKey) {
+            successes++;
+          }
+        }
+
+        results.push({
+          length,
+          trials,
+          successes,
+          successRate: successes / trials * 100
+        });
+      }
+
+      // Overall statistics
+      const totalTrials = trials * results.length;
+
+      const totalCorrect = results.reduce(
+        (sum, row) => sum + row.successes,
+        0
+      );
+
+      const overallRate =
+        totalCorrect / totalTrials * 100;
+
+      summary.textContent =
+        `English corpus size: ` +
+        `${CAESAR_CORPUS_LETTERS.length} letters\n` +
+        `Lengths tested: ${CAESAR_TEST_LENGTHS.join(", ")}\n` +
+        `Trials per length: ${trials}\n` +
+        `Total attacks: ${totalTrials}\n` +
+        `Correctly recovered keys: ${totalCorrect}\n` +
+        `Overall success rate: ${overallRate.toFixed(2)}%\n\n` +
+        `Baseline random-key success: ${(100 / 26).toFixed(2)}%\n` +
+        `Method: Chi-squared letter-frequency analysis`;
+
+      // Results table
+      tableBody.replaceChildren();
+
+      results.forEach(row => {
+        const tr = document.createElement("tr");
+
+        const values = [
+          row.length,
+          row.trials,
+          row.successes,
+          `${row.successRate.toFixed(2)}%`
+        ];
+
+        values.forEach(value => {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        });
+
+        tableBody.appendChild(tr);
+      });
+
+      // Remove old chart before drawing again
+      if (caesarLengthChartInstance) {
+        caesarLengthChartInstance.destroy();
+      }
+
+      caesarLengthChartInstance = new Chart(
+        document.getElementById("caesarLengthChart"),
+        {
+          type: "line",
+          data: {
+            labels: results.map(row => row.length),
+            datasets: [
+              {
+                label: "Observed Success Rate",
+                data: results.map(
+                  row => row.successRate
+                ),
+                borderColor: "#2563eb",
+                backgroundColor: "#2563eb",
+                pointRadius: 5,
+                tension: 0.2
+              },
+              {
+                label: "Random Guess Baseline (1/26)",
+                data: results.map(() => 100 / 26),
+                borderColor: "#f59e0b",
+                borderDash: [6, 5],
+                pointRadius: 0
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text:
+                  "Caesar Key Recovery vs Ciphertext Length"
+              },
+              tooltip: {
+                enabled: true
+              }
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: "Ciphertext Length (letters)"
+                }
+              },
+              y: {
+                min: 0,
+                max: 100,
+                title: {
+                  display: true,
+                  text: "Key Recovery Success Rate (%)"
+                }
+              }
+            }
+          }
+        }
+      );
+
+    } catch (error) {
+      summary.textContent =
+        "Experiment failed. Check the console.";
+      console.error(error);
+
+    } finally {
+      button.disabled = false;
+    }
+  });
+});
