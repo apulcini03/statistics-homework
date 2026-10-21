@@ -1,0 +1,161 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>HW 2 — ECC vs Caesar Cipher</title>
+
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+  <header>
+    <h1>HW 2 — ECC vs Caesar Cipher</h1>
+    <p>Statistics for Cybersecurity</p>
+    <p>Academic Year 2026/2027</p>
+    <p>Encryption, Decryption and Cryptanalysis</p>
+  </header>
+
+  <main>
+
+    <section class="homework-section">
+
+      <h2>Assignment Overview</h2>
+
+      <div class="card">
+        <h3>Objective</h3>
+
+        <p>
+          This homework compares a toy
+          elliptic-curve-based encryption scheme
+          with the classical Caesar cipher.
+        </p>
+
+        <p>
+          The study explores encryption and
+          decryption procedures, the role of
+          cryptographic keys, key-space sizes,
+          and statistical properties.
+        </p>
+
+        <p>
+          It also investigates two attacks:
+          statistical key recovery against
+          Caesar-encrypted text and exhaustive
+          private-key search against a
+          deliberately restricted ECC key space.
+        </p>
+      </div>
+
+      <h2>Part 1 — ECC Encryption and Decryption</h2>
+
+      <div class="card">
+        <h3>Toy ECC-Based Encryption</h3>
+
+        <p>
+          An educational hybrid encryption scheme
+          will use the secp256k1 elliptic curve
+          with a deliberately restricted
+          recipient private-key range.
+        </p>
+
+        <p>
+          The demonstration will explain
+          public and private keys, shared-secret
+          derivation, encryption and decryption.
+        </p>
+      </div>
+
+      <h2>Part 2 — Caesar Cipher</h2>
+
+      <div class="card">
+        <h3>Classical Substitution Cipher</h3>
+
+        <p>
+          Encrypt and decrypt the same message
+          using a Caesar cipher with a
+          configurable alphabet shift.
+        </p>
+      </div>
+
+      <h2>Part 3 — Cryptosystem Comparison</h2>
+
+      <div class="card">
+        <h3>Procedures, Keys and Statistics</h3>
+
+        <p>
+          Compare asymmetric key agreement
+          and symmetric message encryption
+          with classical letter substitution,
+          focusing on key management,
+          key-space size and observable patterns.
+        </p>
+      </div>
+
+      <h2>Part 4 — Statistical Cryptanalysis</h2>
+
+      <div class="card">
+        <h3>Recovering the Caesar Key</h3>
+
+        <p>
+          Estimate the Caesar cipher key
+          from ciphertext using letter-frequency
+          statistics from a known language.
+        </p>
+
+        <p>
+          Study how ciphertext length
+          affects the reliability of
+          statistical key recovery.
+        </p>
+      </div>
+
+      <h2>Part 5 — Restricted ECC Key-Space Attack</h2>
+
+      <div class="card">
+        <h3>Private-Key Recovery</h3>
+
+        <p>
+          Recover an intentionally small
+          ECC private key using exhaustive search.
+          Compare its computational cost with
+          statistical cryptanalysis of Caesar.
+        </p>
+      </div>
+
+      <h2>Results and Conclusions</h2>
+
+      <div class="card">
+        <h3>Experimental Findings</h3>
+
+        <p>
+          Results, statistical observations
+          and security limitations will
+          be discussed after the experiments.
+        </p>
+      </div>
+
+      <div class="card">
+        <a href="../index.html"
+           class="homework-button">
+          ← Back to Home
+        </a>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer>
+    <p>Statistics for Cybersecurity — 2026/2027</p>
+    <p>Educational demonstration only</p>
+  </footer>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
