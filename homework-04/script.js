@@ -303,3 +303,251 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+
+
+// HW 3 - Score Distribution Analysis
+
+const scoreDistributionCharts = {
+  total: null,
+  average: null,
+  normalized: null
+};
+
+// Construct common bins from the integer total scores
+function buildScoreHistogram(scores) {
+  const min = Math.min(...scores);
+  const max = Math.max(...scores);
+
+  const range = max - min + 1;
+  const binCount = Math.min(20, range);
+  const binWidth = range / binCount;
+
+  const frequencies = Array(binCount).fill(0);
+
+  for (const score of scores) {
+    const index = Math.min(
+      binCount - 1,
+      Math.floor((score - min) / binWidth)
+    );
+
+    frequencies[index]++;
+  }
+
+  // Centers of the intervals on the total-score scale
+  const centers = Array.from(
+    { length: binCount },
+    (_, i) => min + (i + 0.5) * binWidth
+  );
+
+  return { frequencies, centers };
+}
+
+// Draw one histogram for the chosen score normalization
+function drawScoreHistogram(canvasId, chartKey, data) {
+  if (scoreDistributionCharts[chartKey]) {
+    scoreDistributionCharts[chartKey].destroy();
+  }
+
+  scoreDistributionCharts[chartKey] = new Chart(
+    document.getElementById(canvasId),
+    {
+      type: "bar",
+      data: {
+        labels: data.labels,
+        datasets: [{
+          label: "Number of Attackers",
+          data: data.frequencies,
+          backgroundColor: data.color,
+          hoverBackgroundColor: "#1d4ed8",
+          barPercentage: 1,
+          categoryPercentage: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          title: {
+            display: true,
+            text: data.title
+          },
+          tooltip: {
+            enabled: true
+          },
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: data.xTitle
+            },
+            ticks: {
+              maxTicksLimit: 10,
+              maxRotation: 45
+            }
+          },
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: "Number of Attackers"
+            },
+            ticks: {
+              precision: 0
+            }
+          }
+        }
+      }
+    }
+  );
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const button = document.getElementById(
+    "analyzeScoreDistributionsBtn"
+  );
+
+  const summary = document.getElementById(
+    "scoreDistributionSummary"
+  );
+
+  const tableBody = document.getElementById(
+    "scoreDistributionTableBody"
+  );
+
+  button.addEventListener("click", () => {
+    const simulation = window.hw3Simulation;
+
+    if (!simulation) {
+      summary.textContent =
+        "Run the stochastic simulation first.";
+      return;
+    }
+
+    button.disabled = true;
+
+    try {
+      const {
+        n, m, model, p,
+        finalScores,
+        finalAverages,
+        finalNormalizedScores
+      } = simulation;
+
+      const { mean: mu, variance: sigma2 } =
+        stochasticParameters(model, p);
+
+      const quantities = [
+        {
+          name: "S(n)",
+          values: finalScores,
+          expectedMean: n * mu,
+          expectedVariance: n * sigma2
+        },
+        {
+          name: "S(n)/n",
+          values: finalAverages,
+          expectedMean: mu,
+          expectedVariance: sigma2 / n
+        },
+        {
+          name: "S(n)/sqrt(n)",
+          values: finalNormalizedScores,
+          expectedMean: Math.sqrt(n) * mu,
+          expectedVariance: sigma2
+        }
+      ];
+
+      summary.textContent =
+        `Model: ${model}\n` +
+        `Systems (n): ${n}\n` +
+        `Attackers (m): ${m}\n` +
+        `Probability p: ${p}\n\n` +
+        `All three histograms use the same ` +
+        `${m} simulated attacker outcomes.`;
+
+      // Populate statistics table
+      tableBody.replaceChildren();
+
+      for (const quantity of quantities) {
+        const row = document.createElement("tr");
+
+        const cells = [
+          quantity.name,
+          stochasticMean(quantity.values).toFixed(4),
+          quantity.expectedMean.toFixed(4),
+          stochasticVariance(quantity.values).toFixed(4),
+          quantity.expectedVariance.toFixed(4)
+        ];
+
+        for (const value of cells) {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          row.appendChild(cell);
+        }
+
+        tableBody.appendChild(row);
+      }
+
+      // Common bins based on S(n)
+      const { frequencies, centers } =
+        buildScoreHistogram(finalScores);
+
+      // Histogram 1: total score
+      drawScoreHistogram(
+        "totalScoreDistributionChart",
+        "total",
+        {
+          labels: centers.map(x => x.toFixed(1)),
+          frequencies,
+          color: "#2563eb",
+          title: "Total Score Distribution",
+          xTitle: "Total Score S(n)"
+        }
+      );
+
+      // Histogram 2: average score
+      drawScoreHistogram(
+        "averageScoreDistributionChart",
+        "average",
+        {
+          labels: centers.map(
+            x => (x / n).toFixed(3)
+          ),
+          frequencies,
+          color: "#0d9488",
+          title: "Average Score Distribution",
+          xTitle: "Average Score S(n)/n"
+        }
+      );
+
+      // Histogram 3: normalized total
+      drawScoreHistogram(
+        "normalizedScoreDistributionChart",
+        "normalized",
+        {
+          labels: centers.map(
+            x => (x / Math.sqrt(n)).toFixed(2)
+          ),
+          frequencies,
+          color: "#9333ea",
+          title: "Normalized Total Score Distribution",
+          xTitle: "Normalized Score S(n)/sqrt(n)"
+        }
+      );
+
+    } catch (error) {
+      summary.textContent =
+        "Distribution analysis failed.";
+      console.error(error);
+
+    } finally {
+      button.disabled = false;
+    }
+  });
+});

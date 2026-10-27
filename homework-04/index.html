@@ -429,15 +429,154 @@
         </div>
 
 
+        
         <h2>Score Distributions</h2>
 
         <div class="card">
-        <h3>Total, Average and Normalized Scores</h3>
+
+        <h3>Distribution of the Three Score Quantities</h3>
+
         <p>
-            Compare the empirical distributions
-            of S(n), S(n)/n and S(n)/sqrt(n).
+            This experiment studies the final scores of
+            all m attackers using the trajectories generated
+            by the stochastic simulator.
         </p>
+
+        <p>
+            The three quantities are S(n), S(n)/n
+            and S(n)/sqrt(n). They are calculated from
+            the same observations, allowing a direct
+            comparison of their distributions.
+        </p>
+
+        <button id="analyzeScoreDistributionsBtn">
+            Analyze Score Distributions
+        </button>
+
+        <div
+            id="scoreDistributionSummary"
+            class="analysis-summary stochastic-result"
+            aria-live="polite"></div>
+
+        <hr>
+
+        <h3>1. Total Score — S(n)</h3>
+
+        <p>
+            The total score is the sum of all increments
+            obtained by an attacker across n systems.
+        </p>
+
+        <p>
+            In the Bernoulli model, S(n) follows a
+            binomial distribution with parameters n and p.
+            In the Rademacher model, the total is a
+            symmetric random-walk endpoint.
+        </p>
+
+        <div class="chart-container">
+            <canvas id="totalScoreDistributionChart"></canvas>
         </div>
+
+        <hr>
+
+        <h3>2. Average Score — S(n)/n</h3>
+
+        <p>
+            Dividing the total score by n produces the
+            average increment per system.
+            As n increases, this quantity concentrates
+            around the expected increment E[X].
+        </p>
+
+        <p>
+            This behavior is explained by the
+            Law of Large Numbers.
+        </p>
+
+        <div class="chart-container">
+            <canvas id="averageScoreDistributionChart"></canvas>
+        </div>
+
+        <hr>
+
+        <h3>3. Normalized Total Score — S(n)/sqrt(n)</h3>
+
+        <p>
+            Dividing the total by sqrt(n) produces
+            a normalization that keeps the variance
+            constant as n increases.
+        </p>
+
+        <p>
+            In the Rademacher model, this quantity
+            approaches a standard normal distribution
+            as n becomes large.
+        </p>
+
+        <p>
+            In the Bernoulli model with positive p,
+            the normalized total has mean p*sqrt(n),
+            which increases with n. Therefore, it
+            does not converge to a standard normal
+            distribution without centering.
+        </p>
+
+        <div class="chart-container">
+            <canvas id="normalizedScoreDistributionChart"></canvas>
+        </div>
+
+        <hr>
+
+        <h3>Empirical and Theoretical Statistics</h3>
+
+        <p>
+            Compare the empirical mean and variance
+            of each quantity with its theoretical value.
+        </p>
+
+        <div class="accounts-table-wrapper">
+            <table class="crypto-comparison-table">
+            <thead>
+                <tr>
+                <th>Quantity</th>
+                <th>Empirical Mean</th>
+                <th>Theoretical Mean</th>
+                <th>Empirical Variance</th>
+                <th>Theoretical Variance</th>
+                </tr>
+            </thead>
+
+            <tbody id="scoreDistributionTableBody"></tbody>
+            </table>
+        </div>
+
+        <h3>Interpretation</h3>
+
+        <p>
+            The histograms use the same attacker outcomes
+            and corresponding bins under three different
+            horizontal scales. Consequently, their
+            frequencies are identical, although the
+            score values, means and variances differ.
+        </p>
+
+        <p>
+            Increasing the number of attackers improves
+            the empirical description of the underlying
+            distribution, without changing its theoretical
+            mean or variance.
+        </p>
+
+        <p class="wallet-note">
+            The histograms show counts of simulated
+            attackers, not probability densities.
+            They are descriptive visualizations
+            of finite samples.
+        </p>
+
+        </div>
+
 
         <h2>Law of Large Numbers Experiment</h2>
 

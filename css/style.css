@@ -808,3 +808,19 @@ button:disabled {
     font-size: 0.82rem;
   }
 }
+
+
+
+/* HW 3 - Score Distributions */
+
+#scoreDistributionTableBody td {
+  font-variant-numeric: tabular-nums;
+}
+
+#scoreDistributionTableBody td:first-child {
+  font-weight: 600;
+}
+
+#analyzeScoreDistributionsBtn {
+  margin-bottom: 16px;
+}
