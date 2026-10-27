@@ -28,358 +28,473 @@
 
     <section class="homework-section">
 
-      <h2>Assignment</h2>
+        <h2>Assignment</h2>
 
-      <div class="card">
+        <div class="card">
         <p>
-          Model the penetration process of m attackers
-          across n systems using a stochastic process
-          with independent and identically distributed
-          increments.
+            Model the penetration process of m attackers
+            across n systems using a stochastic process
+            with independent and identically distributed
+            increments.
         </p>
 
         <p>
-          Simulate the Bernoulli and Rademacher models,
-          analyze sample trajectories and study the
-          distributions of the total score, average
-          score and normalized total score.
+            Simulate the Bernoulli and Rademacher models,
+            analyze sample trajectories and study the
+            distributions of the total score, average
+            score and normalized total score.
         </p>
 
         <p>
-          Investigate the Law of Large Numbers (LLN),
-          the Central Limit Theorem (CLT), variance
-          scaling and the effect of changing the
-          number of systems and attackers.
+            Investigate the Law of Large Numbers (LLN),
+            the Central Limit Theorem (CLT), variance
+            scaling and the effect of changing the
+            number of systems and attackers.
         </p>
-      </div>
+        </div>
 
-      <h2>Theoretical Background</h2>
+        <h2>Theoretical Background</h2>
 
-      <div class="card">
+        <div class="card">
 
         <h3>Stochastic Penetration Process</h3>
 
         <p>
-          Consider n systems and m attackers.
-          Each attacker interacts with a sequence
-          of n systems and receives a score at
-          each step.
+            Consider n systems and m attackers.
+            Each attacker interacts with a sequence
+            of n systems and receives a score at
+            each step.
         </p>
 
         <p>
-          For attacker j, let X(j,i) be the score
-          obtained at step i. The cumulative
-          penetration score after k steps is:
+            For attacker j, let X(j,i) be the score
+            obtained at step i. The cumulative
+            penetration score after k steps is:
         </p>
 
         <p>
-          <strong>
+            <strong>
             S(j,k) = X(j,1) + X(j,2) + ... + X(j,k)
-          </strong>
+            </strong>
         </p>
 
         <p>
-          The increments are assumed to be independent
-          and identically distributed within each
-          trajectory and independent across attackers.
-          Each attacker therefore provides one
-          realization of the same stochastic process.
+            The increments are assumed to be independent
+            and identically distributed within each
+            trajectory and independent across attackers.
+            Each attacker therefore provides one
+            realization of the same stochastic process.
         </p>
 
         <h3>Bernoulli Model</h3>
 
         <p>
-          In the Bernoulli model, every increment
-          takes one of two possible values:
+            In the Bernoulli model, every increment
+            takes one of two possible values:
         </p>
 
         <p>
-          <strong>
+            <strong>
             X = 1 with probability p,
             X = 0 with probability 1 - p.
-          </strong>
+            </strong>
         </p>
 
         <p>
-          A score of 1 represents a successful
-          penetration attempt, while 0 represents
-          an unsuccessful attempt.
+            A score of 1 represents a successful
+            penetration attempt, while 0 represents
+            an unsuccessful attempt.
         </p>
 
         <p>
-          The expected value and variance of a
-          single increment are:
+            The expected value and variance of a
+            single increment are:
         </p>
 
         <p>
-          <strong>
+            <strong>
             E[X] = p,
             Var(X) = p(1 - p).
-          </strong>
+            </strong>
         </p>
 
         <h3>Rademacher Model</h3>
 
         <p>
-          In the Rademacher model, every increment
-          takes the value +1 or -1 with equal
-          probability:
+            In the Rademacher model, every increment
+            takes the value +1 or -1 with equal
+            probability:
         </p>
 
         <p>
-          <strong>
+            <strong>
             P(X = +1) = P(X = -1) = 1/2.
-          </strong>
+            </strong>
         </p>
 
         <p>
-          A positive increment represents an increase
-          in the penetration score, while a negative
-          increment represents a decrease.
+            A positive increment represents an increase
+            in the penetration score, while a negative
+            increment represents a decrease.
         </p>
 
         <p>
-          The model is symmetric, with:
+            The model is symmetric, with:
         </p>
 
         <p>
-          <strong>
+            <strong>
             E[X] = 0, Var(X) = 1.
-          </strong>
+            </strong>
         </p>
 
         <h3>Three Quantities of Interest</h3>
 
         <p>
-          We study three quantities at the final
-          step n of each trajectory:
+            We study three quantities at the final
+            step n of each trajectory:
         </p>
 
         <p>
-          <strong>Total score:</strong>
-          S(n) = X(1) + ... + X(n).
+            <strong>Total score:</strong>
+            S(n) = X(1) + ... + X(n).
         </p>
 
         <p>
-          <strong>Average score:</strong>
-          A(n) = S(n) / n.
+            <strong>Average score:</strong>
+            A(n) = S(n) / n.
         </p>
 
         <p>
-          <strong>Normalized total score:</strong>
-          Z(n) = S(n) / sqrt(n).
+            <strong>Normalized total score:</strong>
+            Z(n) = S(n) / sqrt(n).
         </p>
 
         <p>
-          These quantities behave differently
-          when the number of systems increases.
-          In particular, their variances scale
-          differently with n.
+            These quantities behave differently
+            when the number of systems increases.
+            In particular, their variances scale
+            differently with n.
         </p>
 
         <h3>Law of Large Numbers (LLN)</h3>
 
         <p>
-          The Law of Large Numbers states that
-          the average of independent and identically
-          distributed increments converges in
-          probability to their expected value.
+            The Law of Large Numbers states that
+            the average of independent and identically
+            distributed increments converges in
+            probability to their expected value.
         </p>
 
         <p>
-          <strong>
+            <strong>
             S(n) / n converges to E[X]
             as n increases.
-          </strong>
+            </strong>
         </p>
 
         <p>
-          Therefore, in the Bernoulli model,
-          the average score approaches p.
-          In the Rademacher model, it approaches 0.
+            Therefore, in the Bernoulli model,
+            the average score approaches p.
+            In the Rademacher model, it approaches 0.
         </p>
 
         <h3>Central Limit Theorem (CLT)</h3>
 
         <p>
-          The Central Limit Theorem describes
-          the limiting distribution of appropriately
-          standardized sums of independent
-          random variables.
+            The Central Limit Theorem describes
+            the limiting distribution of appropriately
+            standardized sums of independent
+            random variables.
         </p>
 
         <p>
-          In the Rademacher model, where
-          E[X] = 0 and Var(X) = 1:
+            In the Rademacher model, where
+            E[X] = 0 and Var(X) = 1:
         </p>
 
         <p>
-          <strong>
+            <strong>
             S(n) / sqrt(n) converges in
             distribution to N(0,1).
-          </strong>
+            </strong>
         </p>
 
         <p>
-          For the Bernoulli model with 0 &lt; p &lt; 1,
-          standard normal convergence instead requires
-          centering and standardization:
+            For the Bernoulli model with 0 &lt; p &lt; 1,
+            standard normal convergence instead requires
+            centering and standardization:
         </p>
 
         <p>
-          <strong>
+            <strong>
             (S(n) - np) / sqrt(np(1-p))
             converges in distribution to N(0,1).
-          </strong>
+            </strong>
         </p>
 
         <p>
-          Dividing the Bernoulli total score only
-          by sqrt(n) does not produce the same
-          standard normal limit when p is nonzero.
+            Dividing the Bernoulli total score only
+            by sqrt(n) does not produce the same
+            standard normal limit when p is nonzero.
         </p>
 
         <h3>Variance Under Different Normalizations</h3>
 
         <p>
-          Let mu = E[X] and sigma² = Var(X).
-          For independent increments:
+            Let mu = E[X] and sigma² = Var(X).
+            For independent increments:
         </p>
 
         <p>
-          <strong>
+            <strong>
             Var(S(n)) = n sigma².
-          </strong>
+            </strong>
         </p>
 
         <p>
-          <strong>
+            <strong>
             Var(S(n) / n) = sigma² / n.
-          </strong>
+            </strong>
         </p>
 
         <p>
-          <strong>
+            <strong>
             Var(S(n) / sqrt(n)) = sigma².
-          </strong>
+            </strong>
         </p>
 
         <p>
-          Therefore, the total-score variance
-          increases with n, the average-score
-          variance decreases toward zero, and
-          the normalized-total variance remains
-          constant.
+            Therefore, the total-score variance
+            increases with n, the average-score
+            variance decreases toward zero, and
+            the normalized-total variance remains
+            constant.
         </p>
 
         <h3>Interpretation and Assumptions</h3>
 
         <p>
-          The number of systems n determines
-          the length of each attacker's trajectory.
-          The number of attackers m determines
-          how many independent trajectories
-          are observed.
+            The number of systems n determines
+            the length of each attacker's trajectory.
+            The number of attackers m determines
+            how many independent trajectories
+            are observed.
         </p>
 
         <p>
-          Increasing n changes the distribution
-          of the cumulative penetration scores.
-          Increasing m gives a larger sample
-          for estimating the distributions.
+            Increasing n changes the distribution
+            of the cumulative penetration scores.
+            Increasing m gives a larger sample
+            for estimating the distributions.
         </p>
 
         <p>
-          This is an idealized probabilistic model:
-          real penetration attempts may be dependent,
-          systems may have different vulnerabilities,
-          and attacker behavior may change over time.
+            This is an idealized probabilistic model:
+            real penetration attempts may be dependent,
+            systems may have different vulnerabilities,
+            and attacker behavior may change over time.
         </p>
 
-      </div>
+        </div>
 
-      <h2>Interactive Stochastic Simulator</h2>
+        
+        <h2>Interactive Stochastic Simulator</h2>
 
-      <div class="card">
+        <div class="card">
+
         <h3>Model Parameters and Trajectories</h3>
-        <p>
-          Configure the probability model, number
-          of systems, number of attackers and
-          success probability to simulate
-          cumulative penetration trajectories.
-        </p>
-        <p>
-          Interactive controls and trajectory
-          visualization will be implemented here.
-        </p>
-      </div>
 
-      <h2>Score Distributions</h2>
+        <p>
+            Simulate m independent attackers interacting
+            with n systems. Each attacker follows a
+            stochastic process with independent and
+            identically distributed increments.
+        </p>
 
-      <div class="card">
+        <h3>Step 1 — Configure the Simulation</h3>
+
+        <label for="stochasticModel">
+            Probability Model:
+        </label>
+
+        <select id="stochasticModel">
+            <option value="bernoulli">Bernoulli (0, 1)</option>
+            <option value="rademacher">Rademacher (-1, +1)</option>
+        </select>
+
+        <label for="stochasticSystems">
+            Number of Systems (n):
+        </label>
+
+        <input
+            type="number"
+            id="stochasticSystems"
+            min="1"
+            max="1000"
+            step="1"
+            value="100"
+        >
+
+        <label for="stochasticAttackers">
+            Number of Attackers (m):
+        </label>
+
+        <input
+            type="number"
+            id="stochasticAttackers"
+            min="1"
+            max="2000"
+            step="1"
+            value="200"
+        >
+
+        <div id="bernoulliProbabilityGroup">
+            <label for="stochasticProbability">
+            Bernoulli Success Probability (p):
+            </label>
+
+            <input
+            type="number"
+            id="stochasticProbability"
+            min="0"
+            max="1"
+            step="0.05"
+            value="0.5"
+            >
+        </div>
+
+        <p>
+            <button id="runStochasticSimulationBtn">
+            Run Simulation
+            </button>
+        </p>
+
+        <div
+            id="stochasticSimulationSummary"
+            class="analysis-summary stochastic-result"
+            aria-live="polite"></div>
+
+        <hr>
+
+        <h3>Step 2 — Cumulative Score Trajectories</h3>
+
+        <p>
+            Each line represents one attacker.
+            The horizontal axis represents the
+            number of systems, while the vertical
+            axis shows the cumulative penetration score.
+        </p>
+
+        <p>
+            To keep the chart readable, at most
+            30 attacker trajectories are displayed.
+            All m attackers are included in the
+            statistical calculations.
+        </p>
+
+        <div class="chart-container">
+            <canvas id="stochasticTrajectoriesChart"></canvas>
+        </div>
+
+        <h3>Step 3 — Interpret the Simulation</h3>
+
+        <p>
+            In the Bernoulli model, trajectories
+            are non-decreasing because increments
+            are either 0 or 1.
+        </p>
+
+        <p>
+            In the Rademacher model, trajectories
+            may increase or decrease at each step,
+            resulting in symmetric random walks.
+        </p>
+
+        <p>
+            Increasing n makes each trajectory
+            longer. Increasing m produces more
+            independent observations, allowing
+            more stable empirical estimates
+            of the score distribution.
+        </p>
+
+        <p class="wallet-note">
+            The stochastic model is idealized.
+            Real attackers and systems may exhibit
+            dependencies and heterogeneous success
+            probabilities.
+        </p>
+
+        </div>
+
+
+        <h2>Score Distributions</h2>
+
+        <div class="card">
         <h3>Total, Average and Normalized Scores</h3>
         <p>
-          Compare the empirical distributions
-          of S(n), S(n)/n and S(n)/sqrt(n).
+            Compare the empirical distributions
+            of S(n), S(n)/n and S(n)/sqrt(n).
         </p>
-      </div>
+        </div>
 
-      <h2>Law of Large Numbers Experiment</h2>
+        <h2>Law of Large Numbers Experiment</h2>
 
-      <div class="card">
+        <div class="card">
         <h3>Convergence of Average Scores</h3>
         <p>
-          Examine how the average penetration
-          score approaches its theoretical
-          expected value as n increases.
+            Examine how the average penetration
+            score approaches its theoretical
+            expected value as n increases.
         </p>
-      </div>
+        </div>
 
-      <h2>Central Limit Theorem Experiment</h2>
+        <h2>Central Limit Theorem Experiment</h2>
 
-      <div class="card">
+        <div class="card">
         <h3>Rademacher and the Normal Distribution</h3>
         <p>
-          Compare the empirical distribution
-          of normalized Rademacher sums with
-          the standard normal distribution.
+            Compare the empirical distribution
+            of normalized Rademacher sums with
+            the standard normal distribution.
         </p>
-      </div>
+        </div>
 
-      <h2>Variance and Scaling Analysis</h2>
+        <h2>Variance and Scaling Analysis</h2>
 
-      <div class="card">
+        <div class="card">
         <h3>Empirical vs Theoretical Variance</h3>
         <p>
-          Study the variance of the total,
-          average and normalized penetration
-          scores for increasing values of n.
+            Study the variance of the total,
+            average and normalized penetration
+            scores for increasing values of n.
         </p>
-      </div>
+        </div>
 
-      <h2>Systems and Attackers Experiment</h2>
+        <h2>Systems and Attackers Experiment</h2>
 
-      <div class="card">
+        <div class="card">
         <h3>Effect of n and m</h3>
         <p>
-          Explore how the number of systems
-          changes score distributions and how
-          the number of attackers affects
-          their empirical estimation.
+            Explore how the number of systems
+            changes score distributions and how
+            the number of attackers affects
+            their empirical estimation.
         </p>
-      </div>
+        </div>
 
-      <h2>Results and Conclusions</h2>
+        <h2>Results and Conclusions</h2>
 
-      <div class="card">
+        <div class="card">
         <h3>Experimental Findings</h3>
         <p>
-          The observed convergence, variance
-          scaling and penetration-score behavior
-          will be discussed after completing
-          the simulations.
+            The observed convergence, variance
+            scaling and penetration-score behavior
+            will be discussed after completing
+            the simulations.
         </p>
-      </div>
+        </div>
 
     </section>
 
@@ -389,6 +504,7 @@
     <p>Statistics for Cybersecurity - 2026/2027</p>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
   <script src="script.js"></script>
 
 </body>
