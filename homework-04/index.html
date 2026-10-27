@@ -1236,16 +1236,343 @@
         </div>
 
 
+        
         <h2>Results and Conclusions</h2>
 
         <div class="card">
-        <h3>Experimental Findings</h3>
+
+        <h3>Overview of the Experiments</h3>
+
         <p>
-            The observed convergence, variance
-            scaling and penetration-score behavior
-            will be discussed after completing
-            the simulations.
+            This homework investigated stochastic
+            penetration processes involving n systems
+            and m independent attackers.
         </p>
+
+        <p>
+            Two models of independent and identically
+            distributed increments were studied:
+            Bernoulli and Rademacher.
+        </p>
+
+        <p>
+            For each attacker, three quantities were
+            analyzed: the total score S(n), the average
+            score S(n)/n and the normalized total
+            score S(n)/sqrt(n).
+        </p>
+
+        <h3>Stochastic Trajectories</h3>
+
+        <p>
+            In the Bernoulli model, increments are
+            either 0 or 1. Consequently, cumulative
+            scores are non-decreasing and their
+            theoretical expected value grows as n*p.
+        </p>
+
+        <p>
+            In the Rademacher model, increments
+            are equally likely to be -1 or +1.
+            Trajectories fluctuate above and below
+            zero, with theoretical expected score
+            equal to zero at every step.
+        </p>
+
+        <p>
+            These behaviors were observed in the
+            interactive simulations for both models.
+        </p>
+
+        <h3>Law of Large Numbers</h3>
+
+        <p>
+            The Law of Large Numbers predicts that
+            the average score S(n)/n converges in
+            probability to the expected increment.
+        </p>
+
+        <p>
+            In the Bernoulli experiment with
+            p = 0.5, n = 1000 and m = 300,
+            the empirical mean of the averages
+            was approximately 0.5003, compared
+            with the theoretical value 0.5.
+        </p>
+
+        <p>
+            In the Rademacher experiment with
+            the same n and m, the empirical mean
+            of the averages was approximately
+            0.0017, compared with the theoretical
+            value zero.
+        </p>
+
+        <p>
+            The observed variances were also close
+            to their theoretical predictions:
+            0.00025 for Bernoulli and
+            0.001 for Rademacher at n = 1000.
+        </p>
+
+        <p>
+            The empirical proportion of averages
+            differing from their expected value
+            by more than epsilon = 0.1 decreased
+            as the number of systems increased.
+        </p>
+
+        <p>
+            These observations illustrate
+            convergence in probability, while
+            Chebyshev's inequality provides
+            a theoretical upper bound on
+            the probability of deviation.
+        </p>
+
+        <h3>Central Limit Theorem</h3>
+
+        <p>
+            The Rademacher model has increment
+            mean zero and variance one.
+            Therefore, the Central Limit Theorem
+            predicts convergence in distribution:
+        </p>
+
+        <p>
+            <strong>
+            S(n)/sqrt(n) converges to N(0,1).
+            </strong>
+        </p>
+
+        <p>
+            With n = 1000 and m = 1000, the
+            empirical normalized-score mean
+            was approximately 0.0349 and
+            the variance was 1.0042.
+        </p>
+
+        <p>
+            Approximately 66.60% of observations
+            fell within [-1, 1], compared with
+            68.27% under the standard normal model.
+        </p>
+
+        <p>
+            Approximately 95.50% fell within
+            [-2, 2], compared with the
+            theoretical reference of 95.45%.
+        </p>
+
+        <p>
+            The empirical histogram closely
+            resembled the standard normal density.
+            For smaller n, the normalized score
+            distribution remained more visibly
+            discrete.
+        </p>
+
+        <h3>Variance and Scaling</h3>
+
+        <p>
+            The experiments confirmed three
+            different theoretical scaling laws:
+        </p>
+
+        <p>
+            <strong>Var(S(n)) = n * sigma²</strong>
+        </p>
+
+        <p>
+            <strong>Var(S(n)/n) = sigma² / n</strong>
+        </p>
+
+        <p>
+            <strong>
+            Var(S(n)/sqrt(n)) = sigma²
+            </strong>
+        </p>
+
+        <p>
+            The total-score variance increased
+            approximately linearly with n,
+            while the average-score variance
+            decreased toward zero.
+        </p>
+
+        <p>
+            The normalized-total variance remained
+            approximately constant, around 0.25
+            for Bernoulli with p = 0.5 and
+            around 1 for Rademacher.
+        </p>
+
+        <p>
+            These results explain why different
+            normalizations are useful:
+            division by n reveals concentration
+            around the mean, while division by
+            sqrt(n) preserves a non-vanishing
+            variance.
+        </p>
+
+        <h3>Effect of Systems and Attackers</h3>
+
+        <p>
+            The final experiment investigated
+            the aggregate penetration score
+            across all m attackers and n systems.
+        </p>
+
+        <p>
+            Let T(n,m) denote the sum of all
+            attacker scores. Under the IID
+            assumptions, its theoretical mean
+            and variance are:
+        </p>
+
+        <p>
+            <strong>E[T(n,m)] = n*m*mu</strong>
+        </p>
+
+        <p>
+            <strong>Var(T(n,m)) = n*m*sigma²</strong>
+        </p>
+
+        <p>
+            For Bernoulli with p = 0.5,
+            n = 1000 and m = 1000, the
+            observed aggregate score was
+            500491, compared with an
+            expected aggregate of 500000.
+        </p>
+
+        <p>
+            The resulting pooled average was
+            0.500491, very close to 0.5.
+        </p>
+
+        <p>
+            For Rademacher, the observed aggregate
+            score was 982, compared with an
+            expected value of zero.
+            The pooled average was 0.000982.
+        </p>
+
+        <p>
+            Increasing n adds more increments
+            to each attacker's trajectory.
+            Increasing m adds more independent
+            trajectories and observations.
+        </p>
+
+        <p>
+            The theoretical variance of the pooled
+            average is sigma²/(n*m), showing
+            that estimation uncertainty decreases
+            as the total number of independent
+            observations increases.
+        </p>
+
+        <h3>Cybersecurity Interpretation</h3>
+
+        <p>
+            In the Bernoulli model, the score
+            represents the number of successful
+            penetration attempts.
+            A larger number of systems creates
+            more opportunities for success.
+        </p>
+
+        <p>
+            In the Rademacher model, positive
+            and negative increments represent
+            changes in an abstract penetration
+            score, rather than literal counts
+            of compromised systems.
+        </p>
+
+        <p>
+            The number of attackers determines
+            how many independent penetration
+            trajectories are simulated.
+            More attackers improve the precision
+            of empirical distribution estimates.
+        </p>
+
+        <p>
+            The model assumes identical success
+            probabilities and independent events.
+            Real cybersecurity environments may
+            involve different vulnerability levels,
+            correlated failures, shared attack
+            techniques and adaptive attackers.
+        </p>
+
+        <h3>Limitations of the Simulations</h3>
+
+        <p>
+            All results are based on finite
+            Monte Carlo simulations.
+            Empirical means, variances and
+            probabilities fluctuate between
+            independent executions.
+        </p>
+
+        <p>
+            The systems-and-attackers experiment
+            uses a fixed pseudo-random seed and
+            nested samples for reproducibility.
+            Its observed numerical values
+            describe that specific experiment.
+        </p>
+
+        <p>
+            The LLN and CLT are mathematical
+            results established under specified
+            assumptions; simulations illustrate
+            their predictions but cannot
+            independently prove the theorems.
+        </p>
+
+        <h3>Final Conclusion</h3>
+
+        <p>
+            This homework demonstrated how
+            normalization affects the statistical
+            behavior of stochastic penetration scores.
+        </p>
+
+        <p>
+            The average score converged toward
+            its theoretical expectation,
+            illustrating the Law of Large Numbers.
+        </p>
+
+        <p>
+            The normalized Rademacher total
+            approached the standard normal
+            distribution, illustrating the
+            Central Limit Theorem.
+        </p>
+
+        <p>
+            The experiments also confirmed
+            the different variance scaling laws
+            and showed how the number of systems
+            and attackers influences aggregate
+            scores and estimation uncertainty.
+        </p>
+
+        <p>
+            The main lesson is that large-scale
+            stochastic behavior can be studied
+            through probability distributions,
+            convergence and normalization,
+            provided the assumptions of the
+            underlying model are understood.
+        </p>
+
         </div>
 
     </section>
