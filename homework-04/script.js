@@ -1204,3 +1204,276 @@ document.addEventListener("DOMContentLoaded", () => {
   nSelect.addEventListener("change", updateCltChart);
 });
 
+
+
+// HW 3 - Variance and Scaling Analysis
+
+const VARIANCE_SYSTEM_VALUES = [
+  10, 25, 50, 100, 250, 500, 1000
+];
+
+const varianceChartInstances = {
+  total: null,
+  average: null,
+  normalized: null
+};
+
+// Simulate all tested n using the same
+// underlying trajectories for each attacker.
+function runVarianceSimulation(m, model, p) {
+  const scoresByN = new Map(
+    VARIANCE_SYSTEM_VALUES.map(n => [n, []])
+  );
+
+  const checkpointSet = new Set(VARIANCE_SYSTEM_VALUES);
+  const maxN = Math.max(...VARIANCE_SYSTEM_VALUES);
+
+  for (let attacker = 0; attacker < m; attacker++) {
+    let total = 0;
+
+    for (let step = 1; step <= maxN; step++) {
+      total += generateIncrement(model, p);
+
+      if (checkpointSet.has(step)) {
+        scoresByN.get(step).push(total);
+      }
+    }
+  }
+
+  const sigma2 =
+    stochasticParameters(model, p).variance;
+
+  return VARIANCE_SYSTEM_VALUES.map(n => {
+    const totals = scoresByN.get(n);
+
+    // Use the same sample of attackers
+    // for all three transformations.
+    const empiricalTotal = stochasticVariance(totals);
+
+    const theoreticalTotal = n * sigma2;
+
+    return {
+      n,
+
+      totalEmpirical: empiricalTotal,
+      totalTheoretical: theoreticalTotal,
+
+      averageEmpirical: empiricalTotal / (n * n),
+      averageTheoretical: sigma2 / n,
+
+      normalizedEmpirical: empiricalTotal / n,
+      normalizedTheoretical: sigma2
+    };
+  });
+}
+
+// Draw empirical and theoretical variance curves
+function drawVarianceChart(canvasId, key, rows, config) {
+  if (varianceChartInstances[key]) {
+    varianceChartInstances[key].destroy();
+  }
+
+  varianceChartInstances[key] = new Chart(
+    document.getElementById(canvasId),
+    {
+      type: "line",
+      data: {
+        datasets: [
+          {
+            label: "Empirical Variance",
+            data: rows.map(row => ({
+              x: row.n,
+              y: row[config.empiricalKey]
+            })),
+            borderColor: "#2563eb",
+            backgroundColor: "#2563eb",
+            pointRadius: 5,
+            tension: 0.15
+          },
+          {
+            label: "Theoretical Variance",
+            data: rows.map(row => ({
+              x: row.n,
+              y: row[config.theoreticalKey]
+            })),
+            borderColor: "#f59e0b",
+            borderDash: [7, 5],
+            pointRadius: 3,
+            tension: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        parsing: false,
+        plugins: {
+          title: {
+            display: true,
+            text: config.title
+          },
+          tooltip: {
+            enabled: true
+          }
+        },
+        scales: {
+          x: {
+            type: "linear",
+            title: {
+              display: true,
+              text: "Number of Systems (n)"
+            }
+          },
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: "Variance"
+            }
+          }
+        }
+      }
+    }
+  );
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const mInput = document.getElementById(
+    "varianceAttackers"
+  );
+
+  const button = document.getElementById(
+    "runVarianceExperimentBtn"
+  );
+
+  const summary = document.getElementById(
+    "varianceSummary"
+  );
+
+  const tableBody = document.getElementById(
+    "varianceResultsTableBody"
+  );
+
+  button.addEventListener("click", () => {
+    // Reuse model parameters chosen in Part 2.
+    const baseSimulation = window.hw3Simulation;
+
+    if (!baseSimulation) {
+      summary.textContent =
+        "Run the main stochastic simulator first " +
+        "to select the model and its parameters.";
+      return;
+    }
+
+    const raw = mInput.value.trim();
+    const m = Number(raw);
+
+    if (
+      raw === "" ||
+      !Number.isInteger(m) ||
+      m < 100 ||
+      m > 1500
+    ) {
+      summary.textContent =
+        "Enter an integer number of attackers " +
+        "between 100 and 1500.";
+      return;
+    }
+
+    button.disabled = true;
+
+    summary.textContent =
+      "Computing empirical and theoretical variances...";
+
+    try {
+      const { model, p } = baseSimulation;
+
+      const parameters = stochasticParameters(model, p);
+
+      const rows = runVarianceSimulation(m, model, p);
+
+      summary.textContent =
+        `Model: ${model}\n` +
+        `Probability parameter: ${p}\n` +
+        `Attackers (m): ${m}\n` +
+        `Increment variance sigma²: ` +
+        `${parameters.variance.toFixed(4)}\n\n` +
+        `Theoretical scaling laws:\n` +
+        `Var(S(n)) = n * sigma²\n` +
+        `Var(S(n)/n) = sigma² / n\n` +
+        `Var(S(n)/sqrt(n)) = sigma²\n\n` +
+        `System sizes: ` +
+        `${VARIANCE_SYSTEM_VALUES.join(", ")}`;
+
+      // Update the statistics table.
+      tableBody.replaceChildren();
+
+      for (const row of rows) {
+        const tr = document.createElement("tr");
+
+        const values = [
+          row.n,
+          row.totalEmpirical.toFixed(6),
+          row.totalTheoretical.toFixed(6),
+          row.averageEmpirical.toFixed(6),
+          row.averageTheoretical.toFixed(6),
+          row.normalizedEmpirical.toFixed(6),
+          row.normalizedTheoretical.toFixed(6)
+        ];
+
+        for (const value of values) {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        }
+
+        tableBody.appendChild(tr);
+      }
+
+      // Chart 1 - Total score
+      drawVarianceChart(
+        "varianceTotalChart",
+        "total",
+        rows,
+        {
+          empiricalKey: "totalEmpirical",
+          theoreticalKey: "totalTheoretical",
+          title: "Total Score Variance: n * sigma²"
+        }
+      );
+
+      // Chart 2 - Average score
+      drawVarianceChart(
+        "varianceAverageChart",
+        "average",
+        rows,
+        {
+          empiricalKey: "averageEmpirical",
+          theoreticalKey: "averageTheoretical",
+          title: "Average Score Variance: sigma² / n"
+        }
+      );
+
+      // Chart 3 - Normalized score
+      drawVarianceChart(
+        "varianceNormalizedChart",
+        "normalized",
+        rows,
+        {
+          empiricalKey: "normalizedEmpirical",
+          theoreticalKey: "normalizedTheoretical",
+          title: "Normalized Total Variance: sigma²"
+        }
+      );
+
+    } catch (error) {
+      summary.textContent =
+        "Variance experiment failed. Check the console.";
+      console.error(error);
+
+    } finally {
+      button.disabled = false;
+    }
+  });
+});

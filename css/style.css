@@ -894,3 +894,34 @@ button:disabled {
     font-size: 0.82rem;
   }
 }
+
+
+
+/* HW 3 - Variance and Scaling Analysis */
+
+#varianceAttackers {
+  display: block;
+  width: 100%;
+  max-width: 350px;
+  padding: 12px;
+  margin: 10px 0 20px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  box-sizing: border-box;
+}
+
+#runVarianceExperimentBtn {
+  margin-bottom: 16px;
+}
+
+#varianceResultsTableBody td {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  #varianceResultsTableBody {
+    font-size: 0.82rem;
+  }
+}

@@ -908,13 +908,165 @@
         <h2>Variance and Scaling Analysis</h2>
 
         <div class="card">
-        <h3>Empirical vs Theoretical Variance</h3>
+
+        <h3>How Does Variance Change with System Size?</h3>
+
         <p>
-            Study the variance of the total,
-            average and normalized penetration
-            scores for increasing values of n.
+            This experiment investigates the variance of
+            three quantities: the total score S(n),
+            the average score S(n)/n and the normalized
+            total score S(n)/sqrt(n).
         </p>
+
+        <p>
+            For independent and identically distributed
+            increments with variance sigma², the
+            theoretical variances are:
+        </p>
+
+        <p><strong>Var(S(n)) = n * sigma²</strong></p>
+        <p><strong>Var(S(n)/n) = sigma² / n</strong></p>
+        <p><strong>Var(S(n)/sqrt(n)) = sigma²</strong></p>
+
+        <h3>Step 1 — Configure the Experiment</h3>
+
+        <p>
+            The experiment uses the probability model
+            and Bernoulli probability selected in the
+            main stochastic simulator.
+        </p>
+
+        <p>
+            Tested system sizes:
+            <strong>10, 25, 50, 100, 250, 500, 1000</strong>
+        </p>
+
+        <label for="varianceAttackers">
+            Number of Attackers (m):
+        </label>
+
+        <input
+            type="number"
+            id="varianceAttackers"
+            min="100"
+            max="1500"
+            step="1"
+            value="500"
+        >
+
+        <p>
+            <button id="runVarianceExperimentBtn">
+            Run Variance Experiment
+            </button>
+        </p>
+
+        <div
+            id="varianceSummary"
+            class="analysis-summary stochastic-result"
+            aria-live="polite"></div>
+
+        <hr>
+
+        <h3>Step 2 — Total Score Variance</h3>
+
+        <p>
+            The variance of S(n) increases linearly
+            with n because every additional independent
+            increment contributes to total variability.
+        </p>
+
+        <div class="chart-container">
+            <canvas id="varianceTotalChart"></canvas>
         </div>
+
+        <hr>
+
+        <h3>Step 3 — Average Score Variance</h3>
+
+        <p>
+            Dividing the total by n reduces its
+            variance to sigma²/n.
+            As n grows, the average score becomes
+            increasingly concentrated around E[X].
+        </p>
+
+        <div class="chart-container">
+            <canvas id="varianceAverageChart"></canvas>
+        </div>
+
+        <hr>
+
+        <h3>Step 4 — Normalized Total Variance</h3>
+
+        <p>
+            Dividing the total score by sqrt(n)
+            keeps its variance equal to sigma²
+            independently of n.
+        </p>
+
+        <div class="chart-container">
+            <canvas id="varianceNormalizedChart"></canvas>
+        </div>
+
+        <hr>
+
+        <h3>Empirical vs Theoretical Results</h3>
+
+        <p>
+            Each graph compares the empirical variance
+            across simulated attackers with the
+            corresponding theoretical prediction.
+        </p>
+
+        <div class="accounts-table-wrapper">
+            <table class="crypto-comparison-table">
+            <thead>
+                <tr>
+                <th>n</th>
+                <th>Var(S(n)) Emp.</th>
+                <th>Var(S(n)) Theory</th>
+                <th>Var(S(n)/n) Emp.</th>
+                <th>Var(S(n)/n) Theory</th>
+                <th>Var(S(n)/sqrt(n)) Emp.</th>
+                <th>Var(S(n)/sqrt(n)) Theory</th>
+                </tr>
+            </thead>
+            <tbody id="varianceResultsTableBody"></tbody>
+            </table>
+        </div>
+
+        <h3>Interpretation</h3>
+
+        <p>
+            The total-score variance grows proportionally
+            to the number of systems, showing that
+            cumulative uncertainty increases with n.
+        </p>
+
+        <p>
+            The average-score variance decreases as 1/n.
+            This supports the concentration of sample
+            averages described by the Law of Large Numbers.
+        </p>
+
+        <p>
+            The normalized-total variance stays constant.
+            In the Rademacher case, this value is 1,
+            consistent with the normalization used
+            in the Central Limit Theorem.
+        </p>
+
+        <p class="wallet-note">
+            Empirical variances fluctuate because they
+            are estimated from finitely many attackers.
+            The experiment uses new trajectories for
+            each execution, while all tested system
+            sizes within one execution share the
+            same underlying attacker trajectories.
+        </p>
+
+        </div>
+
 
         <h2>Systems and Attackers Experiment</h2>
 
