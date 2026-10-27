@@ -578,7 +578,7 @@
         </div>
 
         
-        
+
         <h2>Law of Large Numbers Experiment</h2>
 
         <div class="card">
@@ -742,17 +742,168 @@
 
         </div>
 
-
+        
         <h2>Central Limit Theorem Experiment</h2>
 
         <div class="card">
-        <h3>Rademacher and the Normal Distribution</h3>
+
+        <h3>Convergence to the Standard Normal Distribution</h3>
+
         <p>
-            Compare the empirical distribution
-            of normalized Rademacher sums with
-            the standard normal distribution.
+            The Central Limit Theorem describes the
+            limiting distribution of appropriately
+            normalized sums of independent random variables.
         </p>
+
+        <p>
+            For Rademacher increments, E[X] = 0 and
+            Var(X) = 1. Therefore, S(n)/sqrt(n)
+            converges in distribution to N(0,1)
+            as n increases.
+        </p>
+
+        <h3>Step 1 — Configure the CLT Experiment</h3>
+
+        <p>
+            Simulate independent Rademacher trajectories
+            for different numbers of systems.
+            Each attacker contributes one final
+            normalized score for each tested n.
+        </p>
+
+        <p>
+            Tested values of n:
+            <strong>10, 25, 50, 100, 250, 500, 1000</strong>
+        </p>
+
+        <label for="cltAttackers">
+            Number of Attackers (m):
+        </label>
+
+        <input
+            type="number"
+            id="cltAttackers"
+            min="100"
+            max="2000"
+            step="1"
+            value="1000"
+        >
+
+        <p>
+            <button id="runCltExperimentBtn">
+            Run CLT Experiment
+            </button>
+        </p>
+
+        <div
+            id="cltSummary"
+            class="analysis-summary stochastic-result"
+            aria-live="polite"></div>
+
+        <hr>
+
+        <h3>Step 2 — Normalized Score Distribution</h3>
+
+        <p>
+            Select a value of n to compare the empirical
+            distribution of S(n)/sqrt(n) with the
+            standard normal probability density.
+        </p>
+
+        <label for="cltSelectedN">
+            Number of Systems (n):
+        </label>
+
+        <select id="cltSelectedN" disabled>
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="250">250</option>
+            <option value="500">500</option>
+            <option value="1000" selected>1000</option>
+        </select>
+
+        <div class="chart-container">
+            <canvas id="cltDistributionChart"></canvas>
         </div>
+
+        <p>
+            The bars represent empirical probability
+            density estimates. The orange curve
+            represents the theoretical N(0,1) density.
+        </p>
+
+        <p>
+            The histogram uses bins of width 0.25
+            between -4 and +4. Observations outside
+            this range are counted separately.
+        </p>
+
+        <hr>
+
+        <h3>Step 3 — Empirical vs Theoretical Statistics</h3>
+
+        <p>
+            For the Rademacher model, the normalized
+            total has theoretical mean 0 and
+            theoretical variance 1 for every n.
+        </p>
+
+        <div class="accounts-table-wrapper">
+            <table class="crypto-comparison-table">
+            <thead>
+                <tr>
+                <th>Systems (n)</th>
+                <th>Empirical Mean</th>
+                <th>Empirical Variance</th>
+                <th>|Z| ≤ 1</th>
+                <th>|Z| ≤ 2</th>
+                </tr>
+            </thead>
+
+            <tbody id="cltResultsTableBody"></tbody>
+            </table>
+        </div>
+
+        <h3>Interpretation</h3>
+
+        <p>
+            As n increases, the distribution of
+            normalized Rademacher totals approaches
+            the shape of the standard normal distribution.
+        </p>
+
+        <p>
+            Under N(0,1), approximately 68.27% of values
+            lie between -1 and +1, and 95.45%
+            lie between -2 and +2.
+        </p>
+
+        <p>
+            Small values of n produce discrete
+            distributions, which can appear irregular.
+            Larger n generally provides a closer
+            approximation to the continuous
+            normal distribution.
+        </p>
+
+        <p>
+            Unlike S(n)/n, whose variance decreases
+            with n, the variance of S(n)/sqrt(n)
+            remains equal to 1.
+        </p>
+
+        <p class="wallet-note">
+            The Central Limit Theorem concerns
+            convergence in distribution, not
+            convergence of individual trajectories.
+            A finite simulation illustrates the
+            approximation but does not prove it.
+        </p>
+
+        </div>
+
 
         <h2>Variance and Scaling Analysis</h2>
 

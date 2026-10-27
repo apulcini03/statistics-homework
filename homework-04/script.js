@@ -903,3 +903,304 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+
+
+// HW 3 - Central Limit Theorem Experiment
+
+const CLT_SYSTEM_VALUES = [
+  10, 25, 50, 100, 250, 500, 1000
+];
+
+const CLT_BIN_WIDTH = 0.25;
+const CLT_MIN = -4;
+const CLT_MAX = 4;
+
+let cltExperimentData = null;
+let cltDistributionChartInstance = null;
+
+// Standard normal probability density function
+function cltNormalPdf(x) {
+  return Math.exp(-0.5 * x * x) /
+    Math.sqrt(2 * Math.PI);
+}
+
+// Generate Rademacher normalized sums
+function simulateCltExperiment(m) {
+  const results = new Map();
+
+  for (const n of CLT_SYSTEM_VALUES) {
+    results.set(n, []);
+  }
+
+  // Each attacker follows a single trajectory
+  // up to the largest tested number of systems.
+  for (let attacker = 0; attacker < m; attacker++) {
+    let score = 0;
+
+    for (let step = 1; step <= 1000; step++) {
+      score += generateIncrement("rademacher", 0.5);
+
+      if (results.has(step)) {
+        results.get(step).push(
+          score / Math.sqrt(step)
+        );
+      }
+    }
+  }
+
+  return results;
+}
+
+// Empirical density histogram for normalized scores
+function buildCltHistogram(values) {
+  const binCount =
+    Math.round((CLT_MAX - CLT_MIN) / CLT_BIN_WIDTH);
+
+  const counts = Array(binCount).fill(0);
+  let outsideCount = 0;
+
+  for (const value of values) {
+    if (value < CLT_MIN || value >= CLT_MAX) {
+      outsideCount++;
+      continue;
+    }
+
+    const index = Math.floor(
+      (value - CLT_MIN) / CLT_BIN_WIDTH
+    );
+
+    counts[index]++;
+  }
+
+  const centers = Array.from(
+    { length: binCount },
+    (_, i) => CLT_MIN + (i + 0.5) * CLT_BIN_WIDTH
+  );
+
+  // Divide by ALL m observations, not only
+  // those inside the displayed interval.
+  const density = counts.map(
+    count => count / (values.length * CLT_BIN_WIDTH)
+  );
+
+  return {
+    centers,
+    density,
+    outsideCount
+  };
+}
+
+// Summarize a normalized-score sample
+function cltStatistics(values) {
+  const m = values.length;
+
+  return {
+    mean: stochasticMean(values),
+    variance: stochasticVariance(values),
+
+    withinOne: values.filter(
+      value => Math.abs(value) <= 1
+    ).length / m,
+
+    withinTwo: values.filter(
+      value => Math.abs(value) <= 2
+    ).length / m
+  };
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const mInput = document.getElementById(
+    "cltAttackers"
+  );
+
+  const runButton = document.getElementById(
+    "runCltExperimentBtn"
+  );
+
+  const nSelect = document.getElementById(
+    "cltSelectedN"
+  );
+
+  const summary = document.getElementById(
+    "cltSummary"
+  );
+
+  const tableBody = document.getElementById(
+    "cltResultsTableBody"
+  );
+
+  function updateCltChart() {
+    if (!cltExperimentData) {
+      return;
+    }
+
+    const n = Number(nSelect.value);
+    const values = cltExperimentData.get(n);
+
+    const histogram = buildCltHistogram(values);
+
+    const theoreticalDensity =
+      histogram.centers.map(cltNormalPdf);
+
+    if (cltDistributionChartInstance) {
+      cltDistributionChartInstance.destroy();
+    }
+
+    cltDistributionChartInstance = new Chart(
+      document.getElementById(
+        "cltDistributionChart"
+      ),
+      {
+        data: {
+          labels: histogram.centers.map(
+            value => value.toFixed(2)
+          ),
+          datasets: [
+            {
+              type: "bar",
+              label: "Empirical Density",
+              data: histogram.density,
+              backgroundColor: "#2563eb",
+              hoverBackgroundColor: "#1d4ed8",
+              order: 2,
+              barPercentage: 1,
+              categoryPercentage: 1
+            },
+            {
+              type: "line",
+              label: "Standard Normal N(0,1)",
+              data: theoreticalDensity,
+              borderColor: "#f59e0b",
+              backgroundColor: "#f59e0b",
+              borderWidth: 3,
+              pointRadius: 0,
+              tension: 0.25,
+              order: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: {
+            title: {
+              display: true,
+              text:
+                `Rademacher CLT — n = ${n}, ` +
+                `m = ${values.length}`
+            },
+            tooltip: {
+              enabled: true
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: "Normalized Score S(n)/sqrt(n)"
+              },
+              ticks: {
+                maxTicksLimit: 9,
+                maxRotation: 0
+              }
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Probability Density"
+              }
+            }
+          }
+        }
+      }
+    );
+
+    const stats = cltStatistics(values);
+
+    summary.textContent =
+      `Model: Rademacher\n` +
+      `Attackers (m): ${values.length}\n` +
+      `Systems currently displayed: ${n}\n\n` +
+      `Empirical mean: ${stats.mean.toFixed(4)}\n` +
+      `Theoretical mean: 0\n\n` +
+      `Empirical variance: ${stats.variance.toFixed(4)}\n` +
+      `Theoretical variance: 1\n\n` +
+      `P(|Z| <= 1): ${(stats.withinOne * 100).toFixed(2)}%\n` +
+      `Normal reference: approximately 68.27%\n\n` +
+      `P(|Z| <= 2): ${(stats.withinTwo * 100).toFixed(2)}%\n` +
+      `Normal reference: approximately 95.45%\n\n` +
+      `Observations outside [-4, 4): ` +
+      `${histogram.outsideCount}`;
+  }
+
+  runButton.addEventListener("click", () => {
+    const raw = mInput.value.trim();
+    const m = Number(raw);
+
+    if (
+      raw === "" ||
+      !Number.isInteger(m) ||
+      m < 100 ||
+      m > 2000
+    ) {
+      summary.textContent =
+        "Enter an integer number of attackers " +
+        "between 100 and 2000.";
+      return;
+    }
+
+    runButton.disabled = true;
+    nSelect.disabled = true;
+
+    summary.textContent =
+      "Generating Rademacher trajectories...";
+
+    try {
+      cltExperimentData = simulateCltExperiment(m);
+
+      tableBody.replaceChildren();
+
+      for (const n of CLT_SYSTEM_VALUES) {
+        const values = cltExperimentData.get(n);
+        const stats = cltStatistics(values);
+
+        const row = document.createElement("tr");
+
+        const cells = [
+          n,
+          stats.mean.toFixed(4),
+          stats.variance.toFixed(4),
+          `${(stats.withinOne * 100).toFixed(2)}%`,
+          `${(stats.withinTwo * 100).toFixed(2)}%`
+        ];
+
+        for (const value of cells) {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          row.appendChild(cell);
+        }
+
+        tableBody.appendChild(row);
+      }
+
+      nSelect.disabled = false;
+      nSelect.value = "1000";
+
+      updateCltChart();
+
+    } catch (error) {
+      summary.textContent =
+        "CLT experiment failed. Check the console.";
+      console.error(error);
+
+    } finally {
+      runButton.disabled = false;
+    }
+  });
+
+  // Change n without generating new samples
+  nSelect.addEventListener("change", updateCltChart);
+});
+
