@@ -1477,3 +1477,319 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+
+
+// HW 3 - Systems and Attackers Experiment
+
+const SYSTEMS_EXPERIMENT_N = [25, 100, 500, 1000];
+const SYSTEMS_EXPERIMENT_M = [50, 100, 250, 500, 1000];
+
+let systemsEffectChartInstance = null;
+let attackersEffectChartInstance = null;
+
+// Seeded pseudo-random generator for reproducibility
+function hw3SeededRandom(seed) {
+  let state = seed >>> 0;
+
+  return function () {
+    state = (
+      Math.imul(1664525, state) + 1013904223
+    ) >>> 0;
+
+    return state / 4294967296;
+  };
+}
+
+// Generate all observations using nested samples.
+// Smaller n and m reuse subsets of larger samples.
+function runSystemsAttackersSimulation(model, p) {
+  const random = hw3SeededRandom(2026);
+  const nMax = 1000;
+  const mMax = 1000;
+
+  const nSet = new Set(SYSTEMS_EXPERIMENT_N);
+
+  const scoresByN = new Map(
+    SYSTEMS_EXPERIMENT_N.map(n => [n, []])
+  );
+
+  for (let attacker = 0; attacker < mMax; attacker++) {
+    let score = 0;
+
+    for (let step = 1; step <= nMax; step++) {
+      const u = random();
+
+      const increment = model === "bernoulli"
+        ? (u < p ? 1 : 0)
+        : (u < 0.5 ? 1 : -1);
+
+      score += increment;
+
+      if (nSet.has(step)) {
+        scoresByN.get(step).push(score);
+      }
+    }
+  }
+
+  const parameters = stochasticParameters(model, p);
+  const mu = parameters.mean;
+  const sigma2 = parameters.variance;
+
+  const rows = [];
+
+  for (const n of SYSTEMS_EXPERIMENT_N) {
+    const scores = scoresByN.get(n);
+
+    let aggregate = 0;
+    let previousM = 0;
+
+    for (const m of SYSTEMS_EXPERIMENT_M) {
+      // Add only the newly included attackers
+      for (let j = previousM; j < m; j++) {
+        aggregate += scores[j];
+      }
+
+      previousM = m;
+
+      const attempts = n * m;
+      const expectedAggregate = attempts * mu;
+      const pooledAverage = aggregate / attempts;
+
+      const standardError = Math.sqrt(
+        sigma2 / attempts
+      );
+
+      rows.push({
+        n,
+        m,
+        attempts,
+        aggregate,
+        expectedAggregate,
+        pooledAverage,
+        standardError,
+        absoluteError: Math.abs(pooledAverage - mu)
+      });
+    }
+  }
+
+  return { rows, mu, sigma2, model, p };
+}
+
+function drawSystemsAttackersChart(
+  canvasId,
+  oldChart,
+  datasets,
+  title,
+  yTitle
+) {
+  if (oldChart) {
+    oldChart.destroy();
+  }
+
+  return new Chart(
+    document.getElementById(canvasId),
+    {
+      type: "line",
+      data: { datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        parsing: false,
+        plugins: {
+          title: {
+            display: true,
+            text: title
+          },
+          tooltip: {
+            enabled: true
+          }
+        },
+        scales: {
+          x: {
+            type: "linear",
+            title: {
+              display: true,
+              text: canvasId === "systemsEffectChart"
+                ? "Number of Systems (n)"
+                : "Number of Attackers (m)"
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: yTitle
+            }
+          }
+        }
+      }
+    }
+  );
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const button = document.getElementById(
+    "runSystemsAttackersBtn"
+  );
+
+  const summary = document.getElementById(
+    "systemsAttackersSummary"
+  );
+
+  const tableBody = document.getElementById(
+    "systemsAttackersTableBody"
+  );
+
+  button.addEventListener("click", () => {
+    const baseSimulation = window.hw3Simulation;
+
+    if (!baseSimulation) {
+      summary.textContent =
+        "Run the main stochastic simulator first " +
+        "to select the probability model.";
+      return;
+    }
+
+    button.disabled = true;
+    summary.textContent =
+      "Simulating systems and attackers...";
+
+    try {
+      const { model, p } = baseSimulation;
+
+      const experiment = runSystemsAttackersSimulation(
+        model, p
+      );
+
+      const { rows, mu, sigma2 } = experiment;
+
+      const finalRow = rows.find(
+        row => row.n === 1000 && row.m === 1000
+      );
+
+      summary.textContent =
+        `Model: ${model}\n` +
+        `Probability parameter: ${p}\n` +
+        `E[X]: ${mu.toFixed(4)}\n` +
+        `Var(X): ${sigma2.toFixed(4)}\n\n` +
+        `Systems tested: ` +
+        `${SYSTEMS_EXPERIMENT_N.join(", ")}\n` +
+        `Attackers tested: ` +
+        `${SYSTEMS_EXPERIMENT_M.join(", ")}\n` +
+        `Combinations analyzed: ${rows.length}\n\n` +
+        `Largest configuration:\n` +
+        `n = 1000, m = 1000\n` +
+        `Total attempts: ${finalRow.attempts}\n` +
+        `Aggregate score: ${finalRow.aggregate}\n` +
+        `Expected aggregate: ` +
+        `${finalRow.expectedAggregate.toFixed(2)}\n` +
+        `Pooled average: ` +
+        `${finalRow.pooledAverage.toFixed(6)}\n` +
+        `Theoretical SE: ` +
+        `${finalRow.standardError.toFixed(6)}\n\n` +
+        `Fixed random seed: 2026`;
+
+      // Populate all 20 combinations
+      tableBody.replaceChildren();
+
+      for (const row of rows) {
+        const tr = document.createElement("tr");
+
+        const cells = [
+          row.n,
+          row.m,
+          row.attempts,
+          row.aggregate,
+          row.expectedAggregate.toFixed(2),
+          row.pooledAverage.toFixed(6),
+          row.standardError.toFixed(6)
+        ];
+
+        for (const value of cells) {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        }
+
+        tableBody.appendChild(tr);
+      }
+
+      // Chart 1: increasing n with m = 500
+      const byN = rows.filter(row => row.m === 500);
+
+      systemsEffectChartInstance =
+        drawSystemsAttackersChart(
+          "systemsEffectChart",
+          systemsEffectChartInstance,
+          [
+            {
+              label: "Empirical Pooled Average",
+              data: byN.map(row => ({
+                x: row.n,
+                y: row.pooledAverage
+              })),
+              borderColor: "#2563eb",
+              backgroundColor: "#2563eb",
+              pointRadius: 5,
+              tension: 0.15
+            },
+            {
+              label: "Theoretical Mean",
+              data: byN.map(row => ({
+                x: row.n,
+                y: mu
+              })),
+              borderColor: "#f59e0b",
+              borderDash: [7, 5],
+              pointRadius: 0
+            }
+          ],
+          "Effect of Increasing Systems (m = 500)",
+          "Mean Score per Attempt"
+        );
+
+      // Chart 2: increasing m with n = 500
+      const byM = rows.filter(row => row.n === 500);
+
+      attackersEffectChartInstance =
+        drawSystemsAttackersChart(
+          "attackersEffectChart",
+          attackersEffectChartInstance,
+          [
+            {
+              label: "Absolute Estimation Error",
+              data: byM.map(row => ({
+                x: row.m,
+                y: row.absoluteError
+              })),
+              borderColor: "#2563eb",
+              backgroundColor: "#2563eb",
+              pointRadius: 5,
+              tension: 0.15
+            },
+            {
+              label: "Theoretical Standard Error",
+              data: byM.map(row => ({
+                x: row.m,
+                y: row.standardError
+              })),
+              borderColor: "#f59e0b",
+              borderDash: [7, 5],
+              pointRadius: 0
+            }
+          ],
+          "Effect of Increasing Attackers (n = 500)",
+          "Estimation Error / Standard Error"
+        );
+
+    } catch (error) {
+      summary.textContent =
+        "Systems and attackers experiment failed.";
+      console.error(error);
+
+    } finally {
+      button.disabled = false;
+    }
+  });
+});

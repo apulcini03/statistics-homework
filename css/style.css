@@ -925,3 +925,26 @@ button:disabled {
     font-size: 0.82rem;
   }
 }
+
+
+
+/* HW 3 - Systems and Attackers Experiment */
+
+#runSystemsAttackersBtn {
+  margin-bottom: 16px;
+}
+
+#systemsAttackersTableBody td {
+  font-variant-numeric: tabular-nums;
+}
+
+#systemsAttackersTableBody td:first-child,
+#systemsAttackersTableBody td:nth-child(2) {
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  #systemsAttackersSummary {
+    font-size: 0.82rem;
+  }
+}

@@ -1067,18 +1067,174 @@
 
         </div>
 
-
+        
         <h2>Systems and Attackers Experiment</h2>
 
         <div class="card">
-        <h3>Effect of n and m</h3>
+
+        <h3>Effect of System Size and Number of Attackers</h3>
+
         <p>
-            Explore how the number of systems
-            changes score distributions and how
-            the number of attackers affects
-            their empirical estimation.
+            This experiment studies how the number of
+            systems n and attackers m affect the
+            aggregate penetration score and the
+            accuracy of empirical estimates.
         </p>
+
+        <p>
+            The aggregate score T(n,m) is the sum
+            of the final scores of all m attackers.
+            The pooled average is T(n,m)/(n*m).
+        </p>
+
+        <h3>Step 1 — Configure the Experiment</h3>
+
+        <p>
+            The experiment uses the model and
+            probability selected in the main simulator.
+        </p>
+
+        <p>
+            System sizes:
+            <strong>25, 100, 500, 1000</strong>
+        </p>
+
+        <p>
+            Attacker counts:
+            <strong>50, 100, 250, 500, 1000</strong>
+        </p>
+
+        <p>
+            The experiment uses a fixed pseudo-random
+            seed for reproducibility. All tested sizes
+            share nested samples from the same
+            simulated trajectories.
+        </p>
+
+        <button id="runSystemsAttackersBtn">
+            Run Systems and Attackers Experiment
+        </button>
+
+        <div
+            id="systemsAttackersSummary"
+            class="analysis-summary stochastic-result"
+            aria-live="polite"></div>
+
+        <hr>
+
+        <h3>Step 2 — Effect of Increasing n</h3>
+
+        <p>
+            Holding m = 500 attackers fixed, compare
+            the estimated mean score per attempt
+            for increasing system sizes.
+        </p>
+
+        <p>
+            The dashed orange line represents
+            the theoretical mean E[X].
+        </p>
+
+        <div class="chart-container">
+            <canvas id="systemsEffectChart"></canvas>
         </div>
+
+        <hr>
+
+        <h3>Step 3 — Effect of Increasing m</h3>
+
+        <p>
+            Holding n = 500 systems fixed, examine
+            the absolute estimation error as the
+            number of attackers increases.
+        </p>
+
+        <p>
+            The orange dashed curve represents
+            the theoretical standard error of the
+            pooled mean. It is a reference scale,
+            not an upper bound on the error.
+        </p>
+
+        <div class="chart-container">
+            <canvas id="attackersEffectChart"></canvas>
+        </div>
+
+        <hr>
+
+        <h3>Step 4 — Aggregate Penetration Results</h3>
+
+        <p>
+            Compare the observed aggregate score,
+            its theoretical expectation and the
+            pooled average across all combinations
+            of n and m.
+        </p>
+
+        <div class="accounts-table-wrapper">
+            <table class="crypto-comparison-table">
+            <thead>
+                <tr>
+                <th>n</th>
+                <th>m</th>
+                <th>Total Attempts</th>
+                <th>Aggregate Score</th>
+                <th>Expected Aggregate</th>
+                <th>Pooled Average</th>
+                <th>Theoretical SE</th>
+                </tr>
+            </thead>
+            <tbody id="systemsAttackersTableBody"></tbody>
+            </table>
+        </div>
+
+        <h3>Interpretation</h3>
+
+        <p>
+            In the Bernoulli model, the aggregate
+            score counts successful attempts.
+            Its expected value is n*m*p.
+        </p>
+
+        <p>
+            In the Rademacher model, the aggregate
+            score is a signed sum with theoretical
+            mean zero. Its standard deviation
+            increases as sqrt(n*m).
+        </p>
+
+        <p>
+            Increasing the number of systems
+            changes the length and variability
+            of each attacker's trajectory.
+        </p>
+
+        <p>
+            Increasing the number of attackers
+            provides more independent trajectories
+            and increases the aggregate number
+            of observations.
+        </p>
+
+        <p>
+            The pooled average estimates E[X].
+            Its theoretical variance is
+            sigma²/(n*m), so the estimation
+            uncertainty decreases as the
+            number of observations increases.
+        </p>
+
+        <p class="wallet-note">
+            The analysis assumes homogeneous,
+            independent increments across attackers
+            and systems. In real cybersecurity
+            environments, shared vulnerabilities,
+            coordinated attackers and dependencies
+            may violate these assumptions.
+        </p>
+
+        </div>
+
 
         <h2>Results and Conclusions</h2>
 
