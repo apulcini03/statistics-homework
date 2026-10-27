@@ -551,3 +551,355 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+
+
+// HW 3 - Law of Large Numbers Experiment
+
+let llnTrajectoriesChartInstance = null;
+let llnProbabilityChartInstance = null;
+
+function llnCheckpoints(maxN) {
+  const proposed = [
+    10, 25, 50, 100, 250, 500,
+    750, 1000, 1500, 2000
+  ];
+
+  return [...new Set([
+    ...proposed.filter(n => n <= maxN),
+    maxN
+  ])].sort((a, b) => a - b);
+}
+
+function runLlnSimulation(maxN, m, model, p, epsilon) {
+  const checkpoints = llnCheckpoints(maxN);
+  const checkpointSet = new Set(checkpoints);
+
+  const averagesByN = new Map(
+    checkpoints.map(n => [n, []])
+  );
+
+  const displayedTrajectories = [];
+  const mu = stochasticParameters(model, p).mean;
+
+  for (let attacker = 0; attacker < m; attacker++) {
+    let total = 0;
+
+    const showTrajectory = attacker < 15;
+    const trajectory = showTrajectory
+      ? [{ x: 1, y: null }]
+      : null;
+
+    for (let step = 1; step <= maxN; step++) {
+      total += generateIncrement(model, p);
+
+      const average = total / step;
+
+      if (showTrajectory) {
+        trajectory.push({
+          x: step,
+          y: average
+        });
+      }
+
+      if (checkpointSet.has(step)) {
+        averagesByN.get(step).push(average);
+      }
+    }
+
+    if (showTrajectory) {
+      // Remove the placeholder point.
+      displayedTrajectories.push(
+        trajectory.slice(1)
+      );
+    }
+  }
+
+  const sigma2 =
+    stochasticParameters(model, p).variance;
+
+  const results = checkpoints.map(n => {
+    const averages = averagesByN.get(n);
+
+    const deviations = averages.filter(
+      average => Math.abs(average - mu) > epsilon
+    ).length;
+
+    const theoreticalVariance = sigma2 / n;
+
+    const chebyshevBound = Math.min(
+      1,
+      theoreticalVariance / (epsilon ** 2)
+    );
+
+    return {
+      n,
+      empiricalMean: stochasticMean(averages),
+      empiricalVariance: stochasticVariance(averages),
+      theoreticalVariance,
+      deviationRate: deviations / m,
+      chebyshevBound
+    };
+  });
+
+  return {
+    model,
+    p,
+    mu,
+    maxN,
+    m,
+    epsilon,
+    results,
+    displayedTrajectories
+  };
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const nInput = document.getElementById("llnMaxSystems");
+  const mInput = document.getElementById("llnAttackers");
+  const epsilonInput = document.getElementById("llnEpsilon");
+
+  const button = document.getElementById(
+    "runLlnExperimentBtn"
+  );
+
+  const summary = document.getElementById(
+    "llnSummary"
+  );
+
+  const tableBody = document.getElementById(
+    "llnTableBody"
+  );
+
+  button.addEventListener("click", () => {
+    const baseSimulation = window.hw3Simulation;
+
+    if (!baseSimulation) {
+      summary.textContent =
+        "Run the stochastic simulator first " +
+        "to select the probability model.";
+      return;
+    }
+
+    const n = Number(nInput.value);
+    const m = Number(mInput.value);
+    const epsilon = Number(epsilonInput.value);
+
+    if (
+      nInput.value.trim() === "" ||
+      mInput.value.trim() === "" ||
+      epsilonInput.value.trim() === "" ||
+      !Number.isInteger(n) || n < 100 || n > 2000 ||
+      !Number.isInteger(m) || m < 50 || m > 1000 ||
+      !Number.isFinite(epsilon) ||
+      epsilon < 0.01 || epsilon > 1
+    ) {
+      summary.textContent =
+        "Use n = 100–2000, m = 50–1000, " +
+        "and epsilon = 0.01–1.";
+      return;
+    }
+
+    button.disabled = true;
+    summary.textContent =
+      "Simulating convergence of sample averages...";
+
+    try {
+      const { model, p } = baseSimulation;
+
+      const experiment = runLlnSimulation(
+        n, m, model, p, epsilon
+      );
+
+      const last = experiment.results.at(-1);
+
+      summary.textContent =
+        `Model: ${model}\n` +
+        `Probability parameter: ${p}\n` +
+        `Maximum systems: ${n}\n` +
+        `Attackers: ${m}\n` +
+        `Deviation threshold: ${epsilon}\n` +
+        `Expected increment E[X]: ` +
+        `${experiment.mu.toFixed(4)}\n\n` +
+        `At n = ${last.n}:\n` +
+        `Empirical mean of averages: ` +
+        `${last.empiricalMean.toFixed(4)}\n` +
+        `Empirical variance: ` +
+        `${last.empiricalVariance.toFixed(6)}\n` +
+        `Theoretical variance: ` +
+        `${last.theoreticalVariance.toFixed(6)}\n` +
+        `Empirical deviation rate: ` +
+        `${(last.deviationRate * 100).toFixed(2)}%`;
+
+      // Populate comparison table
+      tableBody.replaceChildren();
+
+      for (const row of experiment.results) {
+        const tr = document.createElement("tr");
+
+        const values = [
+          row.n,
+          row.empiricalMean.toFixed(4),
+          row.empiricalVariance.toFixed(6),
+          row.theoreticalVariance.toFixed(6),
+          `${(row.deviationRate * 100).toFixed(2)}%`
+        ];
+
+        values.forEach(value => {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        });
+
+        tableBody.appendChild(tr);
+      }
+
+      // Chart 1 - Running averages
+      if (llnTrajectoriesChartInstance) {
+        llnTrajectoriesChartInstance.destroy();
+      }
+
+      const trajectoryDatasets =
+        experiment.displayedTrajectories.map(
+          (points, index) => ({
+            label: `Attacker ${index + 1}`,
+            data: points,
+            borderColor:
+              `hsl(${index * 360 / 15}, 65%, 45%)`,
+            borderWidth: 1.2,
+            pointRadius: 0,
+            tension: 0
+          })
+        );
+
+      trajectoryDatasets.push({
+        label: "Theoretical mean",
+        data: [
+          { x: 1, y: experiment.mu },
+          { x: n, y: experiment.mu }
+        ],
+        borderColor: "#f59e0b",
+        borderWidth: 3,
+        borderDash: [8, 5],
+        pointRadius: 0
+      });
+
+      llnTrajectoriesChartInstance = new Chart(
+        document.getElementById(
+          "llnTrajectoriesChart"
+        ),
+        {
+          type: "line",
+          data: { datasets: trajectoryDatasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            parsing: false,
+            plugins: {
+              title: {
+                display: true,
+                text: "Running Averages S(k)/k"
+              },
+              legend: {
+                display: false
+              }
+            },
+            scales: {
+              x: {
+                type: "linear",
+                title: {
+                  display: true,
+                  text: "Systems (k)"
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: "Average Score"
+                }
+              }
+            }
+          }
+        }
+      );
+
+      // Chart 2 - Empirical probability of deviation
+      if (llnProbabilityChartInstance) {
+        llnProbabilityChartInstance.destroy();
+      }
+
+      llnProbabilityChartInstance = new Chart(
+        document.getElementById(
+          "llnProbabilityChart"
+        ),
+        {
+          type: "line",
+          data: {
+            datasets: [
+              {
+                label: "Empirical Deviation Rate",
+                data: experiment.results.map(r => ({
+                  x: r.n,
+                  y: r.deviationRate * 100
+                })),
+                borderColor: "#2563eb",
+                backgroundColor: "#2563eb",
+                pointRadius: 5,
+                tension: 0.15
+              },
+              {
+                label: "Chebyshev Upper Bound",
+                data: experiment.results.map(r => ({
+                  x: r.n,
+                  y: r.chebyshevBound * 100
+                })),
+                borderColor: "#f59e0b",
+                borderDash: [7, 5],
+                pointRadius: 0
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            parsing: false,
+            plugins: {
+              title: {
+                display: true,
+                text: "Convergence in Probability"
+              }
+            },
+            scales: {
+              x: {
+                type: "linear",
+                title: {
+                  display: true,
+                  text: "Number of Systems (n)"
+                }
+              },
+              y: {
+                min: 0,
+                max: 100,
+                title: {
+                  display: true,
+                  text: "Deviation Probability (%)"
+                }
+              }
+            }
+          }
+        }
+      );
+
+    } catch (error) {
+      summary.textContent =
+        "LLN experiment failed. Check the console.";
+      console.error(error);
+
+    } finally {
+      button.disabled = false;
+    }
+  });
+});
+

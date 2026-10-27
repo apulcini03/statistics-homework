@@ -577,17 +577,171 @@
 
         </div>
 
-
+        
+        
         <h2>Law of Large Numbers Experiment</h2>
 
         <div class="card">
-        <h3>Convergence of Average Scores</h3>
+
+        <h3>Convergence of Average Penetration Scores</h3>
+
         <p>
-            Examine how the average penetration
-            score approaches its theoretical
-            expected value as n increases.
+            The Law of Large Numbers states that the
+            average of independent and identically
+            distributed increments converges in
+            probability to its theoretical mean.
         </p>
+
+        <p>
+            For Bernoulli increments, the limiting mean
+            is p. For Rademacher increments, it is zero.
+        </p>
+
+        <h3>Step 1 — Configure the LLN Experiment</h3>
+
+        <p>
+            The experiment uses the probability model
+            selected in the stochastic simulator.
+            Run the simulator first to select the model
+            and, for Bernoulli, the success probability.
+        </p>
+
+        <label for="llnMaxSystems">
+            Maximum Number of Systems (n):
+        </label>
+
+        <input
+            type="number"
+            id="llnMaxSystems"
+            min="100"
+            max="2000"
+            step="1"
+            value="1000"
+        >
+
+        <label for="llnAttackers">
+            Number of Attackers (m):
+        </label>
+
+        <input
+            type="number"
+            id="llnAttackers"
+            min="50"
+            max="1000"
+            step="1"
+            value="300"
+        >
+
+        <label for="llnEpsilon">
+            Deviation Threshold (epsilon):
+        </label>
+
+        <input
+            type="number"
+            id="llnEpsilon"
+            min="0.01"
+            max="1"
+            step="0.01"
+            value="0.1"
+        >
+
+        <p>
+            <button id="runLlnExperimentBtn">
+            Run LLN Experiment
+            </button>
+        </p>
+
+        <div
+            id="llnSummary"
+            class="analysis-summary stochastic-result"
+            aria-live="polite"></div>
+
+        <hr>
+
+        <h3>Step 2 — Average Score Trajectories</h3>
+
+        <p>
+            Each line represents the cumulative average
+            S(k)/k for one attacker. The dashed horizontal
+            line represents the theoretical expectation E[X].
+        </p>
+
+        <p>
+            Up to 15 attacker trajectories are displayed.
+            All m attackers contribute to the statistics.
+        </p>
+
+        <div class="chart-container">
+            <canvas id="llnTrajectoriesChart"></canvas>
         </div>
+
+        <hr>
+
+        <h3>Step 3 — Convergence in Probability</h3>
+
+        <p>
+            For each tested value of n, we estimate the
+            proportion of attackers whose average differs
+            from the theoretical mean by more than epsilon.
+        </p>
+
+        <p>
+            The orange dashed curve represents the
+            Chebyshev upper bound, capped at 100%.
+            It is a theoretical bound, not the exact
+            probability of deviation.
+        </p>
+
+        <div class="chart-container">
+            <canvas id="llnProbabilityChart"></canvas>
+        </div>
+
+        <h3>Empirical Results</h3>
+
+        <div class="accounts-table-wrapper">
+            <table class="crypto-comparison-table">
+            <thead>
+                <tr>
+                <th>Systems (n)</th>
+                <th>Mean of Averages</th>
+                <th>Empirical Variance</th>
+                <th>Theoretical Variance</th>
+                <th>P(|Average - Mean| &gt; epsilon)</th>
+                </tr>
+            </thead>
+            <tbody id="llnTableBody"></tbody>
+            </table>
+        </div>
+
+        <h3>Interpretation</h3>
+
+        <p>
+            As the number of systems increases, the
+            average penetration score tends to
+            concentrate around its expected value.
+        </p>
+
+        <p>
+            The theoretical variance decreases as
+            1/n. Consequently, the probability of
+            a fixed deviation approaches zero.
+        </p>
+
+        <p>
+            Increasing the number of attackers improves
+            estimation accuracy but does not change the
+            theoretical distribution for a fixed n.
+        </p>
+
+        <p class="wallet-note">
+            This finite simulation illustrates convergence
+            in probability; it cannot prove the Law of
+            Large Numbers. Empirical deviation rates
+            may fluctuate between runs.
+        </p>
+
+        </div>
+
 
         <h2>Central Limit Theorem Experiment</h2>
 
