@@ -1,0 +1,379 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>HW 4 — Welford & Sampling Statistics</title>
+
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+  <header>
+    <h1>HW 4 — Welford & Sampling Statistics</h1>
+    <p>Statistics for Cybersecurity</p>
+    <p>Alberto Pulcini — 2046542</p>
+    <p>Academic Year 2026/2027</p>
+  </header>
+
+  <main>
+
+    <a href="../index.html" class="homework-button">
+      ← Back to homepage
+    </a>
+
+    <section class="homework-section">
+
+      <h2>Assignment</h2>
+
+      <div class="card">
+
+        <h3>Exercise 1 — Welford's Recurrence Formulas</h3>
+
+        <p>
+          Derive and implement Welford's recurrence
+          formulas for the sum of squared deviations
+          and the variance, starting from Knuth's
+          recurrence formula for the mean.
+        </p>
+
+        <p>
+          Demonstrate how mean and variance can be
+          updated sequentially without storing
+          all previous observations.
+        </p>
+
+        <h3>Exercise 2 — Sampling Mean and Variance</h3>
+
+        <p>
+          Extend the stochastic penetration model
+          by assigning each penetration attempt
+          an integer score between 0 and 10,
+          drawn from a fixed probability distribution.
+        </p>
+
+        <p>
+          Simulate m hackers attempting to penetrate
+          n systems. For each hacker, calculate
+          the sample mean and sample variance
+          using Welford's recurrence formulas.
+        </p>
+
+        <p>
+          Compare the averages of these estimates
+          with their theoretical population
+          parameters and investigate how
+          their variability changes as n increases.
+        </p>
+
+      </div>
+
+      <h2>Theoretical Background</h2>
+
+      <div class="card">
+
+        <h3>Population and Sample Statistics</h3>
+
+        <p>
+          A population is described by a probability
+          distribution with theoretical mean mu
+          and variance sigma squared.
+        </p>
+
+        <p>
+          A sample consists of n observations
+          drawn from that population.
+          Its sample mean and sample variance
+          are used to estimate the corresponding
+          population parameters.
+        </p>
+
+        <p>
+          <strong>Population mean:</strong>
+          mu = E[X].
+        </p>
+
+        <p>
+          <strong>Population variance:</strong>
+          sigma² = E[(X - mu)²].
+        </p>
+
+        <h3>Sample Mean</h3>
+
+        <p>
+          For observations x(1), ..., x(n),
+          the sample mean is:
+        </p>
+
+        <p>
+          <strong>
+            x_bar = (1/n) * sum(x(i)).
+          </strong>
+        </p>
+
+        <p>
+          Under independent and identically
+          distributed sampling, the sample mean
+          is an unbiased estimator of mu.
+        </p>
+
+        <p>
+          Its theoretical variance is:
+        </p>
+
+        <p>
+          <strong>
+            Var(x_bar) = sigma² / n.
+          </strong>
+        </p>
+
+        <h3>Sample Variance</h3>
+
+        <p>
+          The sample variance measures the
+          dispersion of observations around
+          their sample mean.
+        </p>
+
+        <p>
+          The unbiased sample variance is:
+        </p>
+
+        <p>
+          <strong>
+            s² = sum((x(i) - x_bar)²) / (n - 1).
+          </strong>
+        </p>
+
+        <p>
+          The denominator n - 1 is known as
+          Bessel's correction. For IID observations
+          with finite variance, this estimator
+          satisfies E[s²] = sigma².
+        </p>
+
+        <p>
+          Sample variance is defined for
+          at least two observations.
+        </p>
+
+        <h3>Online Algorithms</h3>
+
+        <p>
+          An online algorithm processes observations
+          sequentially, updating its statistics
+          as new data arrives.
+        </p>
+
+        <p>
+          Knuth's recurrence updates the running
+          mean without storing the complete sample.
+          Welford's method extends this idea
+          to the sum of squared deviations
+          and sample variance.
+        </p>
+
+        <p>
+          These methods are particularly useful
+          for streaming data and large datasets,
+          where storing all observations
+          may be unnecessary or expensive.
+        </p>
+
+        <h3>Inferential Statistics</h3>
+
+        <p>
+          Inferential statistics uses sample data
+          to estimate unknown population properties
+          and quantify uncertainty.
+        </p>
+
+        <p>
+          By repeating the sampling experiment,
+          we can study the sampling distributions
+          of the mean and variance estimators.
+        </p>
+
+        <p>
+          Their averages and variability help
+          evaluate estimator bias, precision
+          and consistency.
+        </p>
+
+      </div>
+
+      <h2>Exercise 1 — Welford's Recurrence Formulas</h2>
+
+      <div class="card">
+
+        <h3>Mathematical Derivation</h3>
+
+        <p>
+          Derive the recurrence formulas for
+          the running mean, the sum of squared
+          deviations and the sample variance.
+        </p>
+
+        <p>
+          The derivation will be developed
+          step by step in this section.
+        </p>
+
+        <hr>
+
+        <h3>Interactive Welford Algorithm</h3>
+
+        <p>
+          Process a sequence of observations
+          one value at a time and display
+          the updated mean, sum of squares
+          and sample variance.
+        </p>
+
+        <p>
+          The interactive implementation
+          will be added here.
+        </p>
+
+      </div>
+
+      <h2>Exercise 2 — Sampling Mean and Variance</h2>
+
+      <div class="card">
+
+        <h3>Penetration Score Distribution</h3>
+
+        <p>
+          Each penetration attempt produces
+          an integer score between 0 and 10.
+        </p>
+
+        <p>
+          We use a discrete uniform distribution
+          in which all eleven values have
+          equal probability:
+        </p>
+
+        <p>
+          <strong>
+            P(X = k) = 1/11,
+            for k = 0, 1, ..., 10.
+          </strong>
+        </p>
+
+        <p>
+          The theoretical population parameters are:
+        </p>
+
+        <p>
+          <strong>
+            Population mean: mu = 5.
+          </strong>
+        </p>
+
+        <p>
+          <strong>
+            Population variance: sigma² = 10.
+          </strong>
+        </p>
+
+        <p>
+          These fixed reference values allow
+          us to evaluate the accuracy of
+          the sample estimators.
+        </p>
+
+        <hr>
+
+        <h3>Sampling Simulation</h3>
+
+        <p>
+          Simulate m independent hackers,
+          each attempting n systems and
+          receiving one score per attempt.
+        </p>
+
+        <p>
+          For each hacker, apply Welford's
+          algorithm to estimate the sample
+          mean and unbiased sample variance.
+        </p>
+
+        <p>
+          The interactive simulator
+          will be implemented here.
+        </p>
+
+        <hr>
+
+        <h3>Sampling Mean and Variance Distributions</h3>
+
+        <p>
+          Across the m hackers, compare
+          the average sample mean with mu
+          and the average sample variance
+          with sigma².
+        </p>
+
+        <p>
+          Histograms will illustrate
+          the sampling distributions
+          of the two estimators.
+        </p>
+
+        <hr>
+
+        <h3>Effect of Sample Size</h3>
+
+        <p>
+          Repeat the experiment for increasing
+          values of n while keeping the
+          underlying population distribution fixed.
+        </p>
+
+        <p>
+          Analyze how the variability of
+          sample means and sample variances
+          changes as n increases.
+        </p>
+
+      </div>
+
+      <h2>Results and Conclusions</h2>
+
+      <div class="card">
+
+        <h3>Experimental Findings</h3>
+
+        <p>
+          The results will summarize the accuracy,
+          variability and statistical properties
+          of the estimators obtained using
+          Welford's recurrence formulas.
+        </p>
+
+        <p>
+          The discussion will connect the
+          experimental observations to
+          unbiased estimation and
+          inferential statistics.
+        </p>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer>
+    <p>Statistics for Cybersecurity - 2026/2027</p>
+  </footer>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
