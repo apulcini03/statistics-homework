@@ -622,24 +622,121 @@
 
         <hr>
 
+        
         <h3>Sampling Simulation</h3>
 
         <p>
-          Simulate m independent hackers,
-          each attempting n systems and
-          receiving one score per attempt.
+        Simulate m independent hackers attempting
+        to penetrate n systems each. Every attempt
+        receives a discrete uniform score from 0 to 10.
         </p>
 
         <p>
-          For each hacker, apply Welford's
-          algorithm to estimate the sample
-          mean and unbiased sample variance.
+        For each hacker, Welford's recurrence
+        formulas calculate the sample mean and
+        unbiased sample variance of the n scores.
+        </p>
+
+        <h3>Step 1 — Configure the Simulation</h3>
+
+        <label for="samplingSystems">
+        Number of Systems per Hacker (n):
+        </label>
+
+        <input
+        type="number"
+        id="samplingSystems"
+        min="2"
+        max="1000"
+        step="1"
+        value="100"
+        >
+
+        <label for="samplingHackers">
+        Number of Hackers (m):
+        </label>
+
+        <input
+        type="number"
+        id="samplingHackers"
+        min="1"
+        max="1000"
+        step="1"
+        value="200"
+        >
+
+        <p>
+        <button id="runSamplingSimulationBtn">
+            Run Sampling Simulation
+        </button>
+        </p>
+
+        <div
+        id="samplingSimulationSummary"
+        class="analysis-summary stochastic-result"
+        aria-live="polite">
+        Configure the simulation and press Run.
+        </div>
+
+        <hr>
+
+        <h3>Step 2 — Penetration Score Trajectories</h3>
+
+        <p>
+        The graph displays the individual scores
+        obtained by up to 10 hackers over n systems.
         </p>
 
         <p>
-          The interactive simulator
-          will be implemented here.
+        Every score is an independent observation
+        from the same discrete uniform distribution.
+        All m hackers contribute to the statistical
+        calculations, even if their trajectories
+        are not displayed.
         </p>
+
+        <div class="chart-container">
+        <canvas id="samplingTrajectoriesChart"></canvas>
+        </div>
+
+        <hr>
+
+        <h3>Step 3 — Welford's Statistics per Hacker</h3>
+
+        <p>
+        Each hacker has one sample mean and one
+        unbiased sample variance, computed using
+        Welford's online algorithm.
+        </p>
+
+        <p>
+        The table shows the first 10 hackers.
+        The full set of m estimates is retained
+        for the next statistical experiments.
+        </p>
+
+        <div class="accounts-table-wrapper">
+        <table class="crypto-comparison-table">
+            <thead>
+            <tr>
+                <th>Hacker</th>
+                <th>Systems (n)</th>
+                <th>Sample Mean</th>
+                <th>Sample Variance</th>
+            </tr>
+            </thead>
+
+            <tbody id="samplingHackersTableBody"></tbody>
+        </table>
+        </div>
+
+        <p class="wallet-note">
+        The sample variance uses the denominator
+        n - 1, making it an unbiased estimator
+        of the population variance. The experiment
+        requires at least two observations per hacker.
+        </p>
+
 
         <hr>
 
@@ -706,6 +803,7 @@
     <p>Statistics for Cybersecurity - 2026/2027</p>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
   <script src="script.js"></script>
 
 </body>

@@ -1002,3 +1002,37 @@ button:disabled {
   }
 }
 
+
+
+/* HW 4 - Sampling Simulation */
+
+#samplingSystems,
+#samplingHackers {
+  display: block;
+  width: 100%;
+  max-width: 350px;
+  padding: 12px;
+  margin: 10px 0 20px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  box-sizing: border-box;
+}
+
+#runSamplingSimulationBtn {
+  margin-bottom: 16px;
+}
+
+#samplingSimulationSummary {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#samplingHackersTableBody td {
+  font-variant-numeric: tabular-nums;
+}
+
+#samplingHackersTableBody td:first-child {
+  font-weight: 600;
+}

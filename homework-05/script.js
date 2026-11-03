@@ -333,3 +333,248 @@ document.addEventListener("DOMContentLoaded", () => {
   // Changing input starts a new sequence.
   input.addEventListener("input", resetExperiment);
 });
+
+
+
+// HW 4 - Exercise 2: Sampling Simulation
+
+const SAMPLING_POPULATION_MEAN = 5;
+const SAMPLING_POPULATION_VARIANCE = 10;
+
+let samplingTrajectoriesChartInstance = null;
+
+// Store the latest simulation for later experiments.
+window.hw4SamplingSimulation = null;
+
+// Generate an integer score in {0, 1, ..., 10}.
+function generatePenetrationScore() {
+  return Math.floor(Math.random() * 11);
+}
+
+// Simulate m independent hackers, each with n scores.
+function simulateSamplingExperiment(n, m) {
+  const hackers = [];
+  const displayedTrajectories = [];
+
+  const displayedCount = Math.min(10, m);
+
+  for (let hacker = 0; hacker < m; hacker++) {
+    const state = createWelfordState();
+
+    // Store individual scores only for
+    // the hackers displayed in the graph.
+    const trajectory = hacker < displayedCount
+      ? []
+      : null;
+
+    for (let system = 1; system <= n; system++) {
+      const score = generatePenetrationScore();
+
+      // Reuse the Exercise 1 implementation.
+      updateWelford(state, score);
+
+      if (trajectory !== null) {
+        trajectory.push({
+          x: system,
+          y: score
+        });
+      }
+    }
+
+    // n >= 2: unbiased sample variance.
+    const sampleVariance = state.M2 / (n - 1);
+
+    hackers.push({
+      id: hacker + 1,
+      mean: state.mean,
+      variance: sampleVariance
+    });
+
+    if (trajectory !== null) {
+      displayedTrajectories.push(trajectory);
+    }
+  }
+
+  return {
+    n,
+    m,
+    totalAttempts: n * m,
+    populationMean: SAMPLING_POPULATION_MEAN,
+    populationVariance: SAMPLING_POPULATION_VARIANCE,
+    hackers,
+    displayedTrajectories
+  };
+}
+
+function drawSamplingTrajectories(simulation) {
+  if (samplingTrajectoriesChartInstance) {
+    samplingTrajectoriesChartInstance.destroy();
+  }
+
+  const datasets = simulation.displayedTrajectories.map(
+    (trajectory, index) => ({
+      label: `Hacker ${index + 1}`,
+      data: trajectory,
+      borderColor:
+        `hsl(${index * 360 / 10}, 65%, 45%)`,
+      borderWidth: 1.3,
+      pointRadius: simulation.n <= 30 ? 2 : 0,
+      tension: 0
+    })
+  );
+
+  samplingTrajectoriesChartInstance = new Chart(
+    document.getElementById(
+      "samplingTrajectoriesChart"
+    ),
+    {
+      type: "line",
+      data: { datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        parsing: false,
+        plugins: {
+          title: {
+            display: true,
+            text: "Penetration Scores by Hacker"
+          },
+          legend: {
+            display: true,
+            position: "bottom"
+          }
+        },
+        scales: {
+          x: {
+            type: "linear",
+            title: {
+              display: true,
+              text: "System Number"
+            }
+          },
+          y: {
+            min: 0,
+            max: 10,
+            ticks: {
+              stepSize: 1
+            },
+            title: {
+              display: true,
+              text: "Penetration Score"
+            }
+          }
+        }
+      }
+    }
+  );
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const nInput = document.getElementById(
+    "samplingSystems"
+  );
+
+  const mInput = document.getElementById(
+    "samplingHackers"
+  );
+
+  const button = document.getElementById(
+    "runSamplingSimulationBtn"
+  );
+
+  const summary = document.getElementById(
+    "samplingSimulationSummary"
+  );
+
+  const tableBody = document.getElementById(
+    "samplingHackersTableBody"
+  );
+
+  button.addEventListener("click", () => {
+    const rawN = nInput.value.trim();
+    const rawM = mInput.value.trim();
+
+    const n = Number(rawN);
+    const m = Number(rawM);
+
+    if (
+      rawN === "" ||
+      rawM === "" ||
+      !Number.isInteger(n) ||
+      !Number.isInteger(m) ||
+      n < 2 || n > 1000 ||
+      m < 1 || m > 1000
+    ) {
+      summary.textContent =
+        "Enter an integer n between 2 and 1000 " +
+        "and an integer m between 1 and 1000.";
+      return;
+    }
+
+    button.disabled = true;
+    summary.textContent =
+      "Generating penetration scores...";
+
+    try {
+      const simulation = simulateSamplingExperiment(
+        n, m
+      );
+
+      // Make the complete set of estimates
+      // available to the next experiments.
+      window.hw4SamplingSimulation = simulation;
+
+      summary.textContent =
+        `Distribution: Discrete Uniform {0,...,10}\n` +
+        `Theoretical mean (mu): ` +
+        `${simulation.populationMean}\n` +
+        `Theoretical variance (sigma²): ` +
+        `${simulation.populationVariance}\n\n` +
+        `Systems per hacker (n): ${n}\n` +
+        `Hackers (m): ${m}\n` +
+        `Total penetration attempts: ` +
+        `${simulation.totalAttempts}\n\n` +
+        `Sample means calculated: ${m}\n` +
+        `Sample variances calculated: ${m}\n` +
+        `Algorithm: Welford's recurrence formulas\n` +
+        `Sample variance denominator: n - 1`;
+
+      // First 10 hackers in the table.
+      tableBody.replaceChildren();
+
+      for (const hacker of simulation.hackers.slice(0, 10)) {
+        const row = document.createElement("tr");
+
+        const values = [
+          hacker.id,
+          n,
+          hacker.mean.toFixed(4),
+          hacker.variance.toFixed(4)
+        ];
+
+        for (const value of values) {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          row.appendChild(cell);
+        }
+
+        tableBody.appendChild(row);
+      }
+
+      drawSamplingTrajectories(simulation);
+
+    } catch (error) {
+      window.hw4SamplingSimulation = null;
+
+      summary.textContent =
+        "Sampling simulation failed. " +
+        "Check the browser console.";
+
+      console.error(error);
+
+    } finally {
+      button.disabled = false;
+    }
+  });
+});
