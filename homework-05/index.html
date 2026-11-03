@@ -209,18 +209,265 @@
       <h2>Exercise 1 — Welford's Recurrence Formulas</h2>
 
       <div class="card">
-
+        
         <h3>Mathematical Derivation</h3>
 
         <p>
-          Derive the recurrence formulas for
-          the running mean, the sum of squared
-          deviations and the sample variance.
+        Welford's algorithm computes the running mean,
+        sum of squared deviations and sample variance
+        using recurrence formulas.
         </p>
 
         <p>
-          The derivation will be developed
-          step by step in this section.
+        At each iteration, the algorithm processes
+        one new observation without storing the
+        previous observations.
+        </p>
+
+        <h3>Step 1 — Knuth's Recurrence for the Mean</h3>
+
+        <p>
+        For observations x(1), ..., x(n),
+        the sample mean is:
+        </p>
+
+        <p>
+        <strong>
+            mean(n) = (1/n) * sum(x(i)).
+        </strong>
+        </p>
+
+        <p>
+        Separating the last observation:
+        </p>
+
+        <p>
+        <strong>
+            mean(n) =
+            [(n-1) * mean(n-1) + x(n)] / n.
+        </strong>
+        </p>
+
+        <p>
+        Rearranging:
+        </p>
+
+        <p>
+        <strong>
+            mean(n) = mean(n-1) +
+            [x(n) - mean(n-1)] / n.
+        </strong>
+        </p>
+
+        <p>
+        Define delta = x(n) - mean(n-1).
+        Then:
+        </p>
+
+        <p>
+        <strong>
+            mean(n) = mean(n-1) + delta/n.
+        </strong>
+        </p>
+
+        <hr>
+
+        <h3>Step 2 — Welford's Sum of Squares Recurrence</h3>
+
+        <p>
+        Define the sum of squared deviations:
+        </p>
+
+        <p>
+        <strong>
+            M2(n) = sum[(x(i) - mean(n))²].
+        </strong>
+        </p>
+
+        <p>
+        Separate the contribution of the
+        newest observation:
+        </p>
+
+        <p>
+        <strong>
+            M2(n) =
+            sum[i=1 to n-1](x(i) - mean(n))²
+            + (x(n) - mean(n))².
+        </strong>
+        </p>
+
+        <p>
+        From Knuth's recurrence:
+        </p>
+
+        <p>
+        <strong>
+            mean(n) - mean(n-1) = delta/n.
+        </strong>
+        </p>
+
+        <p>
+        Therefore, for every previous observation:
+        </p>
+
+        <p>
+        <strong>
+            x(i) - mean(n) =
+            [x(i) - mean(n-1)] - delta/n.
+        </strong>
+        </p>
+
+        <p>
+        Expanding the square and summing,
+        the cross term vanishes because:
+        </p>
+
+        <p>
+        <strong>
+            sum[i=1 to n-1]
+            (x(i) - mean(n-1)) = 0.
+        </strong>
+        </p>
+
+        <p>
+        The previous observations contribute:
+        </p>
+
+        <p>
+        <strong>
+            M2(n-1) + (n-1)*delta²/n².
+        </strong>
+        </p>
+
+        <p>
+        The newest observation contributes:
+        </p>
+
+        <p>
+        <strong>
+            (x(n) - mean(n))² =
+            [(n-1)*delta/n]².
+        </strong>
+        </p>
+
+        <p>
+        Combining the terms:
+        </p>
+
+        <p>
+        <strong>
+            M2(n) = M2(n-1) +
+            [(n-1)/n]*delta².
+        </strong>
+        </p>
+
+        <p>
+        Since x(n) - mean(n) = [(n-1)/n]*delta,
+        we obtain Welford's recurrence:
+        </p>
+
+        <p>
+        <strong>
+            M2(n) = M2(n-1) +
+            delta * [x(n) - mean(n)].
+        </strong>
+        </p>
+
+        <hr>
+
+        <h3>Step 3 — Sample Variance Recurrence</h3>
+
+        <p>
+        The unbiased sample variance is:
+        </p>
+
+        <p>
+        <strong>
+            s²(n) = M2(n) / (n-1), for n >= 2.
+        </strong>
+        </p>
+
+        <p>
+        Substituting the recurrence for M2:
+        </p>
+
+        <p>
+        <strong>
+            s²(n) =
+            [M2(n-1) + delta*(x(n)-mean(n))]
+            / (n-1).
+        </strong>
+        </p>
+
+        <p>
+        Because M2(n-1) = (n-2)*s²(n-1),
+        for n >= 3 we obtain:
+        </p>
+
+        <p>
+        <strong>
+            s²(n) =
+            [(n-2)*s²(n-1) +
+            delta*(x(n)-mean(n))]
+            / (n-1).
+        </strong>
+        </p>
+
+        <p>
+        For n = 2, the sample variance is
+        M2(2), since the denominator is 1.
+        For n = 1, sample variance is undefined.
+        </p>
+
+        <hr>
+
+        <h3>Step 4 — Three-Line Core Implementation</h3>
+
+        <p>
+        After incrementing the observation counter,
+        the complete running update requires
+        approximately three lines of JavaScript:
+        </p>
+
+        <pre><code>const delta = x - mean;
+        mean += delta / count;
+        M2 += delta * (x - mean);</code></pre>
+
+        <p>
+        The variables count, mean and M2 are
+        initialized to zero before processing
+        the observations.
+        </p>
+
+        <p>
+        After at least two observations,
+        the sample variance is obtained as
+        M2 / (count - 1).
+        </p>
+
+        <h3>Why Use Welford's Algorithm?</h3>
+
+        <p>
+        Welford's algorithm requires constant
+        additional memory and processes each
+        observation in constant time.
+        </p>
+
+        <p>
+        It also avoids repeatedly subtracting
+        two potentially large, nearly equal
+        quantities when computing variance.
+        This makes it generally more numerically
+        stable than the naive one-pass formula
+        based on E[X²] - E[X]².
+        </p>
+
+        <p>
+        The recurrence formulas will be used
+        directly in both the interactive
+        demonstration and the sampling experiment
+        in Exercise 2.
         </p>
 
         <hr>
