@@ -94,6 +94,34 @@ Study the behavior of total, average and normalized penetration scores through B
 
 [Open Homework 3](https://apulcini03.github.io/statistics-homework/homework-04/)
 
+## Homework 4 — Welford & Sampling Statistics
+
+Derive and implement Welford's recurrence formulas
+for the running mean, sum of squared deviations
+and unbiased sample variance.
+
+Apply the algorithm to stochastic penetration
+scores and investigate the sampling distributions
+of mean and variance estimators.
+
+### Features
+
+- Mathematical derivation of Welford's recurrences
+- Three-line core implementation
+- Interactive step-by-step algorithm demonstration
+- Verification against direct computation
+- Discrete uniform penetration scores from 0 to 10
+- Simulation of multiple hackers and systems
+- Online calculation of sample means and variances
+- Sampling distributions of the two estimators
+- Empirical comparison with population parameters
+- Analysis of estimator variability for increasing n
+- Comparison with theoretical sampling variability
+- Interpretation for inferential statistics
+
+[Open Homework 4](https://apulcini03.github.io/statistics-homework/homework-05/)
+
+
 
 ## Project Structure
 
@@ -103,6 +131,7 @@ statistics-homework/
 ├── homework-02/    # HW 1.2 — Ethereum Wallet Pipeline
 ├── homework-03/    # HW 2 — ECC vs Caesar Cipher & Cryptanalysis
 ├── homework-04/    # HW 3 — Stochastic Penetration Processes
+├── homework-05/    # HW 4 — Welford & Sampling Statistics
 ├── css/            # Shared styles
 ├── js/             # Homepage scripts
 ├── index.html      # Homepage

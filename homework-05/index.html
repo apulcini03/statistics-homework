@@ -1061,27 +1061,352 @@
 
       </div>
 
-      <h2>Results and Conclusions</h2>
+      
+        <h2>Results and Conclusions</h2>
 
-      <div class="card">
+        <div class="card">
 
-        <h3>Experimental Findings</h3>
+        <h3>Overview</h3>
 
         <p>
-          The results will summarize the accuracy,
-          variability and statistical properties
-          of the estimators obtained using
-          Welford's recurrence formulas.
+            This homework investigated Welford's online
+            algorithm and its application to statistical
+            estimation in a stochastic penetration model.
         </p>
 
         <p>
-          The discussion will connect the
-          experimental observations to
-          unbiased estimation and
-          inferential statistics.
+            Exercise 1 derived the recurrence formulas
+            for the running mean, sum of squared
+            deviations and unbiased sample variance.
         </p>
 
-      </div>
+        <p>
+            Exercise 2 applied these formulas to
+            independent hacker trajectories, comparing
+            sample estimates with known population
+            parameters and examining the effect
+            of increasing sample size.
+        </p>
+
+        <hr>
+
+        <h3>Exercise 1 — Welford's Algorithm</h3>
+
+        <p>
+            Starting from Knuth's recurrence for the
+            running mean, we derived Welford's
+            update for the sum of squared deviations:
+        </p>
+
+        <p>
+            <strong>
+            mean(n) = mean(n-1) + delta/n
+            </strong>
+        </p>
+
+        <p>
+            <strong>
+            M2(n) = M2(n-1) +
+            delta * [x(n) - mean(n)]
+            </strong>
+        </p>
+
+        <p>
+            where delta = x(n) - mean(n-1).
+        </p>
+
+        <p>
+            The unbiased sample variance is
+            obtained as:
+        </p>
+
+        <p>
+            <strong>
+            s²(n) = M2(n)/(n-1), for n >= 2.
+            </strong>
+        </p>
+
+        <p>
+            The implementation updates the running
+            statistics using three core instructions
+            after incrementing the observation count.
+        </p>
+
+        <p>
+            The algorithm requires constant additional
+            memory and does not need to store the
+            complete observation sequence.
+        </p>
+
+        <p>
+            Interactive verification confirmed that
+            Welford's algorithm agrees with direct
+            computation. For example, the sequence
+            {2, 4, 6} produced mean 4, sum of squares
+            8 and unbiased sample variance 4.
+        </p>
+
+        <hr>
+
+        <h3>Exercise 2 — Sampling Simulation</h3>
+
+        <p>
+            Each hacker received n independent scores
+            drawn from the discrete uniform distribution
+            on the integers from 0 to 10.
+        </p>
+
+        <p>
+            The theoretical population parameters are:
+        </p>
+
+        <p>
+            <strong>Population mean: mu = 5</strong>
+        </p>
+
+        <p>
+            <strong>
+            Population variance: sigma² = 10
+            </strong>
+        </p>
+
+        <p>
+            For every hacker, Welford's algorithm
+            computed a sample mean and an unbiased
+            sample variance using the n scores.
+        </p>
+
+        <p>
+            Averaging these statistics across
+            independent hackers allows us to compare
+            the empirical estimators with the
+            theoretical population parameters.
+        </p>
+
+        <hr>
+
+        <h3>Comparison with Population Parameters</h3>
+
+        <p>
+            In one simulation with n = 100 systems
+            per hacker, the average of the sample
+            means was 5.000650, very close to
+            the theoretical mean of 5.
+        </p>
+
+        <p>
+            The average of the unbiased sample
+            variances was 9.993123, very close
+            to the theoretical variance of 10.
+        </p>
+
+        <p>
+            The empirical standard deviation of
+            sample means was 0.310094, compared
+            with the theoretical value of
+            approximately 0.316228.
+        </p>
+
+        <p>
+            These observations are consistent
+            with the unbiasedness of both estimators:
+        </p>
+
+        <p>
+            <strong>E[sample mean] = mu</strong>
+        </p>
+
+        <p>
+            <strong>E[sample variance] = sigma²</strong>
+        </p>
+
+        <p>
+            Unbiasedness means that the estimator
+            has the correct expected value over
+            repeated random samples. It does not
+            guarantee an exact match in any
+            individual simulation.
+        </p>
+
+        <hr>
+
+        <h3>Effect of Increasing Sample Size</h3>
+
+        <p>
+            The experiment was repeated for sample
+            sizes n = 2, 5, 10, 20, 50, 100,
+            200, 500 and 1000.
+        </p>
+
+        <p>
+            As n increased, the empirical standard
+            deviation of sample means decreased.
+            In one experiment, it fell from
+            approximately 2.2161 at n = 2
+            to 0.0976 at n = 1000.
+        </p>
+
+        <p>
+            This agrees with the theoretical formula:
+        </p>
+
+        <p>
+            <strong>
+            SD(sample mean) = sqrt(sigma²/n).
+            </strong>
+        </p>
+
+        <p>
+            The sample variance estimator also
+            became less variable as n increased.
+        </p>
+
+        <p>
+            Its empirical standard deviation
+            decreased from approximately
+            11.9284 at n = 2 to
+            0.2785 at n = 1000.
+        </p>
+
+        <p>
+            The theoretical variability of the
+            unbiased sample variance depends
+            on the fourth central moment mu4.
+        </p>
+
+        <p>
+            <strong>
+            Var(s²) =
+            [mu4 - sigma⁴*(n-3)/(n-1)] / n.
+            </strong>
+        </p>
+
+        <p>
+            For the selected distribution,
+            mu4 = 178 and sigma² = 10.
+        </p>
+
+        <p>
+            Both empirical trends are consistent
+            with the theoretical prediction that
+            increasing sample size improves
+            estimator precision.
+        </p>
+
+        <hr>
+
+        <h3>Importance for Inferential Statistics</h3>
+
+        <p>
+            Inferential statistics uses sample
+            observations to draw conclusions
+            about unknown population parameters.
+        </p>
+
+        <p>
+            The sample mean estimates the
+            population mean, while the
+            unbiased sample variance estimates
+            the population variance.
+        </p>
+
+        <p>
+            Unbiasedness is important because
+            an estimator should not systematically
+            overestimate or underestimate
+            its target parameter.
+        </p>
+
+        <p>
+            Variability measures the uncertainty
+            associated with an estimate.
+            Lower variability generally produces
+            more precise estimates.
+        </p>
+
+        <p>
+            Sampling distributions are used
+            to quantify estimation uncertainty
+            and support statistical procedures,
+            including confidence intervals
+            and hypothesis testing.
+        </p>
+
+        <p>
+            Increasing n improves the precision
+            of the estimators. Increasing m
+            provides more independent samples
+            with which to investigate their
+            sampling distributions.
+        </p>
+
+        <hr>
+
+        <h3>Limitations</h3>
+
+        <p>
+            The experiment assumes independent
+            and identically distributed scores
+            with a fixed probability distribution.
+        </p>
+
+        <p>
+            Actual penetration attempts may
+            exhibit dependencies, changing
+            probabilities and different system
+            vulnerability levels.
+        </p>
+
+        <p>
+            The experimental results are based
+            on finite Monte Carlo simulations
+            and may vary between executions.
+        </p>
+
+        <p>
+            Although Welford's method is
+            numerically stable and memory
+            efficient, floating-point calculations
+            still have finite precision.
+        </p>
+
+        <hr>
+
+        <h3>Final Conclusion</h3>
+
+        <p>
+            Welford's recurrence formulas provide
+            an efficient method for calculating
+            the running mean and unbiased
+            sample variance.
+        </p>
+
+        <p>
+            The simulations confirmed that
+            averaging sample means and unbiased
+            sample variances across independent
+            hackers produces estimates close
+            to the theoretical population
+            parameters.
+        </p>
+
+        <p>
+            Increasing the number of systems
+            reduced the variability of both
+            estimators, demonstrating the
+            importance of sample size for
+            statistical precision.
+        </p>
+
+        <p>
+            Together, these findings illustrate
+            how online algorithms and sampling
+            distributions support reliable
+            statistical estimation.
+        </p>
+
+        </div>
+
 
     </section>
 
