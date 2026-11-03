@@ -740,20 +740,147 @@
 
         <hr>
 
+        
         <h3>Sampling Mean and Variance Distributions</h3>
 
         <p>
-          Across the m hackers, compare
-          the average sample mean with mu
-          and the average sample variance
-          with sigma².
+        Each hacker produces one sample mean and one
+        unbiased sample variance using Welford's algorithm.
         </p>
 
         <p>
-          Histograms will illustrate
-          the sampling distributions
-          of the two estimators.
+        Across the m hackers, we compute the average
+        of the sample means and the average of the
+        sample variances, then compare them with
+        the theoretical population parameters.
         </p>
+
+        <h3>Step 1 — Analyze the Sampling Results</h3>
+
+        <p>
+        First run the Sampling Simulation above.
+        Then analyze its complete set of m
+        sample estimates without generating
+        new observations.
+        </p>
+
+        <button id="analyzeSamplingBtn">
+        Analyze Sampling Statistics
+        </button>
+
+        <div
+        id="samplingAnalysisSummary"
+        class="analysis-summary stochastic-result"
+        aria-live="polite">
+        Run the Sampling Simulation first.
+        </div>
+
+        <hr>
+
+        <h3>Step 2 — Distribution of Sample Means</h3>
+
+        <p>
+        The histogram displays the distribution
+        of the m sample means.
+        </p>
+
+        <p>
+        The dashed orange line indicates the
+        theoretical population mean, mu = 5.
+        </p>
+
+        <div class="chart-container">
+        <canvas id="samplingMeansChart"></canvas>
+        </div>
+
+        <hr>
+
+        <h3>Step 3 — Distribution of Sample Variances</h3>
+
+        <p>
+        The histogram displays the distribution
+        of the m unbiased sample variances.
+        </p>
+
+        <p>
+        The dashed orange line indicates the
+        theoretical population variance,
+        sigma² = 10.
+        </p>
+
+        <div class="chart-container">
+        <canvas id="samplingVariancesChart"></canvas>
+        </div>
+
+        <hr>
+
+        <h3>Step 4 — Empirical vs Theoretical Results</h3>
+
+        <p>
+        The average sample mean estimates mu,
+        while the average unbiased sample variance
+        estimates sigma².
+        </p>
+
+        <p>
+        The empirical standard deviation across
+        hackers describes the variability of
+        each estimator.
+        </p>
+
+        <div class="accounts-table-wrapper">
+        <table class="crypto-comparison-table">
+            <thead>
+            <tr>
+                <th>Estimator</th>
+                <th>Average Estimate</th>
+                <th>Theoretical Value</th>
+                <th>Absolute Error</th>
+                <th>Empirical SD</th>
+            </tr>
+            </thead>
+
+            <tbody id="samplingAnalysisTableBody"></tbody>
+        </table>
+        </div>
+
+        <h3>Statistical Interpretation</h3>
+
+        <p>
+        For independent observations from the
+        same population, the sample mean is
+        an unbiased estimator of mu.
+        </p>
+
+        <p>
+        The sample variance using the denominator
+        n - 1 is an unbiased estimator of sigma².
+        </p>
+
+        <p>
+        Therefore, averaging these estimators
+        across many independent hackers provides
+        empirical values that tend to approach
+        their population counterparts.
+        </p>
+
+        <p>
+        The sampling distribution describes
+        how an estimator varies across repeated
+        samples. This is fundamental to
+        inferential statistics, confidence
+        intervals and hypothesis testing.
+        </p>
+
+        <p class="wallet-note">
+        Unbiasedness describes the expected value
+        across repeated samples. It does not
+        guarantee that a particular finite
+        simulation exactly equals the theoretical
+        parameter. The empirical SD is calculated
+        across the m hacker estimates.
+        </p>
+
 
         <hr>
 

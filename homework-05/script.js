@@ -578,3 +578,373 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+
+
+// HW 4 - Exercise 2: Sampling Statistics Analysis
+
+const samplingAnalysisCharts = {
+  means: null,
+  variances: null
+};
+
+// Descriptive mean of the m hacker estimates.
+function samplingAverage(values) {
+  return values.reduce((sum, x) => sum + x, 0) /
+    values.length;
+}
+
+// Descriptive standard deviation across hackers.
+function samplingStandardDeviation(values) {
+  const mean = samplingAverage(values);
+
+  const variance = values.reduce(
+    (sum, x) => sum + (x - mean) ** 2,
+    0
+  ) / values.length;
+
+  return Math.sqrt(variance);
+}
+
+// Analyze the estimates produced by Welford.
+function analyzeSamplingStatistics(simulation) {
+  const sampleMeans = simulation.hackers.map(
+    hacker => hacker.mean
+  );
+
+  const sampleVariances = simulation.hackers.map(
+    hacker => hacker.variance
+  );
+
+  const averageMean = samplingAverage(sampleMeans);
+  const averageVariance = samplingAverage(
+    sampleVariances
+  );
+
+  const mu = simulation.populationMean;
+  const sigma2 = simulation.populationVariance;
+
+  return {
+    n: simulation.n,
+    m: simulation.m,
+    sampleMeans,
+    sampleVariances,
+    averageMean,
+    averageVariance,
+    meanAbsoluteError: Math.abs(averageMean - mu),
+    varianceAbsoluteError: Math.abs(
+      averageVariance - sigma2
+    ),
+    meanEstimatorSD:
+      samplingStandardDeviation(sampleMeans),
+    varianceEstimatorSD:
+      samplingStandardDeviation(sampleVariances),
+    theoreticalMeanSD: Math.sqrt(
+      sigma2 / simulation.n
+    ),
+    mu,
+    sigma2
+  };
+}
+
+// Construct equal-width frequency histogram bins.
+function buildSamplingHistogram(
+  values,
+  minimum,
+  maximum,
+  binCount = 20
+) {
+  const width = (maximum - minimum) / binCount;
+  const frequencies = Array(binCount).fill(0);
+
+  for (const value of values) {
+    const index = Math.min(
+      binCount - 1,
+      Math.max(
+        0,
+        Math.floor((value - minimum) / width)
+      )
+    );
+
+    frequencies[index]++;
+  }
+
+  const centers = Array.from(
+    { length: binCount },
+    (_, i) => minimum + (i + 0.5) * width
+  );
+
+  return {
+    centers,
+    frequencies
+  };
+}
+
+// Chart.js plugin: vertical theoretical reference line.
+const samplingReferenceLinePlugin = {
+  id: "samplingReferenceLine",
+
+  afterDatasetsDraw(chart, args, options) {
+    const xScale = chart.scales.x;
+    const area = chart.chartArea;
+
+    if (!xScale || !area) {
+      return;
+    }
+
+    const x = xScale.getPixelForValue(options.value);
+
+    if (!Number.isFinite(x)) {
+      return;
+    }
+
+    const ctx = chart.ctx;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(
+      area.left,
+      area.top,
+      area.right - area.left,
+      area.bottom - area.top
+    );
+    ctx.clip();
+
+    ctx.beginPath();
+    ctx.moveTo(x, area.top);
+    ctx.lineTo(x, area.bottom);
+
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([7, 5]);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+};
+
+// Draw a frequency histogram and theoretical reference.
+function drawSamplingHistogram(
+  canvasId,
+  chartKey,
+  values,
+  theoreticalValue,
+  title,
+  minimum,
+  maximum
+) {
+  if (samplingAnalysisCharts[chartKey]) {
+    samplingAnalysisCharts[chartKey].destroy();
+  }
+
+  const histogram = buildSamplingHistogram(
+    values,
+    minimum,
+    maximum
+  );
+
+  samplingAnalysisCharts[chartKey] = new Chart(
+    document.getElementById(canvasId),
+    {
+      type: "bar",
+
+      data: {
+        datasets: [{
+          label: "Hacker Estimates",
+          data: histogram.centers.map(
+            (center, index) => ({
+              x: center,
+              y: histogram.frequencies[index]
+            })
+          ),
+          backgroundColor: "#2563eb",
+          hoverBackgroundColor: "#1d4ed8",
+          barPercentage: 1,
+          categoryPercentage: 1
+        }]
+      },
+
+      plugins: [samplingReferenceLinePlugin],
+
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        parsing: false,
+
+        plugins: {
+          title: {
+            display: true,
+            text: title
+          },
+
+          samplingReferenceLine: {
+            value: theoreticalValue
+          }
+        },
+
+        scales: {
+          x: {
+            type: "linear",
+            min: minimum,
+            max: maximum,
+            title: {
+              display: true,
+              text: chartKey === "means"
+                ? "Sample Mean"
+                : "Sample Variance"
+            }
+          },
+
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0
+            },
+            title: {
+              display: true,
+              text: "Number of Hackers"
+            }
+          }
+        }
+      }
+    }
+  );
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const button = document.getElementById(
+    "analyzeSamplingBtn"
+  );
+
+  const summary = document.getElementById(
+    "samplingAnalysisSummary"
+  );
+
+  const tableBody = document.getElementById(
+    "samplingAnalysisTableBody"
+  );
+
+  // Clear outdated analysis when a new simulation runs.
+  document.getElementById(
+    "runSamplingSimulationBtn"
+  ).addEventListener("click", () => {
+    summary.textContent =
+      "Run Analyze Sampling Statistics " +
+      "to inspect the latest simulation.";
+
+    tableBody.replaceChildren();
+
+    for (const key of ["means", "variances"]) {
+      if (samplingAnalysisCharts[key]) {
+        samplingAnalysisCharts[key].destroy();
+        samplingAnalysisCharts[key] = null;
+      }
+    }
+  });
+
+  button.addEventListener("click", () => {
+    const simulation = window.hw4SamplingSimulation;
+
+    if (!simulation) {
+      summary.textContent =
+        "Run the Sampling Simulation first.";
+      return;
+    }
+
+    const result = analyzeSamplingStatistics(
+      simulation
+    );
+
+    summary.textContent =
+      `Distribution: Discrete Uniform {0,...,10}\n` +
+      `Systems per hacker (n): ${result.n}\n` +
+      `Hackers (m): ${result.m}\n\n` +
+
+      `AVERAGE OF SAMPLE MEANS\n` +
+      `Empirical: ${result.averageMean.toFixed(6)}\n` +
+      `Theoretical mu: ${result.mu.toFixed(6)}\n` +
+      `Absolute error: ` +
+      `${result.meanAbsoluteError.toFixed(6)}\n` +
+      `Empirical SD across hackers: ` +
+      `${result.meanEstimatorSD.toFixed(6)}\n` +
+      `Theoretical SD of sample mean: ` +
+      `${result.theoreticalMeanSD.toFixed(6)}\n\n` +
+
+      `AVERAGE OF SAMPLE VARIANCES\n` +
+      `Empirical: ` +
+      `${result.averageVariance.toFixed(6)}\n` +
+      `Theoretical sigma²: ` +
+      `${result.sigma2.toFixed(6)}\n` +
+      `Absolute error: ` +
+      `${result.varianceAbsoluteError.toFixed(6)}\n` +
+      `Empirical SD across hackers: ` +
+      `${result.varianceEstimatorSD.toFixed(6)}`;
+
+    // Comparison table
+    tableBody.replaceChildren();
+
+    const rows = [
+      [
+        "Sample Mean",
+        result.averageMean,
+        result.mu,
+        result.meanAbsoluteError,
+        result.meanEstimatorSD
+      ],
+      [
+        "Sample Variance",
+        result.averageVariance,
+        result.sigma2,
+        result.varianceAbsoluteError,
+        result.varianceEstimatorSD
+      ]
+    ];
+
+    for (const values of rows) {
+      const tr = document.createElement("tr");
+
+      for (const value of values) {
+        const td = document.createElement("td");
+
+        td.textContent = typeof value === "number"
+          ? value.toFixed(6)
+          : value;
+
+        tr.appendChild(td);
+      }
+
+      tableBody.appendChild(tr);
+    }
+
+    // Sample means lie between 0 and 10.
+    drawSamplingHistogram(
+      "samplingMeansChart",
+      "means",
+      result.sampleMeans,
+      result.mu,
+      "Sampling Distribution of the Mean",
+      0,
+      10
+    );
+
+    // Sample variances are non-negative.
+    // Expand the axis if small samples yield
+    // unusually large variance estimates.
+    const maximumVariance = Math.max(
+      20,
+      result.sigma2 * 1.2,
+      ...result.sampleVariances
+    );
+
+    drawSamplingHistogram(
+      "samplingVariancesChart",
+      "variances",
+      result.sampleVariances,
+      result.sigma2,
+      "Sampling Distribution of the Variance",
+      0,
+      maximumVariance * 1.05
+    );
+  });
+});

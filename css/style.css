@@ -1036,3 +1036,24 @@ button:disabled {
 #samplingHackersTableBody td:first-child {
   font-weight: 600;
 }
+
+
+
+/* HW 4 - Sampling Means and Variances */
+
+#analyzeSamplingBtn {
+  margin-bottom: 16px;
+}
+
+#samplingAnalysisSummary {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#samplingAnalysisTableBody td {
+  font-variant-numeric: tabular-nums;
+}
+
+#samplingAnalysisTableBody td:first-child {
+  font-weight: 600;
+}
