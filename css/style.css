@@ -1057,3 +1057,43 @@ button:disabled {
 #samplingAnalysisTableBody td:first-child {
   font-weight: 600;
 }
+
+
+
+/* HW 4 - Effect of Sample Size */
+
+#sampleSizeHackers {
+  display: block;
+  width: 100%;
+  max-width: 350px;
+  padding: 12px;
+  margin: 10px 0 20px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  box-sizing: border-box;
+}
+
+#runSampleSizeExperimentBtn {
+  margin-bottom: 16px;
+}
+
+#sampleSizeSummary {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#sampleSizeResultsTableBody td {
+  font-variant-numeric: tabular-nums;
+}
+
+#sampleSizeResultsTableBody td:first-child {
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  #sampleSizeSummary {
+    font-size: 0.82rem;
+  }
+}

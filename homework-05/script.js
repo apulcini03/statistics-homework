@@ -948,3 +948,307 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   });
 });
+
+
+// HW 4 - Effect of Sample Size
+
+const SAMPLE_SIZE_VALUES = [
+  2, 5, 10, 20, 50, 100, 200, 500, 1000
+];
+
+const SAMPLING_FOURTH_CENTRAL_MOMENT = 178;
+
+const sampleSizeChartInstances = {
+  means: null,
+  variances: null
+};
+
+// Theoretical SD of the sample mean.
+function theoreticalSampleMeanSD(n) {
+  return Math.sqrt(SAMPLING_POPULATION_VARIANCE / n);
+}
+
+// Theoretical SD of the unbiased sample variance.
+// Valid for IID observations with finite 4th moment.
+function theoreticalSampleVarianceSD(n) {
+  const sigma2 = SAMPLING_POPULATION_VARIANCE;
+  const sigma4 = sigma2 * sigma2;
+  const mu4 = SAMPLING_FOURTH_CENTRAL_MOMENT;
+
+  const variance = (
+    mu4 - ((n - 3) / (n - 1)) * sigma4
+  ) / n;
+
+  return Math.sqrt(variance);
+}
+
+// Generate nested samples for all tested n.
+function simulateSampleSizeExperiment(m) {
+  const checkpoints = new Set(SAMPLE_SIZE_VALUES);
+
+  const estimatesByN = new Map(
+    SAMPLE_SIZE_VALUES.map(n => [
+      n,
+      { means: [], variances: [] }
+    ])
+  );
+
+  const maxN = Math.max(...SAMPLE_SIZE_VALUES);
+
+  for (let hacker = 0; hacker < m; hacker++) {
+    const state = createWelfordState();
+
+    for (let system = 1; system <= maxN; system++) {
+      const score = generatePenetrationScore();
+
+      updateWelford(state, score);
+
+      if (checkpoints.has(system)) {
+        const estimates = estimatesByN.get(system);
+
+        estimates.means.push(state.mean);
+
+        estimates.variances.push(
+          state.M2 / (system - 1)
+        );
+      }
+    }
+  }
+
+  return SAMPLE_SIZE_VALUES.map(n => {
+    const estimates = estimatesByN.get(n);
+
+    return {
+      n,
+
+      averageMean: samplingAverage(estimates.means),
+
+      averageVariance:
+        samplingAverage(estimates.variances),
+
+      meanSDEmpirical:
+        samplingStandardDeviation(estimates.means),
+
+      meanSDTheoretical:
+        theoreticalSampleMeanSD(n),
+
+      varianceSDEmpirical:
+        samplingStandardDeviation(estimates.variances),
+
+      varianceSDTheoretical:
+        theoreticalSampleVarianceSD(n)
+    };
+  });
+}
+
+// Compare empirical and theoretical SD curves.
+function drawSampleSizeChart(
+  canvasId,
+  chartKey,
+  rows,
+  empiricalKey,
+  theoreticalKey,
+  title
+) {
+  if (sampleSizeChartInstances[chartKey]) {
+    sampleSizeChartInstances[chartKey].destroy();
+  }
+
+  sampleSizeChartInstances[chartKey] = new Chart(
+    document.getElementById(canvasId),
+    {
+      type: "line",
+
+      data: {
+        datasets: [
+          {
+            label: "Empirical SD",
+            data: rows.map(row => ({
+              x: row.n,
+              y: row[empiricalKey]
+            })),
+            borderColor: "#2563eb",
+            backgroundColor: "#2563eb",
+            pointRadius: 5,
+            tension: 0.15
+          },
+          {
+            label: "Theoretical SD",
+            data: rows.map(row => ({
+              x: row.n,
+              y: row[theoreticalKey]
+            })),
+            borderColor: "#f59e0b",
+            borderDash: [7, 5],
+            pointRadius: 3,
+            tension: 0
+          }
+        ]
+      },
+
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        parsing: false,
+
+        plugins: {
+          title: {
+            display: true,
+            text: title
+          }
+        },
+
+        scales: {
+          x: {
+            type: "linear",
+            title: {
+              display: true,
+              text: "Number of Systems (n)"
+            }
+          },
+
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: "Standard Deviation"
+            }
+          }
+        }
+      }
+    }
+  );
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const mInput = document.getElementById(
+    "sampleSizeHackers"
+  );
+
+  const button = document.getElementById(
+    "runSampleSizeExperimentBtn"
+  );
+
+  const summary = document.getElementById(
+    "sampleSizeSummary"
+  );
+
+  const tableBody = document.getElementById(
+    "sampleSizeResultsTableBody"
+  );
+
+  button.addEventListener("click", () => {
+    const raw = mInput.value.trim();
+    const m = Number(raw);
+
+    if (
+      raw === "" ||
+      !Number.isInteger(m) ||
+      m < 50 ||
+      m > 1000
+    ) {
+      summary.textContent =
+        "Enter an integer number of hackers " +
+        "between 50 and 1000.";
+      return;
+    }
+
+    button.disabled = true;
+
+    summary.textContent =
+      "Simulating repeated samples...";
+
+    try {
+      const rows = simulateSampleSizeExperiment(m);
+
+      tableBody.replaceChildren();
+
+      for (const result of rows) {
+        const tr = document.createElement("tr");
+
+        const values = [
+          result.n,
+          result.averageMean.toFixed(4),
+          result.averageVariance.toFixed(4),
+          result.meanSDEmpirical.toFixed(6),
+          result.meanSDTheoretical.toFixed(6),
+          result.varianceSDEmpirical.toFixed(6),
+          result.varianceSDTheoretical.toFixed(6)
+        ];
+
+        for (const value of values) {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        }
+
+        tableBody.appendChild(tr);
+      }
+
+      drawSampleSizeChart(
+        "sampleSizeMeansChart",
+        "means",
+        rows,
+        "meanSDEmpirical",
+        "meanSDTheoretical",
+        "Variability of Sample Means"
+      );
+
+      drawSampleSizeChart(
+        "sampleSizeVariancesChart",
+        "variances",
+        rows,
+        "varianceSDEmpirical",
+        "varianceSDTheoretical",
+        "Variability of Sample Variances"
+      );
+
+      const first = rows[0];
+      const last = rows[rows.length - 1];
+
+      summary.textContent =
+        `Distribution: Discrete Uniform {0,...,10}\n` +
+        `Theoretical mean: 5\n` +
+        `Theoretical variance: 10\n` +
+        `Fourth central moment: 178\n\n` +
+
+        `Hackers per sample size (m): ${m}\n` +
+        `Sample sizes: ${SAMPLE_SIZE_VALUES.join(", ")}\n` +
+        `Total generated scores: ${m * 1000}\n\n` +
+
+        `SMALLEST SAMPLE (n = ${first.n})\n` +
+        `Average sample mean: ` +
+        `${first.averageMean.toFixed(4)}\n` +
+        `Average sample variance: ` +
+        `${first.averageVariance.toFixed(4)}\n` +
+        `SD of sample means: ` +
+        `${first.meanSDEmpirical.toFixed(6)}\n` +
+        `SD of sample variances: ` +
+        `${first.varianceSDEmpirical.toFixed(6)}\n\n` +
+
+        `LARGEST SAMPLE (n = ${last.n})\n` +
+        `Average sample mean: ` +
+        `${last.averageMean.toFixed(4)}\n` +
+        `Average sample variance: ` +
+        `${last.averageVariance.toFixed(4)}\n` +
+        `SD of sample means: ` +
+        `${last.meanSDEmpirical.toFixed(6)}\n` +
+        `SD of sample variances: ` +
+        `${last.varianceSDEmpirical.toFixed(6)}\n\n` +
+
+        `Estimator variability should decrease ` +
+        `as n increases.`;
+
+    } catch (error) {
+      summary.textContent =
+        "Sample size experiment failed. " +
+        "Check the browser console.";
+
+      console.error(error);
+
+    } finally {
+      button.disabled = false;
+    }
+  });
+});

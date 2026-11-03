@@ -887,16 +887,177 @@
         <h3>Effect of Sample Size</h3>
 
         <p>
-          Repeat the experiment for increasing
-          values of n while keeping the
-          underlying population distribution fixed.
+        Repeat the sampling experiment for increasing
+        numbers of systems per hacker while keeping
+        the population distribution unchanged.
         </p>
 
         <p>
-          Analyze how the variability of
-          sample means and sample variances
-          changes as n increases.
+        The goal is to investigate how sample size
+        affects the variability of sample means
+        and unbiased sample variances.
         </p>
+
+        <h3>Step 1 — Configure the Experiment</h3>
+
+        <p>
+        Each hacker receives scores from the same
+        discrete uniform distribution on {0,...,10}.
+        The theoretical mean is 5 and variance is 10.
+        </p>
+
+        <p>
+        Tested sample sizes:
+        <strong>2, 5, 10, 20, 50, 100, 200, 500, 1000</strong>
+        </p>
+
+        <label for="sampleSizeHackers">
+        Number of Hackers (m):
+        </label>
+
+        <input
+        type="number"
+        id="sampleSizeHackers"
+        min="50"
+        max="1000"
+        step="1"
+        value="500"
+        >
+
+        <p>
+        <button id="runSampleSizeExperimentBtn">
+            Run Sample Size Experiment
+        </button>
+        </p>
+
+        <div
+        id="sampleSizeSummary"
+        class="analysis-summary stochastic-result"
+        aria-live="polite">
+        Configure the experiment and press Run.
+        </div>
+
+        <hr>
+
+        <h3>Step 2 — Variability of Sample Means</h3>
+
+        <p>
+        For each n, calculate the standard deviation
+        of the m sample means obtained with Welford's
+        algorithm.
+        </p>
+
+        <p>
+        Compare the empirical standard deviation
+        with the theoretical value sqrt(10/n).
+        </p>
+
+        <div class="chart-container">
+        <canvas id="sampleSizeMeansChart"></canvas>
+        </div>
+
+        <hr>
+
+        <h3>Step 3 — Variability of Sample Variances</h3>
+
+        <p>
+        For each n, calculate the standard deviation
+        of the m unbiased sample variances.
+        </p>
+
+        <p>
+        The theoretical variance of the sample
+        variance depends on the fourth central
+        moment of the population distribution.
+        </p>
+
+        <p>
+        For the discrete uniform distribution
+        on {0,...,10}, the fourth central
+        moment is 178.
+        </p>
+
+        <p>
+        <strong>
+            Var(s²) = [178 - 100*(n-3)/(n-1)] / n.
+        </strong>
+        </p>
+
+        <p>
+        The theoretical standard deviation
+        is the square root of this expression.
+        </p>
+
+        <div class="chart-container">
+        <canvas id="sampleSizeVariancesChart"></canvas>
+        </div>
+
+        <hr>
+
+        <h3>Step 4 — Empirical Results</h3>
+
+        <p>
+        Each row summarizes the estimates obtained
+        from m hackers at a particular sample size.
+        Both the average estimate and its variability
+        are reported.
+        </p>
+
+        <div class="accounts-table-wrapper">
+        <table class="crypto-comparison-table">
+            <thead>
+            <tr>
+                <th>n</th>
+                <th>Average Sample Mean</th>
+                <th>Average Sample Variance</th>
+                <th>SD Mean (Emp.)</th>
+                <th>SD Mean (Theory)</th>
+                <th>SD Variance (Emp.)</th>
+                <th>SD Variance (Theory)</th>
+            </tr>
+            </thead>
+
+            <tbody id="sampleSizeResultsTableBody"></tbody>
+        </table>
+        </div>
+
+        <h3>Statistical Interpretation</h3>
+
+        <p>
+        As n increases, the sampling distribution
+        of the mean becomes more concentrated
+        around the population mean mu = 5.
+        </p>
+
+        <p>
+        The sampling distribution of the unbiased
+        variance also becomes less dispersed
+        around sigma² = 10.
+        </p>
+
+        <p>
+        Both estimators are unbiased for all
+        tested values of n. Increasing n improves
+        their precision by reducing variability,
+        rather than by changing their expected values.
+        </p>
+
+        <p>
+        These properties are fundamental in
+        inferential statistics, where sample
+        statistics are used to estimate unknown
+        population parameters.
+        </p>
+
+        <p class="wallet-note">
+        Each hacker follows one trajectory of up to
+        1000 observations. Estimates for smaller n
+        use the initial observations of the same
+        trajectory. This allows comparison of
+        different sample sizes using nested samples.
+        Empirical results may fluctuate between runs.
+        </p>
+
 
       </div>
 
