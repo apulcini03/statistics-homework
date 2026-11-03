@@ -948,3 +948,57 @@ button:disabled {
     font-size: 0.82rem;
   }
 }
+
+
+
+/* HW 4 - Interactive Welford Algorithm */
+
+#welfordObservations {
+  display: block;
+  width: 100%;
+  max-width: 500px;
+  padding: 12px;
+  margin: 10px 0 20px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  box-sizing: border-box;
+}
+
+.welford-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.welford-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#welfordSummary,
+#welfordVerification {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#welfordStepsBody td {
+  font-variant-numeric: tabular-nums;
+}
+
+#welfordStepsBody td:first-child {
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .welford-controls {
+    flex-direction: column;
+  }
+
+  .welford-controls button {
+    width: 100%;
+  }
+}
+

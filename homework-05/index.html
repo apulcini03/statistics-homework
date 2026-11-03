@@ -475,16 +475,102 @@
         <h3>Interactive Welford Algorithm</h3>
 
         <p>
-          Process a sequence of observations
-          one value at a time and display
-          the updated mean, sum of squares
-          and sample variance.
+        Enter a sequence of numeric observations
+        to compute its running mean, sum of squared
+        deviations and unbiased sample variance.
         </p>
 
         <p>
-          The interactive implementation
-          will be added here.
+        Process one observation at a time to follow
+        Welford's recurrence formulas, or process
+        the entire sequence automatically.
         </p>
+
+        <label for="welfordObservations">
+        Observations (comma-separated):
+        </label>
+
+        <input
+        type="text"
+        id="welfordObservations"
+        value="2, 4, 6"
+        placeholder="Example: 2, 4, 6"
+        >
+
+        <div class="welford-controls">
+        <button id="welfordNextBtn">
+            Process Next Observation
+        </button>
+
+        <button id="welfordRunAllBtn">
+            Process All
+        </button>
+
+        <button id="welfordResetBtn">
+            Reset
+        </button>
+        </div>
+
+        <div
+        id="welfordSummary"
+        class="analysis-summary stochastic-result"
+        aria-live="polite">
+        Enter a sequence and start the algorithm.
+        </div>
+
+        <hr>
+
+        <h3>Step-by-Step Computation</h3>
+
+        <p>
+        Each row represents one update.
+        The delta value is calculated from
+        the previous running mean.
+        </p>
+
+        <div class="accounts-table-wrapper">
+        <table class="crypto-comparison-table">
+            <thead>
+            <tr>
+                <th>k</th>
+                <th>x(k)</th>
+                <th>Delta</th>
+                <th>Mean</th>
+                <th>M2 / SS</th>
+                <th>Sample Variance</th>
+            </tr>
+            </thead>
+
+            <tbody id="welfordStepsBody"></tbody>
+        </table>
+        </div>
+
+        <hr>
+
+        <h3>Verification Against Direct Computation</h3>
+
+        <p>
+        The final running statistics are compared
+        with a direct calculation using the
+        observations processed so far.
+        </p>
+
+        <div
+        id="welfordVerification"
+        class="analysis-summary stochastic-result"
+        aria-live="polite">
+        No observations processed yet.
+        </div>
+
+        <p class="wallet-note">
+        Welford's algorithm maintains only count,
+        mean and M2. The interactive demonstration
+        stores the input and computation history
+        solely to visualize and verify each step.
+        For a single observation, the unbiased
+        sample variance is undefined.
+        </p>
+
 
       </div>
 
