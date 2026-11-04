@@ -229,6 +229,7 @@ button:disabled {
 
 .chart-container canvas {
   display: block;
+  max-width: 100%;
 }
 
 /* Mobile devices */

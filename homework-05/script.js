@@ -15,12 +15,23 @@ function createWelfordState() {
 
 // Update running statistics with one observation.
 function updateWelford(state, x) {
-  state.count++;
+  const count = state.count + 1;
 
   // Welford's three-line core
   const delta = x - state.mean;
-  state.mean += delta / state.count;
-  state.M2 += delta * (x - state.mean);
+  const mean = state.mean + delta / count;
+  const M2 = state.M2 + delta * (x - mean);
+
+  // Commit only representable updates, preserving the last valid state.
+  if (![x, delta, mean, M2].every(Number.isFinite)) {
+    throw new RangeError(
+      "Numeric overflow: observations exceed the supported numeric range."
+    );
+  }
+
+  state.count = count;
+  state.mean = mean;
+  state.M2 = M2;
 
   return {
     count: state.count,
@@ -73,10 +84,15 @@ function directWelfordStatistics(values) {
     return null;
   }
 
-  const mean = values.reduce(
+  const total = values.reduce(
     (sum, x) => sum + x,
     0
-  ) / n;
+  );
+
+  // Scale before summing only if the ordinary sum overflows.
+  const mean = Number.isFinite(total)
+    ? total / n
+    : values.reduce((sum, x) => sum + x / n, 0);
 
   const M2 = values.reduce(
     (sum, x) => sum + (x - mean) ** 2,
@@ -103,6 +119,10 @@ function formatWelfordNumber(value) {
 function welfordAlmostEqual(a, b) {
   if (a === null || b === null) {
     return a === b;
+  }
+
+  if (!Number.isFinite(a) || !Number.isFinite(b)) {
+    return false;
   }
 
   const tolerance =
@@ -223,6 +243,14 @@ document.addEventListener("DOMContentLoaded", () => {
       processedValues
     );
 
+    if (![direct.mean, direct.M2, direct.variance].every(
+      value => value === null || Number.isFinite(value)
+    )) {
+      verification.textContent =
+        "Verification unavailable: numeric overflow in direct calculation.";
+      return;
+    }
+
     const welfordVariance = state.count > 1
       ? state.M2 / (state.count - 1)
       : null;
@@ -274,7 +302,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const x = observations[state.count];
 
-    const result = updateWelford(state, x);
+    let result;
+
+    try {
+      result = updateWelford(state, x);
+    } catch (error) {
+      summary.textContent =
+        `Processing stopped at observation ${state.count + 1}.\n` +
+        `${error.message}\n` +
+        `Processed observations: ${state.count}/${observations.length}\n` +
+        "Last valid state retained. Edit the sequence or Reset to restart.";
+      verification.textContent =
+        "Verification unavailable: numeric overflow.";
+      nextButton.disabled = true;
+      runAllButton.disabled = true;
+      return false;
+    }
 
     // History is stored only by the demonstration.
     processedValues.push(x);
@@ -321,7 +364,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     while (state.count < observations.length) {
-      processNextObservation();
+      if (processNextObservation() === false) break;
     }
   });
 

@@ -630,8 +630,16 @@ function hexFromBytes(buffer) {
     .join("");
 }
 
-// Hamming distance between equal-length hex digests
+// Hamming distance between non-empty, equal-length hex digests
 function digestHammingDistance(a, b) {
+  if (![a, b].every(value =>
+    typeof value === "string" &&
+    value.length > 0 &&
+    !/[^0-9a-f]/i.test(value)
+  )) {
+    throw new Error("Digests must be non-empty hexadecimal strings");
+  }
+
   if (a.length !== b.length) {
     throw new Error("Digest lengths must match");
   }

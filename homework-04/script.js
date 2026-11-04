@@ -174,6 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Data shared by all subsequent analyses
       window.hw3Simulation = simulation;
+      clearScoreDistributions();
 
       const parameters = stochasticParameters(
         model, effectiveP
@@ -314,6 +315,19 @@ const scoreDistributionCharts = {
   normalized: null
 };
 
+function clearScoreDistributions() {
+  document.getElementById("scoreDistributionTableBody").replaceChildren();
+  document.getElementById("scoreDistributionSummary").textContent =
+    "Run Analyze Score Distributions to inspect the latest simulation.";
+
+  for (const key of Object.keys(scoreDistributionCharts)) {
+    if (scoreDistributionCharts[key]) {
+      scoreDistributionCharts[key].destroy();
+      scoreDistributionCharts[key] = null;
+    }
+  }
+}
+
 // Construct common bins from the integer total scores
 function buildScoreHistogram(scores) {
   const min = Math.min(...scores);
@@ -322,13 +336,14 @@ function buildScoreHistogram(scores) {
   const range = max - min + 1;
   const binCount = Math.min(20, range);
   const binWidth = range / binCount;
+  const lowerEdge = min - 0.5;
 
   const frequencies = Array(binCount).fill(0);
 
   for (const score of scores) {
     const index = Math.min(
       binCount - 1,
-      Math.floor((score - min) / binWidth)
+      Math.floor((score - lowerEdge) / binWidth)
     );
 
     frequencies[index]++;
@@ -337,7 +352,7 @@ function buildScoreHistogram(scores) {
   // Centers of the intervals on the total-score scale
   const centers = Array.from(
     { length: binCount },
-    (_, i) => min + (i + 0.5) * binWidth
+    (_, i) => lowerEdge + (i + 0.5) * binWidth
   );
 
   return { frequencies, centers };

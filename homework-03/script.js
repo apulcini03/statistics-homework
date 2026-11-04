@@ -8,6 +8,7 @@ const ECC_INFO = new TextEncoder().encode(
 
 let eccRecipient = null;
 let eccEncryptedPackage = null;
+let eccOperationVersion = 0;
 
 // Convert an ArrayBuffer or Uint8Array to hex
 function eccToHex(data) {
@@ -98,6 +99,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // STEP 1 - Generate recipient keys
   keysButton.addEventListener("click", () => {
+    // Invalidate pending work even when regeneration fails or reuses a key.
+    eccOperationVersion++;
+
     try {
       eccRecipient = eccGenerateRecipient();
 
@@ -125,9 +129,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // STEP 2 - Encrypt message
   encryptButton.addEventListener("click", async () => {
     encryptButton.disabled = true;
+    const version = ++eccOperationVersion;
+    const recipient = eccRecipient;
+    eccEncryptedPackage = null;
+    decryptResult.textContent = "";
 
     try {
-      if (!eccRecipient) {
+      if (!recipient) {
         throw new Error(
           "Generate recipient keys before encryption."
         );
@@ -158,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const sharedSecret =
         senderKey.computeSharedSecret(
-          eccRecipient.publicKey
+          recipient.publicKey
         );
 
       // Random HKDF salt and AES-GCM nonce
@@ -188,8 +196,10 @@ document.addEventListener("DOMContentLoaded", () => {
           plaintextBytes
         );
 
+      if (version !== eccOperationVersion) return;
+
       eccEncryptedPackage = {
-        recipientPublicKey: eccRecipient.publicKey,
+        recipientPublicKey: recipient.publicKey,
         ephemeralPublicKey,
         salt,
         iv,
@@ -211,6 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
       decryptResult.textContent = "";
 
     } catch (error) {
+      if (version !== eccOperationVersion) return;
       eccEncryptedPackage = null;
       encryptResult.textContent = error.message;
       decryptResult.textContent = "";
@@ -224,9 +235,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // STEP 3 - Decrypt message
   decryptButton.addEventListener("click", async () => {
     decryptButton.disabled = true;
+    const version = eccOperationVersion;
+    const recipient = eccRecipient;
+    const encryptedPackage = eccEncryptedPackage;
 
     try {
-      if (!eccRecipient || !eccEncryptedPackage) {
+      if (!recipient || !encryptedPackage) {
         throw new Error(
           "Generate keys and encrypt a message first."
         );
@@ -234,37 +248,40 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // ECDH from recipient side: dR
       const recipientKey = new ethers.SigningKey(
-        eccRecipient.privateKey
+        recipient.privateKey
       );
 
       const sharedSecret =
         recipientKey.computeSharedSecret(
-          eccEncryptedPackage.ephemeralPublicKey
+          encryptedPackage.ephemeralPublicKey
         );
 
       const aesKey = await eccDeriveAesKey(
         sharedSecret,
-        eccEncryptedPackage.salt
+        encryptedPackage.salt
       );
 
       const decryptedBuffer =
         await crypto.subtle.decrypt(
           {
             name: "AES-GCM",
-            iv: eccEncryptedPackage.iv
+            iv: encryptedPackage.iv
           },
           aesKey,
-          eccEncryptedPackage.ciphertext
+          encryptedPackage.ciphertext
         );
 
       const recoveredMessage =
         new TextDecoder().decode(decryptedBuffer);
+
+      if (version !== eccOperationVersion) return;
 
       decryptResult.textContent =
         `Decryption successful!\n\n` +
         `Recovered plaintext:\n${recoveredMessage}`;
 
     } catch (error) {
+      if (version !== eccOperationVersion) return;
       decryptResult.textContent =
         "Decryption failed: " + error.message;
       console.error(error);
@@ -416,7 +433,7 @@ let caesarFrequencyChartInstance = null;
 // Count occurrences of letters A-Z
 function countEnglishLetters(text) {
   const counts = Array(26).fill(0);
-  const normalized = text.toUpperCase();
+  const normalized = text.replace(/[^A-Za-z]/g, "").toUpperCase();
 
   let total = 0;
 

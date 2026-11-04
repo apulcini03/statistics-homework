@@ -914,10 +914,16 @@
         </p>
         
         <p>
-          Since input-bit positions were selected
-          with replacement, some trials repeated
-          the same modification. Consequently,
-          the observations are not all independent.
+          Input-bit positions are drawn independently
+          with replacement, so the same modification
+          may occur more than once. Repetitions limit
+          coverage of distinct modifications; they do
+          not make the draws or their deterministic
+          Hamming distances dependent. For this fixed
+          message, the experiment samples the finite
+          distribution of 256 possible distances.
+          The binomial model is an ideal reference,
+          not an exact law established by this experiment.
           The experiment illustrates avalanche-like
           behaviour but does not prove cryptographic
           security or the strict avalanche criterion.
