@@ -1,0 +1,631 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>HW 5 — Riemann, Lebesgue & Normal CDF</title>
+
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+  <header>
+    <h1>HW 5 — Riemann, Lebesgue & Normal CDF</h1>
+    <p>Statistics for Cybersecurity</p>
+    <p>Academic Year 2026/2027</p>
+  </header>
+
+  <main>
+
+    <a href="../index.html" class="homework-button">
+      ← Back to homepage
+    </a>
+
+    <section class="homework-section">
+
+      <h2>Assignment</h2>
+
+      <div class="card">
+
+        <h3>Exercise 1 — Riemann and Lebesgue Integration</h3>
+
+        <p>
+          Approximate definite integrals numerically
+          using two different approaches:
+          partitioning the domain, as in Riemann
+          integration, and partitioning the range,
+          as in Lebesgue integration.
+        </p>
+
+        <p>
+          Compare accuracy, convergence and
+          computational efficiency across
+          different functions, including
+          discontinuous and pathological examples.
+        </p>
+
+        <h3>Exercise 2 — Numerical Computation of the Normal CDF</h3>
+
+        <p>
+          Develop and compare numerical methods
+          for computing the cumulative distribution
+          function of the standard normal distribution.
+        </p>
+
+        <p>
+          Investigate numerical accuracy, efficiency,
+          the role of the error function and
+          the absence of an elementary
+          antiderivative for the Gaussian density.
+        </p>
+
+      </div>
+
+      <h2>Theoretical Background</h2>
+
+      <div class="card">
+
+        <h3>Definite Integration</h3>
+
+        <p>
+          Integration is used to calculate
+          accumulated quantities, areas and
+          expectations of random variables.
+        </p>
+
+        <p>
+          Riemann and Lebesgue integration
+          provide different constructions
+          of the integral.
+        </p>
+
+        <p>
+          For sufficiently regular functions,
+          both approaches produce the same value.
+          However, Lebesgue integration applies
+          to a broader class of functions.
+        </p>
+
+        <h3>Riemann Integration</h3>
+
+        <p>
+          Riemann integration partitions the
+          domain [a,b] into subintervals.
+        </p>
+
+        <p>
+          A sample point is selected in each
+          subinterval, and the function value
+          is multiplied by the interval width.
+        </p>
+
+        <p>
+          The resulting Riemann sums approximate
+          the integral as the partition becomes
+          increasingly fine.
+        </p>
+
+        <p>
+          <strong>
+            Riemann sum:
+            sum f(x_i*) * Delta_x_i
+          </strong>
+        </p>
+
+        <p>
+          Numerical quadrature methods,
+          including left, right and midpoint
+          rules, are based on this principle.
+        </p>
+
+        <h3>Lebesgue Integration</h3>
+
+        <p>
+          Lebesgue integration is based on
+          measuring sets of points where a
+          function takes specified values
+          or belongs to a given range.
+        </p>
+
+        <p>
+          Instead of partitioning only the
+          domain, we can divide the range
+          of function values into levels.
+        </p>
+
+        <p>
+          Each level corresponds to a measurable
+          preimage in the domain.
+          Its contribution depends on the
+          measure of that preimage.
+        </p>
+
+        <p>
+          Non-negative measurable functions
+          can be approximated from below
+          using simple functions.
+        </p>
+
+        <p>
+          <strong>
+            Integral of a simple function:
+            sum c_j * measure(A_j)
+          </strong>
+        </p>
+
+        <p>
+          Here, c_j is a function level and
+          A_j is its associated measurable set.
+        </p>
+
+        <h3>Numerical Approximation vs Mathematical Definition</h3>
+
+        <p>
+          Numerical sampling provides only
+          finite information about a function.
+          It cannot, by itself, determine
+          the exact measure of every preimage.
+        </p>
+
+        <p>
+          This distinction becomes essential
+          for pathological functions, especially
+          those whose behavior differs on
+          rational and irrational points.
+        </p>
+
+        <p>
+          The experiments will distinguish
+          numerical approximations from
+          mathematically established results.
+        </p>
+
+        <h3>The Standard Normal Distribution</h3>
+
+        <p>
+          The standard normal distribution
+          has mean zero and variance one.
+        </p>
+
+        <p>
+          Its probability density function is:
+        </p>
+
+        <p>
+          <strong>
+            phi(x) = exp(-x²/2) / sqrt(2*pi)
+          </strong>
+        </p>
+
+        <p>
+          Its cumulative distribution function
+          gives the probability that a standard
+          normal random variable is less than
+          or equal to x:
+        </p>
+
+        <p>
+          <strong>
+            Phi(x) = integral from -infinity
+            to x of phi(t) dt
+          </strong>
+        </p>
+
+        <p>
+          The normal CDF has no elementary
+          closed-form expression, but it can
+          be represented exactly using
+          the special function erf.
+        </p>
+
+      </div>
+
+      <h2>Exercise 1 — Riemann and Lebesgue Integration</h2>
+
+      <div class="card">
+
+        <h3>Functions Under Investigation</h3>
+
+        <p>
+          The experiments will use a collection
+          of continuous, discontinuous,
+          unbounded and pathological functions.
+        </p>
+
+        <div class="accounts-table-wrapper">
+          <table class="crypto-comparison-table">
+            <thead>
+              <tr>
+                <th>Function</th>
+                <th>Domain</th>
+                <th>Reference Integral</th>
+                <th>Property</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>sin(x)</td>
+                <td>[0, pi]</td>
+                <td>2</td>
+                <td>Continuous</td>
+              </tr>
+              <tr>
+                <td>x²</td>
+                <td>[0, 1]</td>
+                <td>1/3</td>
+                <td>Continuous</td>
+              </tr>
+              <tr>
+                <td>1 if x &lt; 0.5, else 3</td>
+                <td>[0, 1]</td>
+                <td>2</td>
+                <td>Step function</td>
+              </tr>
+              <tr>
+                <td>|x - 0.5|</td>
+                <td>[0, 1]</td>
+                <td>1/4</td>
+                <td>Continuous, non-smooth</td>
+              </tr>
+              <tr>
+                <td>1 / sqrt(x)</td>
+                <td>(0, 1]</td>
+                <td>2</td>
+                <td>Improper integral</td>
+              </tr>
+              <tr>
+                <td>1 if x &lt; 0.5, else 0</td>
+                <td>[0, 1]</td>
+                <td>1/2</td>
+                <td>Indicator function</td>
+              </tr>
+              <tr>
+                <td>sin(x) / x</td>
+                <td>[0, pi]</td>
+                <td>Si(pi) ≈ 1.851937</td>
+                <td>Removable singularity</td>
+              </tr>
+              <tr>
+                <td>Dirichlet function</td>
+                <td>[0, 1]</td>
+                <td>Lebesgue: 0</td>
+                <td>Not Riemann-integrable</td>
+              </tr>
+              <tr>
+                <td>Thomae's function</td>
+                <td>[0, 1]</td>
+                <td>0</td>
+                <td>Riemann and Lebesgue integrable</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Step 1 — Riemann Integration</h3>
+
+        <p>
+          Select a function and approximate
+          its integral by partitioning
+          the domain into subintervals.
+        </p>
+
+        <p>
+          We will implement left, right and
+          midpoint Riemann sums and visualize
+          their approximating rectangles.
+        </p>
+
+        <p>
+          The number of subintervals will be
+          configurable, allowing us to study
+          accuracy and convergence.
+        </p>
+
+        <hr>
+
+        <h3>Step 2 — Lebesgue-Inspired Integration</h3>
+
+        <p>
+          Approximate the integral by partitioning
+          the range of function values into levels.
+        </p>
+
+        <p>
+          We will construct simple-function
+          approximations and estimate the
+          measures of their preimages.
+        </p>
+
+        <p>
+          The range resolution and numerical
+          domain resolution will be
+          controlled separately.
+        </p>
+
+        <p>
+          This separation is important because
+          increasing the number of range levels
+          does not automatically improve the
+          accuracy of preimage measurement.
+        </p>
+
+        <hr>
+
+        <h3>Step 3 — Accuracy and Convergence</h3>
+
+        <p>
+          Compare numerical estimates with
+          known analytical integrals.
+        </p>
+
+        <p>
+          Analyze absolute errors, convergence
+          as partitions are refined, and
+          the computational work required.
+        </p>
+
+        <p>
+          For bounded Riemann-integrable
+          functions on a compact interval,
+          the Riemann and Lebesgue integrals
+          agree.
+        </p>
+
+        <hr>
+
+        <h3>Step 4 — Pathological Functions</h3>
+
+        <p>
+          The Dirichlet function equals one
+          at rational points and zero
+          at irrational points.
+        </p>
+
+        <p>
+          It is Lebesgue-integrable with
+          integral zero because the rational
+          numbers have Lebesgue measure zero.
+        </p>
+
+        <p>
+          It is not Riemann-integrable:
+          every interval contains both
+          rational and irrational numbers,
+          so upper and lower Darboux sums
+          cannot converge to the same value.
+        </p>
+
+        <p>
+          Thomae's function equals 1/q at
+          a rational number p/q in lowest
+          terms and zero at irrational points.
+        </p>
+
+        <p>
+          It is Riemann-integrable with
+          integral zero, despite being
+          discontinuous at every rational point.
+        </p>
+
+        <p>
+          These functions will be studied
+          using mathematical properties and
+          carefully designed numerical examples,
+          rather than relying on floating-point
+          rationality tests.
+        </p>
+
+      </div>
+
+      <h2>Exercise 2 — Numerical Computation of the Normal CDF</h2>
+
+      <div class="card">
+
+        <h3>Mathematical Definition</h3>
+
+        <p>
+          Let Z be a standard normal random
+          variable, Z ~ N(0,1).
+        </p>
+
+        <p>
+          The cumulative distribution function is:
+        </p>
+
+        <p>
+          <strong>
+            Phi(x) = P(Z &lt;= x)
+          </strong>
+        </p>
+
+        <p>
+          <strong>
+            Phi(x) = (1/sqrt(2*pi)) *
+            integral from -infinity to x
+            of exp(-t²/2) dt
+          </strong>
+        </p>
+
+        <h3>Step 1 — Numerical Integration</h3>
+
+        <p>
+          Implement numerical integration
+          methods, including the trapezoidal
+          and Simpson rules.
+        </p>
+
+        <p>
+          The infinite integration interval
+          requires a suitable numerical
+          treatment to control truncation error.
+        </p>
+
+        <hr>
+
+        <h3>Step 2 — Power Series</h3>
+
+        <p>
+          Approximate the error function
+          using its power series expansion.
+        </p>
+
+        <p>
+          Investigate the number of terms
+          required to obtain accurate results
+          for different values of x.
+        </p>
+
+        <hr>
+
+        <h3>Step 3 — Error Function</h3>
+
+        <p>
+          The error function provides
+          an exact representation of
+          the normal CDF:
+        </p>
+
+        <p>
+          <strong>
+            Phi(x) = 0.5 *
+            [1 + erf(x / sqrt(2))]
+          </strong>
+        </p>
+
+        <p>
+          This is an exact mathematical
+          relationship, although evaluating
+          erf numerically still requires
+          a computational algorithm.
+        </p>
+
+        <hr>
+
+        <h3>Step 4 — Numerical Accuracy</h3>
+
+        <p>
+          Evaluate the CDF at multiple
+          positive and negative values.
+        </p>
+
+        <p>
+          Compare the estimates with
+          trusted reference values and
+          calculate absolute errors.
+        </p>
+
+        <p>
+          Special attention will be given
+          to symmetry, tail probabilities
+          and numerical cancellation.
+        </p>
+
+        <hr>
+
+        <h3>Step 5 — Computational Efficiency</h3>
+
+        <p>
+          Compare execution times,
+          function evaluations and
+          convergence rates.
+        </p>
+
+        <p>
+          Repeated benchmarks will help
+          reduce the influence of timing
+          fluctuations in the browser.
+        </p>
+
+        <hr>
+
+        <h3>Liouville's Theorem and Special Functions</h3>
+
+        <p>
+          The Gaussian density does not
+          have an elementary antiderivative.
+        </p>
+
+        <p>
+          Liouville's theorem on elementary
+          integration provides the mathematical
+          framework for proving this fact.
+        </p>
+
+        <p>
+          Introducing the error function
+          extends the available analytical
+          language and allows the CDF
+          to be expressed exactly.
+        </p>
+
+        <p>
+          However, an exact expression in
+          terms of a special function is
+          not the same as an elementary
+          numerical evaluation algorithm.
+        </p>
+
+        <p>
+          Numerical methods remain essential
+          when actual probability values
+          must be computed efficiently.
+        </p>
+
+      </div>
+
+      <h2>Results and Conclusions</h2>
+
+      <div class="card">
+
+        <h3>Integration Comparison</h3>
+
+        <p>
+          The final analysis will compare
+          Riemann and Lebesgue-inspired
+          approximations, discussing their
+          accuracy, convergence and
+          numerical limitations.
+        </p>
+
+        <h3>Normal CDF Comparison</h3>
+
+        <p>
+          Numerical methods for the normal
+          CDF will be evaluated against
+          trusted reference values.
+        </p>
+
+        <p>
+          The discussion will consider
+          accuracy, computational efficiency,
+          convergence and numerical stability.
+        </p>
+
+        <h3>Final Conclusions</h3>
+
+        <p>
+          The conclusions will connect the
+          mathematical theory of integration
+          with practical numerical methods
+          used in probability and statistics.
+        </p>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer>
+    <p>Statistics for Cybersecurity - 2026/2027</p>
+  </footer>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
