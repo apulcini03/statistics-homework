@@ -1106,7 +1106,8 @@ button:disabled {
 #lebesgueMethod,
 #comparisonFunction,
 #dirichletSampling,
-#thomaeTagMethod {
+#thomaeTagMethod,
+#normalCdfMethod {
   display: block;
   width: 100%;
   max-width: 450px;
@@ -1147,4 +1148,15 @@ button:disabled {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   font-size: 1rem;
+}
+
+/* HW 5 - Pending Normal CDF controls */
+#normalCdfControls button {
+  max-width: 100%;
+  white-space: normal;
+}
+
+#normalCdfControls :disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }

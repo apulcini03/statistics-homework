@@ -582,6 +582,65 @@
 
       <div class="card">
 
+        <h3>Normal CDF — Experiment Setup</h3>
+        <p id="normalCdfAvailability" class="wallet-note">
+          Setup only. Numerical methods, resolution settings and calculation
+          will become available in Step 6. Editing x only validates the input
+          and looks up a tabulated reference; it does not calculate the CDF.
+        </p>
+
+        <div id="normalCdfControls">
+          <label for="normalCdfX">Value x:</label>
+          <input type="number" id="normalCdfX" step="any" value="1"
+                 aria-describedby="normalCdfAvailability">
+
+          <label for="normalCdfMethod">Numerical method (unavailable until Step 6):</label>
+          <select id="normalCdfMethod" disabled aria-describedby="normalCdfAvailability"></select>
+
+          <label for="normalCdfParameter" id="normalCdfParameterLabel">Resolution / precision (unavailable until Step 6):</label>
+          <input type="number" id="normalCdfParameter" min="2" max="100000" step="1"
+                 value="1000" disabled aria-describedby="normalCdfAvailability">
+
+          <button type="button" id="calculateNormalCdfBtn" disabled
+                  aria-describedby="normalCdfAvailability">Calculate Normal CDF</button>
+        </div>
+
+        <div id="normalCdfSummary" class="analysis-summary stochastic-result" aria-live="polite">
+          Setup only — no numerical approximation has been computed.
+        </div>
+
+        <p class="wallet-note">
+          Reference data:
+          <a href="https://www.itl.nist.gov/div898/handbook/eda/section3/eda3671.htm">NIST standard normal table</a>.
+          Published precision: five decimal places. Reference-comparison tolerance:
+          1e-5 (display-resolution allowance, not a certified error bound).
+          Only the 13 stored x values are available; no interpolation is performed.
+        </p>
+
+        <div class="accounts-table-wrapper">
+          <table class="crypto-comparison-table" id="normalCdfTable">
+            <thead><tr>
+              <th>Method</th><th>Status</th><th>Tabulated reference Φ(x)</th>
+              <th>Approximation</th><th>Absolute error</th><th>Evaluations</th>
+              <th>Iterations</th><th>Algorithm time (ms)</th>
+            </tr></thead>
+            <tbody id="normalCdfTableBody"></tbody>
+          </table>
+        </div>
+
+        <p class="wallet-note">Normal density and cumulative-area plot — unavailable until Step 6.</p>
+        <div class="chart-container">
+          <canvas id="normalCdfDensityChart" role="img"
+                  aria-label="Normal density and cumulative-area plot, unavailable until Step 6"></canvas>
+        </div>
+        <p class="wallet-note">Method-error comparison plot — unavailable until Step 6.</p>
+        <div class="chart-container">
+          <canvas id="normalCdfErrorChart" role="img"
+                  aria-label="Normal CDF method-error comparison, unavailable until Step 6"></canvas>
+        </div>
+
+        <hr>
+
         <h3>Mathematical Definition</h3>
 
         <p>
