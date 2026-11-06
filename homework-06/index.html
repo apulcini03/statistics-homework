@@ -326,6 +326,41 @@
           accuracy and convergence.
         </p>
 
+        <div id="riemannControls">
+          <label for="riemannFunction">Function:</label>
+          <select id="riemannFunction">
+            <option value="sin">sin(x) on [0, π]</option>
+            <option value="square">x² on [0, 1]</option>
+            <option value="step">1 if x &lt; 0.5, else 3 on [0, 1]</option>
+            <option value="absolute">abs(x - 0.5) on [0, 1]</option>
+            <option value="inverseSqrt">1/sqrt(x) on (0, 1]</option>
+            <option value="indicator">1 if x &lt; 0.5, else 0 on [0, 1]</option>
+            <option value="sinc">sin(x)/x on [0, π]</option>
+          </select>
+
+          <label for="riemannIntervals">Number of subintervals (1–10000):</label>
+          <input type="number" id="riemannIntervals"
+                 min="1" max="10000" step="1" value="20">
+
+          <label for="riemannMethod">Riemann method:</label>
+          <select id="riemannMethod">
+            <option value="left">Left Riemann Sum</option>
+            <option value="right">Right Riemann Sum</option>
+            <option value="midpoint">Midpoint Riemann Sum</option>
+          </select>
+
+          <button type="button" id="calculateRiemannBtn">Calculate Integral</button>
+        </div>
+
+        <div id="riemannResults" class="analysis-summary stochastic-result"
+             aria-live="polite">Choose a function and press Calculate Integral.</div>
+
+        <div class="chart-container">
+          <canvas id="riemannChart" role="img"
+                  aria-label="Selected function, Riemann rectangles and sample points"></canvas>
+        </div>
+        <p id="riemannPlotNote" class="wallet-note"></p>
+
         <hr>
 
         <h3>Step 2 — Lebesgue-Inspired Integration</h3>
@@ -625,6 +660,7 @@
     <p>Statistics for Cybersecurity - 2026/2027</p>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
   <script src="script.js"></script>
 
 </body>

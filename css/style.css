@@ -1098,3 +1098,17 @@ button:disabled {
     font-size: 0.82rem;
   }
 }
+
+/* HW 5 - Riemann simulator controls */
+#riemannFunction,
+#riemannMethod {
+  display: block;
+  width: 100%;
+  max-width: 450px;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  font-size: 1rem;
+}
