@@ -1101,7 +1101,12 @@ button:disabled {
 
 /* HW 5 - Riemann simulator controls */
 #riemannFunction,
-#riemannMethod {
+#riemannMethod,
+#lebesgueFunction,
+#lebesgueMethod,
+#comparisonFunction,
+#dirichletSampling,
+#thomaeTagMethod {
   display: block;
   width: 100%;
   max-width: 450px;
@@ -1110,5 +1115,36 @@ button:disabled {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: white;
+  font-size: 1rem;
+}
+
+#calculateLebesgueBtn {
+  max-width: 100%;
+  white-space: normal;
+}
+
+/* HW 5 - Comparison and exact rational-point controls */
+#comparisonControls button,
+#runDirichletBtn,
+#runThomaeBtn {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.integration-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+#thomaeNumerator,
+#thomaeDenominator {
+  display: block;
+  width: 100%;
+  max-width: 450px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
   font-size: 1rem;
 }

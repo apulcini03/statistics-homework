@@ -389,6 +389,41 @@
           accuracy of preimage measurement.
         </p>
 
+        <div id="lebesgueControls">
+          <label for="lebesgueFunction">Function:</label>
+          <select id="lebesgueFunction"></select>
+
+          <label for="lebesgueLevels">Number of value levels K (1–10000):</label>
+          <input type="number" id="lebesgueLevels"
+                 min="1" max="10000" step="1" value="20">
+
+          <label for="lebesgueSamples">Domain samples M (1–100000):</label>
+          <input type="number" id="lebesgueSamples"
+                 min="1" max="100000" step="1" value="2000">
+
+          <label for="lebesgueMethod">Level approximation:</label>
+          <select id="lebesgueMethod">
+            <option value="lower">Lower Simple-Function Approximation</option>
+            <option value="upper">Upper Simple-Function Approximation</option>
+            <option value="midpoint" selected>Mid-Level Approximation</option>
+          </select>
+
+          <button type="button" id="calculateLebesgueBtn">Calculate Lebesgue Approximation</button>
+        </div>
+
+        <div id="lebesgueResults" class="analysis-summary stochastic-result"
+             aria-live="polite">Choose a function and press Calculate Lebesgue Approximation.</div>
+
+        <div class="chart-container">
+          <canvas id="lebesgueMeasuresChart" role="img"
+                  aria-label="Estimated preimage measures by function-value level"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="lebesgueContributionsChart" role="img"
+                  aria-label="Estimated integral contributions by function-value level"></canvas>
+        </div>
+        <p id="lebesguePlotNote" class="wallet-note"></p>
+
         <hr>
 
         <h3>Step 3 — Accuracy and Convergence</h3>
@@ -410,6 +445,49 @@
           the Riemann and Lebesgue integrals
           agree.
         </p>
+
+        <div id="comparisonControls">
+          <label for="comparisonFunction">Function:</label>
+          <select id="comparisonFunction"></select>
+          <label for="comparisonIntervals">Riemann subintervals n (1–10000):</label>
+          <input type="number" id="comparisonIntervals" min="1" max="10000" step="1" value="1000">
+          <label for="comparisonLevels">Lebesgue levels K (1–10000):</label>
+          <input type="number" id="comparisonLevels" min="1" max="10000" step="1" value="200">
+          <label for="comparisonSamples">Lebesgue domain samples M (1–100000):</label>
+          <input type="number" id="comparisonSamples" min="1" max="100000" step="1" value="4000">
+          <label for="comparisonRepeats">Measured repetitions (3–9, after one warm-up):</label>
+          <input type="number" id="comparisonRepeats" min="3" max="9" step="1" value="5">
+          <div class="integration-actions">
+            <button type="button" id="runComparisonBtn">Run Method Comparison</button>
+            <button type="button" id="runConvergenceBtn">Run Convergence Experiment</button>
+          </div>
+        </div>
+
+        <div id="comparisonSummary" class="analysis-summary stochastic-result" aria-live="polite">
+          Configure the methods and run a comparison.
+        </div>
+        <div class="accounts-table-wrapper">
+          <table class="crypto-comparison-table">
+            <thead><tr>
+              <th>Method</th><th>Approximation</th><th>Reference</th><th>Absolute error</th>
+              <th>Evaluations / run</th><th>Effective parameters</th>
+              <th>Median algorithm time (ms)</th><th>Min–max (ms)</th>
+              <th>Time / space complexity</th><th>Evaluations including warm-up and repeats</th>
+              <th>Analytic contribution</th>
+            </tr></thead>
+            <tbody id="comparisonTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="convergenceSummary" class="analysis-summary stochastic-result" aria-live="polite">
+          Convergence uses its own listed n/K/M configurations, independently of the benchmark inputs.
+        </div>
+        <div class="chart-container">
+          <canvas id="convergenceResolutionChart" role="img" aria-label="Absolute errors by resolution configuration"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="convergenceCostChart" role="img" aria-label="Absolute errors by function-evaluation cost"></canvas>
+        </div>
 
         <hr>
 
@@ -454,6 +532,49 @@
           rather than relying on floating-point
           rationality tests.
         </p>
+
+        <h4>Dirichlet — Constructed Sampling</h4>
+        <label for="dirichletIntervals">Uniform subintervals n (1–1000):</label>
+        <input type="number" id="dirichletIntervals" min="1" max="1000" step="1" value="20">
+        <label for="dirichletSampling">Constructed tags:</label>
+        <select id="dirichletSampling">
+          <option value="both">Rational and irrational</option>
+          <option value="rational">Rational only</option>
+          <option value="irrational">Irrational only</option>
+        </select>
+        <button type="button" id="runDirichletBtn">Run Dirichlet Experiment</button>
+        <div id="dirichletSummary" class="analysis-summary stochastic-result" aria-live="polite">
+          Run the experiment to compare constructed tags.
+        </div>
+        <div class="chart-container">
+          <canvas id="dirichletChart" role="img" aria-label="Dirichlet values on constructed rational and irrational tags"></canvas>
+        </div>
+
+        <h4>Thomae — Exact Rational Construction</h4>
+        <label for="thomaeNumerator">Selected numerator p (non-negative decimal integer, at most 100 digits):</label>
+        <input type="text" id="thomaeNumerator" inputmode="numeric" maxlength="100" value="2">
+        <label for="thomaeDenominator">Selected denominator q (positive decimal integer, at most 100 digits; p ≤ q):</label>
+        <input type="text" id="thomaeDenominator" inputmode="numeric" maxlength="100" value="4">
+        <label for="thomaeMaximumDenominator">Rational-cloud maximum denominator Q (1–200):</label>
+        <input type="number" id="thomaeMaximumDenominator" min="1" max="200" step="1" value="30">
+        <label for="thomaeIntervals">Uniform rational-tag subintervals n (1–2000):</label>
+        <input type="number" id="thomaeIntervals" min="1" max="2000" step="1" value="100">
+        <label for="thomaeTagMethod">Uniform rational tags:</label>
+        <select id="thomaeTagMethod">
+          <option value="left">Left endpoints</option>
+          <option value="right">Right endpoints</option>
+          <option value="midpoint" selected>Midpoints</option>
+        </select>
+        <button type="button" id="runThomaeBtn">Run Thomae Experiment</button>
+        <div id="thomaeSummary" class="analysis-summary stochastic-result" aria-live="polite">
+          Run the experiment to evaluate the selected fraction and enumerate rational points.
+        </div>
+        <div class="chart-container">
+          <canvas id="thomaePointsChart" role="img" aria-label="Thomae values at exactly constructed rational points"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="thomaeDenominatorsChart" role="img" aria-label="Thomae height as a function of the reduced denominator"></canvas>
+        </div>
 
       </div>
 
