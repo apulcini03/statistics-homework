@@ -16,7 +16,7 @@ after(async () => {
   assert.deepEqual(browser.exceptions, [], 'No unhandled JavaScript exceptions');
 });
 
-test('Normal CDF UI: required setup elements exist and numerical controls are unavailable', async () => {
+test('Normal CDF UI: required setup elements exist and numerical controls are operational', async () => {
   await browser.navigate(6);
   const result = await browser.evaluate(`({x:normalCdfX.value,
     disabled:[normalCdfMethod.disabled,normalCdfParameter.disabled,calculateNormalCdfBtn.disabled],
@@ -26,14 +26,14 @@ test('Normal CDF UI: required setup elements exist and numerical controls are un
     charts:Object.keys(Chart.instances).length,state:NormalCdf.getState(),
     labels:[...document.querySelectorAll('#normalCdfControls label')].map(l=>!!document.getElementById(l.htmlFor))})`);
   assert.equal(result.x, '1');
-  assert.deepEqual(result.disabled, [true, true, true]);
+  assert.deepEqual(result.disabled, [false, false, false]);
   assert.equal(result.options.length, 3);
-  assert.ok(result.options.every(label => label.includes('unavailable')));
-  assert.match(result.summary, /Setup only/);
+  assert.deepEqual(result.options, ['Trapezoidal integration', 'Simpson integration', 'Error-function power series']);
+  assert.match(result.summary, /Ready/);
   assert.match(result.summary, /0\.84134/);
   assert.equal(result.rows.length, 3);
   for (const row of result.rows) {
-    assert.equal(row[1], 'Unavailable — Step 6');
+    assert.equal(row[1], 'Not computed');
     assert.equal(row[2], '0.84134');
     assert.ok(row.slice(3).every(value => value === 'Unavailable'));
   }
@@ -42,7 +42,8 @@ test('Normal CDF UI: required setup elements exist and numerical controls are un
   assert.ok(result.labels.every(Boolean));
   assert.ok(result.state.results.every(r => r.approximation === null && r.absoluteError === null));
   await browser.evaluate('calculateNormalCdfBtn.click()');
-  assert.equal(await browser.evaluate('NormalCdf.getState().results[0].approximation'), null);
+  assert.ok(Math.abs(await browser.evaluate('NormalCdf.getState().results[0].approximation') - 0.8413447460685429) < 3e-6);
+  assert.equal(await browser.evaluate('Object.keys(Chart.instances).length'), 2);
 });
 
 test('Normal CDF UI: editing x only validates and looks up exact tabulated references', async () => {
@@ -63,11 +64,11 @@ test('Normal CDF UI: editing x only validates and looks up exact tabulated refer
   }
   await browser.set('normalCdfX', '1');
   assert.equal(await browser.evaluate('normalCdfTableBody.rows.length'), 3);
-  assert.deepEqual(await browser.evaluate('[normalCdfMethod.disabled,normalCdfParameter.disabled,calculateNormalCdfBtn.disabled]'), [true,true,true]);
+  assert.deepEqual(await browser.evaluate('[normalCdfMethod.disabled,normalCdfParameter.disabled,calculateNormalCdfBtn.disabled]'), [false,false,false]);
   assert.equal(await browser.evaluate('Object.keys(Chart.instances).length'), 0);
 });
 
-test('Normal CDF UI: planned method metadata and repeated initialization never enable or duplicate controls', async () => {
+test('Normal CDF UI: method metadata and repeated initialization keep controls enabled without duplicates', async () => {
   await browser.navigate(6);
   await browser.set('normalCdfMethod', 'simpson');
   assert.equal(await browser.evaluate('normalCdfParameter.step'), '2');
@@ -77,7 +78,7 @@ test('Normal CDF UI: planned method metadata and repeated initialization never e
   await browser.evaluate('NormalCdf.initialize();NormalCdf.initialize()');
   assert.equal(await browser.evaluate('normalCdfMethod.options.length'), 3);
   assert.equal(await browser.evaluate('normalCdfTableBody.rows.length'), 3);
-  assert.deepEqual(await browser.evaluate('[normalCdfMethod.disabled,normalCdfParameter.disabled,calculateNormalCdfBtn.disabled]'), [true,true,true]);
+  assert.deepEqual(await browser.evaluate('[normalCdfMethod.disabled,normalCdfParameter.disabled,calculateNormalCdfBtn.disabled]'), [false,false,false]);
 });
 
 test('Normal CDF infrastructure: table/plot updates replace previous content and preserve unrelated charts', async () => {

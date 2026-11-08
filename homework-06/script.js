@@ -913,7 +913,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// Step 5/8 - Normal CDF setup only; no PDF/CDF quadrature or erf implementation.
+// Step 6/8 - Normal CDF algorithms and UI, isolated from Exercise 1.
 const NormalCdf = (() => {
   const source = Object.freeze({
     title: "NIST/SEMATECH e-Handbook, section 1.3.6.7.1: Standard Normal Table",
@@ -937,15 +937,16 @@ const NormalCdf = (() => {
     { x: 4, cdf: 0.99997 }
   ].map(Object.freeze));
   const methods = Object.freeze([
-    { id: "trapezoidal", label: "Trapezoidal integration", available: false, compute: null,
+    { id: "trapezoidal", label: "Trapezoidal integration", available: true, compute: trapezoidal,
       parameter: { label: "Subintervals", defaultValue: 1000, minimum: 2, maximum: 100000, step: 1 } },
-    { id: "simpson", label: "Simpson integration", available: false, compute: null,
+    { id: "simpson", label: "Simpson integration", available: true, compute: simpson,
       parameter: { label: "Subintervals (even)", defaultValue: 1000, minimum: 2, maximum: 100000, step: 2 } },
-    { id: "erf-series", label: "Error-function power series", available: false, compute: null,
+    { id: "erf-series", label: "Error-function power series", available: true, compute: erfSeries,
       parameter: { label: "Maximum terms", defaultValue: 100, minimum: 1, maximum: 1000, step: 1 } }
   ].map(method => Object.freeze({ ...method, parameter: Object.freeze(method.parameter) })));
 
   const state = { x: null, error: null, results: [] };
+  const settings = { quadrature: "1000", terms: "100" };
   const charts = { density: null, errors: null };
   const canvasIds = { density: "normalCdfDensityChart", errors: "normalCdfErrorChart" };
 
@@ -997,7 +998,7 @@ const NormalCdf = (() => {
     validateX(x);
     const reference = referenceAt(x);
     return Object.freeze({
-      methodId, x, status: "unavailable", approximation: null, absoluteError: null,
+      methodId, x, status: "pending", approximation: null, absoluteError: null,
       evaluations: null, iterations: null, elapsedMs: null,
       reference: reference?.cdf ?? null,
       referenceTolerance: reference ? source.comparisonTolerance : null
@@ -1007,7 +1008,7 @@ const NormalCdf = (() => {
   function formatNumber(value) {
     if (value === null || value === undefined) return "Unavailable";
     if (!Number.isFinite(value)) return "Invalid numeric value";
-    return Number(value.toPrecision(8)).toString();
+    return Number(value.toPrecision(15)).toString();
   }
 
   function formatReference(value) {
@@ -1015,29 +1016,143 @@ const NormalCdf = (() => {
       ? value.toFixed(source.decimalPlaces) : "Invalid reference";
   }
 
+  const CUTOFF = 12;
+  // Cached once, outside measured calculations and their density-evaluation counts.
+  const OMITTED_TAIL_BOUND = Math.exp(-72) / Math.sqrt(2 * Math.PI) / CUTOFF;
+  function density(x) {
+    validateX(x);
+    return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+  }
+  function validateTolerance(tolerance) {
+    if (!Number.isFinite(tolerance) || tolerance < 1e-15 || tolerance > 1e-3) {
+      throw new RangeError("Erf tolerance must be between 1e-15 and 1e-3 (absolute CDF term criterion).");
+    }
+    return tolerance;
+  }
+  function quadrature(methodId, x, n) {
+    validateX(x);
+    if (typeof n !== "number") throw new RangeError("Subintervals must be numeric.");
+    validateParameter(methodId, String(n));
+    if (Math.abs(x) > 10) throw new RangeError("Quadrature supports |x| <= 10; no result computed outside this range.");
+    const common = { parameterUsed: `n=${n}`, evaluations: 0, iterations: 0,
+      converged: null, status: "completed", message: "Fixed resolution; refine n to check discretization error.",
+      cutoff: null, tailBound: 0, discretizationBound: 0 };
+    if (x === 0) return { ...common, approximation: 0.5, strategy: "Exact symmetry at x=0." };
+    const left = Math.abs(x), right = CUTOFF;
+    const h = (right - left) / n;
+    let sum = 0, correction = 0;
+    for (let i = 0; i <= n; i++) {
+      const weight = i === 0 || i === n ? 1 : methodId === "simpson" ? (i % 2 ? 4 : 2) : 2;
+      const adjusted = weight * density(left + i * h) - correction;
+      const next = sum + adjusted;
+      correction = (next - sum) - adjusted;
+      sum = next;
+    }
+    let integral = sum * h / (methodId === "simpson" ? 3 : 2);
+    // The tail cannot exceed 0.5. Only repair a tiny rounding overshoot;
+    // substantial violations are errors, never clamped into a valid probability.
+    const roundingAdjustment = integral > 0.5 && integral <= 0.5 + 8 * Number.EPSILON
+      ? integral - 0.5 : 0;
+    if (roundingAdjustment) integral = 0.5;
+    const approximation = x < 0 ? integral : 1 - integral;
+    if (!Number.isFinite(approximation) || approximation < 0 || approximation > 1 || integral > 0.5) {
+      throw new RangeError("Numerical result is invalid at this resolution; increase the subinterval count.");
+    }
+    // Conservative global derivative bounds: |second derivative| <= 1 and
+    // |fourth derivative| <= 10. Classical bounds exclude floating-point error.
+    // Tail truncation uses the Mills inequality Q(c) < phi(c)/c.
+    const length = right - left;
+    return { ...common, approximation, evaluations: n + 1, iterations: n,
+      tailProbability: integral, roundingAdjustment,
+      cutoff: CUTOFF, tailBound: OMITTED_TAIL_BOUND,
+      discretizationBound: methodId === "simpson" ? 10 * length ** 5 / (180 * n ** 4)
+        : length ** 3 / (12 * n ** 2),
+      strategy: "Integrate positive tail [|x|, 12]; omitted tail < phi(12)/12. Negative tails avoid cancellation.",
+      message: common.message + (roundingAdjustment ? " Tiny tail overshoot rounded to 0.5 (within 8 machine epsilons)." : "") + (approximation === 1 ? " Positive CDF rounded to 1 in binary64; the computed tail remains available." : "") };
+  }
+  function trapezoidal(x, n = 1000) { return quadrature("trapezoidal", x, n); }
+  function simpson(x, n = 1000) { return quadrature("simpson", x, n); }
+
+  function erfSeries(x, maxTerms = 100, tolerance = 1e-12) {
+    validateX(x);
+    if (typeof maxTerms !== "number") throw new RangeError("Maximum terms must be numeric.");
+    validateParameter("erf-series", String(maxTerms));
+    validateTolerance(tolerance);
+    if (Math.abs(x) > 4) throw new RangeError("Erf power series supports |x| <= 4 to limit cancellation; use quadrature for larger |x|.");
+    const common = { parameterUsed: `max terms=${maxTerms}; tolerance=${tolerance}`,
+      evaluations: 0, iterations: 0, cutoff: null, tailBound: 0,
+      strategy: "Erf alternating power series, compensated sum; |x| <= 4. Tolerance controls the first omitted CDF term, not total floating-point error." };
+    if (x === 0) return { ...common, approximation: 0.5, status: "converged", converged: true,
+      remainderBound: 0, roundoffEstimate: 0, message: "Exact symmetry at x=0." };
+    const z = Math.abs(x) / Math.SQRT2;
+    let term = z, sum = 0, correction = 0, absoluteSum = 0;
+    for (let i = 0; i < maxTerms; i++) {
+      const adjusted = term - correction;
+      const nextSum = sum + adjusted;
+      correction = (nextSum - sum) - adjusted;
+      sum = nextSum;
+      absoluteSum += Math.abs(term);
+      // NIST DLMF 7.6.1: recurrence avoids factorials and repeated powers.
+      const ratio = -z * z * (2 * i + 1) / ((i + 1) * (2 * i + 3));
+      const next = term * ratio;
+      if (![sum, absoluteSum, next].every(Number.isFinite)) throw new RangeError("Non-finite erf series operation.");
+      const remainderBound = Math.abs(next) / Math.sqrt(Math.PI);
+      if (Math.abs(ratio) <= 1 && remainderBound <= tolerance) {
+        const approximation = 0.5 + Math.sign(x) * sum / Math.sqrt(Math.PI);
+        if (!Number.isFinite(approximation) || approximation < 0 || approximation > 1) {
+          throw new RangeError("Erf series produced an invalid probability; use quadrature.");
+        }
+        // Deliberately conservative rounding-risk estimate, not a certified
+        // bound on libm operations; kept separate from the truncation criterion.
+        const roundoffEstimate = Number.EPSILON * (8 * (i + 1) + 4) * absoluteSum / Math.sqrt(Math.PI);
+        const warning = roundoffEstimate > tolerance;
+        return { ...common, approximation, iterations: i + 1, converged: true,
+          status: warning ? "accuracy-warning" : "converged", remainderBound, roundoffEstimate,
+          message: warning ? "Term criterion met; cancellation/roundoff may exceed the requested tolerance. Use Simpson for a precision check."
+            : "Term criterion met; tolerance is not a guarantee of total floating-point accuracy." };
+      }
+      term = next;
+    }
+    return { ...common, approximation: null, iterations: maxTerms, converged: false,
+      status: "not-converged", message: "Maximum terms reached before the term criterion was met. Increase maximum terms." };
+  }
+
+  function calculate(methodId, x, parameter, tolerance = 1e-12) {
+    const method = methodById(methodId);
+    validateX(x);
+    const pending = createPendingResult(methodId, x);
+    const now = () => typeof performance !== "undefined" ? performance.now() : Date.now();
+    const start = now();
+    let result;
+    try { result = method.compute(x, parameter, tolerance); }
+    catch (error) {
+      result = { approximation: null, status: "error", converged: false, message: error.message,
+        parameterUsed: `${parameter}${methodId === "erf-series" ? `; tolerance=${tolerance}` : ""}` };
+    }
+    const elapsedMs = now() - start; // Excludes DOM, graphs and reference lookup.
+    return Object.freeze({ ...pending, ...result, elapsedMs,
+      absoluteError: result.approximation !== null && pending.reference !== null
+        ? Math.abs(result.approximation - pending.reference) : null });
+  }
+
   function renderTable(results) {
-    const rows = results.map(result => {
-      const method = methodById(result.methodId);
-      return [method.label, result.status === "unavailable" ? "Unavailable — Step 6" : result.status,
-        formatReference(result.reference), formatNumber(result.approximation),
-        formatNumber(result.absoluteError), formatNumber(result.evaluations),
-        formatNumber(result.iterations), formatNumber(result.elapsedMs)];
-    });
     const body = document.getElementById("normalCdfTableBody");
     body.replaceChildren();
-    for (const values of rows) {
+    for (const result of results) {
       const row = document.createElement("tr");
+      const values = [methodById(result.methodId).label,
+        result.status === "pending" ? "Not computed" : `${result.status}: ${result.message}`,
+        formatReference(result.reference), formatNumber(result.approximation), formatNumber(result.absoluteError),
+        formatNumber(result.evaluations), formatNumber(result.iterations), result.elapsedMs === null ? "Unavailable" : result.elapsedMs.toFixed(3),
+        result.parameterUsed ?? "Unavailable"];
       for (const value of values) {
-        const cell = document.createElement("td");
-        cell.textContent = value;
-        row.appendChild(cell);
+        const cell = document.createElement("td"); cell.textContent = value; row.appendChild(cell);
       }
       body.appendChild(row);
     }
   }
 
-  // Receives already computed plot configurations in Step 6. No numeric data is
-  // fabricated here; null clears only this module's own chart instance.
+  // Replace only this module's charts; null clears an existing instance.
   function updateCharts(configurations = {}) {
     for (const key of Object.keys(configurations)) {
       if (!Object.hasOwn(canvasIds, key)) throw new RangeError("Unknown Normal CDF plot.");
@@ -1054,59 +1169,122 @@ const NormalCdf = (() => {
   }
 
   function refreshInput() {
+    updateCharts();
+    document.getElementById("normalCdfPlotNote").textContent = "Calculate to display the density and cumulative area.";
+    document.getElementById("normalCdfErrorNote").textContent = "Errors use only stored five-decimal NIST references.";
     const summary = document.getElementById("normalCdfSummary");
     try {
       state.x = parseX(document.getElementById("normalCdfX").value);
       state.error = null;
       state.results = methods.map(method => createPendingResult(method.id, state.x));
       const reference = referenceAt(state.x);
-      summary.textContent = "Setup only — numerical methods are unavailable until Step 6.\n" +
-        `x: ${state.x}\nTabulated reference Φ(x): ${formatReference(reference?.cdf ?? null)}\n` +
-        (reference ? `Published decimal places: ${source.decimalPlaces}; comparison tolerance: 1e-5.\n`
-          : "No stored reference for this exact x; no interpolation is performed.\n") +
-        "Approximation: Unavailable\nAbsolute error: Unavailable\n" +
-        "Function evaluations: Unavailable\nIterations: Unavailable\nAlgorithm time: Unavailable";
+      summary.textContent = `Ready — no numerical approximation has been computed.\nx: ${state.x}\n` +
+        `Tabulated reference Φ(x): ${formatReference(reference?.cdf ?? null)}\n` +
+        (reference ? "Published precision: five decimal places."
+          : "No stored reference for this exact x; no interpolation is performed.");
     } catch (error) {
-      state.x = null;
-      state.error = error.message;
-      state.results = [];
-      summary.textContent = `${error.message}\nSetup only — no numerical approximation has been computed.`;
+      state.x = null; state.error = error.message; state.results = []; summary.textContent = error.message;
     }
     renderTable(state.results);
   }
-
-  function updateParameterControl() {
-    const { parameter } = methodById(document.getElementById("normalCdfMethod").value);
-    const input = document.getElementById("normalCdfParameter");
-    input.value = parameter.defaultValue;
-    input.min = parameter.minimum;
-    input.max = parameter.maximum;
-    input.step = parameter.step;
-    input.disabled = true;
-    document.getElementById("normalCdfParameterLabel").textContent =
-      `${parameter.label} (unavailable until Step 6):`;
+  function plotResults() {
+    if (!state.results.some(result => Number.isFinite(result.approximation))) { updateCharts(); return; }
+    const x = state.x, extent = Math.max(6, Math.abs(x) + 1);
+    const positions = Array.from({ length: 801 }, (_, i) => -extent + 2 * extent * i / 800);
+    positions.push(x); positions.sort((a, b) => a - b);
+    const points = positions.map(t => ({ x: t, y: density(t) }));
+    const options = { responsive: true, maintainAspectRatio: false, animation: false,
+      scales: { x: { type: "linear", min: -extent, max: extent, ticks: { maxTicksLimit: 5 },
+        title: { display: true, text: "x" } }, y: { beginAtZero: true } },
+      plugins: { legend: { labels: { boxWidth: 10 } } } };
+    const densityPlot = { type: "line", data: { datasets: [
+      { label: "Normal density", data: points, borderColor: "#2471a3", borderWidth: 2, pointRadius: 0, fill: false },
+      { label: "Cumulative area", data: points.filter(point => point.x <= x), borderWidth: 0,
+        pointRadius: 0, backgroundColor: "rgba(36,113,163,0.25)", fill: "origin" },
+      { label: `x = ${x}`, data: [{ x, y: 0 }, { x, y: density(0) }],
+        borderColor: "#c0392b", borderWidth: 2, pointRadius: 0, fill: false }
+    ] }, options };
+    const compared = state.results.filter(result => Number.isFinite(result.absoluteError));
+    const errors = compared.length ? { type: "bar", data: {
+      labels: compared.map(result => methodById(result.methodId).label),
+      datasets: [{ label: "Difference from NIST (5 d.p.)",
+        data: compared.map(result => result.absoluteError), backgroundColor: "#2471a3" }]
+    }, options: { ...options, scales: { y: { beginAtZero: true } } } } : null;
+    updateCharts({ density: densityPlot, errors });
+    document.getElementById("normalCdfPlotNote").textContent =
+      `Density plot truncated to [${-extent}, ${extent}]; shaded area omits the left tail (< ${formatNumber(density(extent) / extent)}). Rendering is excluded from algorithm time.`;
+    document.getElementById("normalCdfErrorNote").textContent = compared.length
+      ? "Absolute differences from the rounded NIST table; differences below 1e-5 do not certify algorithm accuracy."
+      : "No NIST reference for this exact x; error chart unavailable (no interpolation).";
   }
-
+  function rememberParameter() {
+    const id = document.getElementById("normalCdfMethod").value;
+    settings[id === "erf-series" ? "terms" : "quadrature"] = document.getElementById("normalCdfParameter").value;
+    refreshInput();
+  }
+  function updateParameterControl() {
+    const method = methodById(document.getElementById("normalCdfMethod").value);
+    const input = document.getElementById("normalCdfParameter");
+    input.value = settings[method.id === "erf-series" ? "terms" : "quadrature"];
+    input.min = method.parameter.minimum; input.max = method.parameter.maximum; input.step = method.parameter.step;
+    input.disabled = false;
+    document.getElementById("normalCdfParameterLabel").textContent = `${method.parameter.label}:`;
+    refreshInput();
+  }
+  function run(compareAll) {
+    refreshInput();
+    if (state.x === null) return;
+    const selected = document.getElementById("normalCdfMethod").value;
+    settings[selected === "erf-series" ? "terms" : "quadrature"] = document.getElementById("normalCdfParameter").value;
+    state.results = methods.map(method => {
+      if (!compareAll && method.id !== selected) return createPendingResult(method.id, state.x);
+      const raw = settings[method.id === "erf-series" ? "terms" : "quadrature"];
+      try {
+        const parameter = validateParameter(method.id, raw);
+        const tolerance = method.id === "erf-series"
+          ? validateTolerance(parseNumericInput(document.getElementById("normalCdfTolerance").value, "erf tolerance")) : 1e-12;
+        return calculate(method.id, state.x, parameter, tolerance);
+      } catch (error) {
+        return { ...createPendingResult(method.id, state.x), status: "error", converged: false,
+          parameterUsed: raw, message: error.message };
+      }
+    });
+    renderTable(state.results);
+    const result = state.results.find(value => value.methodId === selected);
+    state.error = result.approximation === null ? result.message : null;
+    document.getElementById("normalCdfSummary").textContent =
+      `x: ${state.x}\nMethod: ${methodById(selected).label}\nStatus: ${result.status}\n${result.message}\n` +
+      `Approximation Φ(x): ${formatNumber(result.approximation)}\nNIST reference: ${formatReference(result.reference)}\n` +
+      `Absolute difference from rounded NIST: ${formatNumber(result.absoluteError)}\n` +
+      `Parameters used: ${result.parameterUsed}\nDensity evaluations: ${formatNumber(result.evaluations)}; iterations / series terms: ${formatNumber(result.iterations)}\n` +
+      `Algorithm time (ms): ${result.elapsedMs === null ? "Unavailable" : result.elapsedMs.toFixed(3)}\nConvergence: ${result.converged === null ? "fixed resolution" : result.converged ? "term criterion met" : "not achieved"}\n` +
+      (result.strategy ?? "") +
+      (result.discretizationBound !== undefined ? `\nConservative discretization bound (excludes rounding): ${formatNumber(result.discretizationBound)}; omitted-tail bound: ${formatNumber(result.tailBound)}` : "") +
+      (result.remainderBound !== undefined ? `\nSeries remainder bound (exact arithmetic): ${formatNumber(result.remainderBound)}; rounding-risk estimate (not certified): ${formatNumber(result.roundoffEstimate)}` : "");
+    plotResults();
+  }
+  function calculateSelected() { run(false); }
+  function compareMethods() { run(true); }
   function initialize() {
     const select = document.getElementById("normalCdfMethod");
     select.replaceChildren();
     for (const method of methods) {
-      const option = document.createElement("option");
-      option.value = method.id;
-      option.textContent = `${method.label} — unavailable (Step 6)`;
+      const option = document.createElement("option"); option.value = method.id; option.textContent = method.label;
       select.appendChild(option);
     }
-    select.disabled = true;
-    document.getElementById("calculateNormalCdfBtn").disabled = true;
+    select.disabled = false;
+    document.getElementById("calculateNormalCdfBtn").disabled = false;
     updateParameterControl();
-    updateCharts(); // Keep canvases uninitialized until computed data is available.
-    refreshInput();
     document.getElementById("normalCdfX").addEventListener("input", refreshInput);
+    document.getElementById("normalCdfParameter").addEventListener("input", rememberParameter);
+    document.getElementById("normalCdfTolerance").addEventListener("input", refreshInput);
     select.addEventListener("change", updateParameterControl);
+    document.getElementById("calculateNormalCdfBtn").addEventListener("click", calculateSelected);
+    document.getElementById("compareNormalCdfBtn").addEventListener("click", compareMethods);
   }
-
-  return Object.freeze({ source, references, methods, validateX, parseX, validateParameter,
+  return Object.freeze({ source, references, methods, validateX, parseX, validateParameter, validateTolerance,
     referenceAt, createPendingResult, formatNumber, formatReference, renderTable, updateCharts, initialize,
+    density, trapezoidal, simpson, erfSeries, calculate,
     getState: () => ({ x: state.x, error: state.error, results: state.results.slice() }) });
 })();
 

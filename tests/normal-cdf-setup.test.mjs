@@ -66,10 +66,10 @@ test('Normal CDF setup: programmatic validation rejects non-numeric or non-finit
   }
 });
 
-test('Normal CDF setup: method catalog has no callable or fabricated numerical implementations', () => {
+test('Normal CDF setup: method catalog exposes the three implemented numerical algorithms', () => {
   const methods = evaluate('NormalCdf.methods');
   assert.deepEqual(Array.from(methods, method => method.id), ['trapezoidal', 'simpson', 'erf-series']);
-  assert.ok(methods.every(method => method.available === false && method.compute === null));
+  assert.ok(methods.every(method => method.available === true && typeof method.compute === 'function'));
   assert.equal(evaluate('Object.isFrozen(NormalCdf.methods) && Object.isFrozen(NormalCdf.references)'), true);
 });
 
@@ -77,7 +77,7 @@ test('Normal CDF setup: standardized pending records keep all computed metrics n
   for (const method of ['trapezoidal', 'simpson', 'erf-series']) {
     for (const x of [0, 1, 0.25]) {
       const result = evaluate(`NormalCdf.createPendingResult('${method}',${x})`);
-      assert.equal(result.status, 'unavailable');
+      assert.equal(result.status, 'pending');
       for (const field of ['approximation', 'absoluteError', 'evaluations', 'iterations', 'elapsedMs']) {
         assert.equal(result[field], null);
       }

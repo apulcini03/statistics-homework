@@ -582,11 +582,14 @@
 
       <div class="card">
 
-        <h3>Normal CDF — Experiment Setup</h3>
+        <h3>Normal CDF — Numerical Methods</h3>
         <p id="normalCdfAvailability" class="wallet-note">
-          Setup only. Numerical methods, resolution settings and calculation
-          will become available in Step 6. Editing x only validates the input
-          and looks up a tabulated reference; it does not calculate the CDF.
+          Quadrature supports |x| ≤ 10; erf series supports |x| ≤ 4.
+          Quadrature uses a positive-tail cutoff of 12 (omitted tail &lt; 2e-33) and symmetry; x = 0 is exact.
+          Trapezoidal and Simpson share the subinterval setting (2–100000; Simpson requires even n).
+          The series uses 1–1000 terms and an absolute term tolerance from 1e-15 to 1e-3.
+          Compare uses the current quadrature and series settings; changing inputs clears previous results.
+          Times are single algorithm runs; zero may reflect timer resolution.
         </p>
 
         <div id="normalCdfControls">
@@ -594,19 +597,24 @@
           <input type="number" id="normalCdfX" step="any" value="1"
                  aria-describedby="normalCdfAvailability">
 
-          <label for="normalCdfMethod">Numerical method (unavailable until Step 6):</label>
-          <select id="normalCdfMethod" disabled aria-describedby="normalCdfAvailability"></select>
+          <label for="normalCdfMethod">Numerical method:</label>
+          <select id="normalCdfMethod" aria-describedby="normalCdfAvailability"></select>
 
-          <label for="normalCdfParameter" id="normalCdfParameterLabel">Resolution / precision (unavailable until Step 6):</label>
+          <label for="normalCdfParameter" id="normalCdfParameterLabel">Subintervals:</label>
           <input type="number" id="normalCdfParameter" min="2" max="100000" step="1"
-                 value="1000" disabled aria-describedby="normalCdfAvailability">
+                 value="1000" aria-describedby="normalCdfAvailability">
 
-          <button type="button" id="calculateNormalCdfBtn" disabled
+          <label for="normalCdfTolerance">Erf absolute term tolerance (not total error):</label>
+          <input type="number" id="normalCdfTolerance" min="1e-15" max="1e-3" step="any" value="1e-12"
+                 aria-describedby="normalCdfAvailability">
+
+          <button type="button" id="calculateNormalCdfBtn"
                   aria-describedby="normalCdfAvailability">Calculate Normal CDF</button>
+          <button type="button" id="compareNormalCdfBtn">Compare All Methods</button>
         </div>
 
         <div id="normalCdfSummary" class="analysis-summary stochastic-result" aria-live="polite">
-          Setup only — no numerical approximation has been computed.
+          Ready — no numerical approximation has been computed.
         </div>
 
         <p class="wallet-note">
@@ -622,21 +630,21 @@
             <thead><tr>
               <th>Method</th><th>Status</th><th>Tabulated reference Φ(x)</th>
               <th>Approximation</th><th>Absolute error</th><th>Evaluations</th>
-              <th>Iterations</th><th>Algorithm time (ms)</th>
+              <th>Iterations / series terms</th><th>Algorithm time (ms)</th><th>Parameters used</th>
             </tr></thead>
             <tbody id="normalCdfTableBody"></tbody>
           </table>
         </div>
 
-        <p class="wallet-note">Normal density and cumulative-area plot — unavailable until Step 6.</p>
+        <p id="normalCdfPlotNote" class="wallet-note">Calculate to display the density and cumulative area.</p>
         <div class="chart-container">
           <canvas id="normalCdfDensityChart" role="img"
-                  aria-label="Normal density and cumulative-area plot, unavailable until Step 6"></canvas>
+                  aria-label="Normal density and cumulative-area plot"></canvas>
         </div>
-        <p class="wallet-note">Method-error comparison plot — unavailable until Step 6.</p>
+        <p id="normalCdfErrorNote" class="wallet-note">Errors use only stored five-decimal NIST references.</p>
         <div class="chart-container">
           <canvas id="normalCdfErrorChart" role="img"
-                  aria-label="Normal CDF method-error comparison, unavailable until Step 6"></canvas>
+                  aria-label="Normal CDF method-error comparison"></canvas>
         </div>
 
         <hr>
