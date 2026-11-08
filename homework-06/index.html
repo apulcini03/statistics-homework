@@ -748,6 +748,77 @@
           and numerical cancellation.
         </p>
 
+        <div id="cdfExperimentControls">
+          <label for="cdfExperimentN">Quadrature subintervals n (even, 2–100000):</label>
+          <input id="cdfExperimentN" type="number" min="2" max="100000" step="2" value="1000">
+          <label for="cdfExperimentTerms">Erf maximum terms (1–1000):</label>
+          <input id="cdfExperimentTerms" type="number" min="1" max="1000" step="1" value="100">
+          <label for="cdfExperimentTolerance">Erf absolute term tolerance (1e-15–1e-3):</label>
+          <input id="cdfExperimentTolerance" type="number" min="1e-15" max="1e-3" step="any" value="1e-12">
+          <label for="cdfReferenceKind">Convergence and benchmark error source:</label>
+          <select id="cdfReferenceKind">
+            <option value="erfc">Independent erfc vectors (binary64)</option>
+            <option value="nist">Rounded NIST table (5 decimals)</option>
+          </select>
+          <label for="cdfExperimentX">Convergence and benchmark x:</label>
+          <input id="cdfExperimentX" type="number" step="any" value="1">
+          <div class="integration-actions">
+            <button id="runCdfAccuracyBtn" type="button">Run Accuracy and Tail Experiments</button>
+            <button id="runCdfConvergenceBtn" type="button">Run CDF Convergence</button>
+          </div>
+        </div>
+        <p class="wallet-note">
+          Accuracy tables keep the two reference sources separate:
+          <a href="https://www.itl.nist.gov/div898/handbook/eda/section3/eda3671.htm">NIST</a>
+          has five published decimals; its difference is not the true error at higher precision.
+          Independent vectors use CPython 3.10.7 / macOS libm
+          <a href="https://docs.python.org/3.10/library/math.html#math.erfc">erfc</a>, stored in binary64.
+          Differences near their rounding scale do not certify total accuracy. No interpolation is used.
+        </p>
+        <div id="cdfAccuracySummary" class="analysis-summary stochastic-result" aria-live="polite"></div>
+        <h4>Accuracy across 13 reference points</h4>
+        <div class="accounts-table-wrapper">
+          <table class="crypto-comparison-table" id="cdfAccuracyTable">
+            <thead><tr><th>x</th><th>NIST (5 decimals)</th><th>Independent erfc CDF (binary64)</th>
+              <th>Trapezoidal CDF</th><th>Trapezoidal difference from NIST</th><th>Trapezoidal difference from erfc</th><th>Trapezoidal status</th>
+              <th>Simpson CDF</th><th>Simpson difference from NIST</th><th>Simpson difference from erfc</th><th>Simpson status</th>
+              <th>Erf CDF</th><th>Erf difference from NIST</th><th>Erf difference from erfc</th><th>Erf status</th>
+            </tr></thead><tbody id="cdfAccuracyBody"></tbody>
+          </table>
+        </div>
+        <h4>Tail accuracy and survival probabilities</h4>
+        <p class="wallet-note">
+          Quadrature supports |x| ≤ 10; erf series supports |x| ≤ 4.
+          Survival means P(Z &gt; x). Positive quadrature tails are recorded directly, not by subtracting a rounded CDF from 1.
+          A displayed CDF of 1 at finite x is a floating-point rounding result, not an exact probability.
+        </p>
+        <div class="accounts-table-wrapper">
+          <table class="crypto-comparison-table" id="cdfTailTable">
+            <thead><tr><th>x</th><th>Method</th><th>CDF</th><th>Reference CDF (erfc)</th><th>CDF difference from erfc</th>
+              <th>Survival</th><th>Reference survival (erfc)</th><th>Survival difference</th><th>Relative small-tail difference</th>
+              <th>Survival calculation</th><th>Status</th></tr></thead><tbody id="cdfTailBody"></tbody>
+          </table>
+        </div>
+        <h4>Convergence by method and numerical cost</h4>
+        <p class="wallet-note">
+          Quadrature n: 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000.
+          Erf tolerances: 1e-3, 1e-5, 1e-7, 1e-9, 1e-11, 1e-13, 1e-15; the maximum-terms setting stays fixed.
+          Log charts omit zero, unavailable and failed values; they do not replace zeros with positive errors.
+          Tables retain those values and precision warnings. Evaluations and terms represent different kinds of work.
+        </p>
+        <div id="cdfConvergenceSummary" class="analysis-summary stochastic-result" aria-live="polite"></div>
+        <div class="accounts-table-wrapper">
+          <table class="crypto-comparison-table" id="cdfConvergenceTable">
+            <thead><tr><th>Method</th><th>x</th><th>Parameters used</th><th>CDF</th><th>Selected reference</th><th>Reference difference</th>
+              <th>Reference precision</th><th>Density evaluations</th><th>Iterations / terms</th><th>Status</th></tr></thead>
+            <tbody id="cdfConvergenceBody"></tbody>
+          </table>
+        </div>
+        <div class="chart-container"><canvas id="cdfTrapezoidalConvergenceChart" role="img" aria-label="Trapezoidal error versus subintervals"></canvas></div>
+        <div class="chart-container"><canvas id="cdfSimpsonConvergenceChart" role="img" aria-label="Simpson error versus subintervals"></canvas></div>
+        <div class="chart-container"><canvas id="cdfSeriesConvergenceChart" role="img" aria-label="Erf error versus term tolerance"></canvas></div>
+        <div class="chart-container"><canvas id="cdfCostConvergenceChart" role="img" aria-label="CDF errors versus evaluations or terms"></canvas></div>
+
         <hr>
 
         <h3>Step 5 — Computational Efficiency</h3>
@@ -763,6 +834,28 @@
           reduce the influence of timing
           fluctuations in the browser.
         </p>
+
+        <div id="cdfBenchmarkControls">
+          <p class="wallet-note">Uses x, n, maximum terms, tolerance and error source from the accuracy controls above.</p>
+          <label for="cdfBenchmarkRepeats">Measured batch repetitions (3–15):</label>
+          <input id="cdfBenchmarkRepeats" type="number" min="3" max="15" step="1" value="5">
+          <button id="runCdfBenchmarkBtn" type="button">Run CDF Benchmark</button>
+        </div>
+        <p class="wallet-note">
+          Each available method uses 3 warm-up calls and adaptive batches targeting 8–20 ms, capped at 65536 calls.
+          Timing excludes tables, charts, reference comparison and warm-up; batch-loop and clock overhead remain included.
+          Slices yield to the browser between batches. Short or unresolved batches are explicitly flagged.
+          Median, minimum and maximum refer to batch means in ms per call, not individual-call latency.
+        </p>
+        <div id="cdfBenchmarkSummary" class="analysis-summary stochastic-result" aria-live="polite"></div>
+        <div class="accounts-table-wrapper">
+          <table class="crypto-comparison-table" id="cdfBenchmarkTable">
+            <thead><tr><th>Method</th><th>x</th><th>Parameters used</th><th>CDF</th><th>Reference difference</th><th>Error source</th>
+              <th>Density evaluations per call</th><th>Iterations / terms per call</th><th>Median ms/call</th><th>Minimum ms/call</th><th>Maximum ms/call</th>
+              <th>Measured batches</th><th>Warm-up calls</th><th>Calibration calls</th><th>Measured calls</th><th>Observed clock tick (ms)</th>
+              <th>Algorithm status</th><th>Timing status</th></tr></thead><tbody id="cdfBenchmarkBody"></tbody>
+          </table>
+        </div>
 
         <hr>
 

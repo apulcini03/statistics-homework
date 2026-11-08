@@ -95,8 +95,10 @@ test('Riemann UI: mobile 320px and desktop contain the graph before and after ca
   await browser.viewport(320);
   await browser.navigate(6);
   const checkWidth = async width => {
-    assert.equal(await browser.evaluate('document.documentElement.clientWidth'), width);
-    assert.equal(await browser.evaluate('document.documentElement.scrollWidth'), width);
+    const dimensions = await browser.evaluate('({inner:innerWidth,client:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth})');
+    assert.equal(dimensions.inner, width);
+    if (width === 320) assert.equal(dimensions.client, 320);
+    assert.equal(dimensions.scroll, dimensions.client, 'No horizontal overflow with or without a vertical scrollbar');
   };
   await checkWidth(320);
   for (const id of ['sin', 'step', 'inverseSqrt', 'sinc']) {

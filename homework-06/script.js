@@ -1281,10 +1281,303 @@ const NormalCdf = (() => {
     select.addEventListener("change", updateParameterControl);
     document.getElementById("calculateNormalCdfBtn").addEventListener("click", calculateSelected);
     document.getElementById("compareNormalCdfBtn").addEventListener("click", compareMethods);
+    initializeExperiments();
   }
+  // Step 7: independent reference literals, experiments and batch timing only.
+  // Reproduction: CPython 3.10.7/macOS libm, for each x:
+  // (.5*math.erfc(-x/math.sqrt(2)), .5*math.erfc(x/math.sqrt(2))).
+  // https://docs.python.org/3.10/library/math.html#math.erfc
+  // Binary64 vectors, NOT certified arbitrary-precision values. Survival is
+  // computed independently, never reconstructed from an already rounded CDF.
+  const numericSource = Object.freeze({
+    title: "Independent CPython 3.10.7 / macOS libm erfc vectors (binary64)",
+    url: "https://docs.python.org/3.10/library/math.html#math.erfc",
+    limitation: "Stored double-precision values; differences near their rounding scale cannot certify total algorithm accuracy. No interpolation."
+  });
+  const numericReferences = Object.freeze([
+    [-10,7.619853024160593e-24,1], [-8,6.22096057427182e-16,.9999999999999993],
+    [-6,9.865876450377014e-10,.9999999990134123], [-4,3.167124183311996e-5,.9999683287581669],
+    [-3,.0013498980316300957,.9986501019683699], [-2,.022750131948179216,.9772498680518208],
+    [-1.96,.02499789514822043,.9750021048517795], [-1,.15865525393145705,.8413447460685429],
+    [-.5,.30853753872598694,.691462461274013], [0,.5,.5], [.5,.691462461274013,.30853753872598694],
+    [1,.8413447460685429,.15865525393145705], [1.96,.9750021048517795,.02499789514822043],
+    [2,.9772498680518208,.022750131948179216], [3,.9986501019683699,.0013498980316300957],
+    [4,.9999683287581669,3.167124183311996e-5], [6,.9999999990134123,9.865876450377014e-10],
+    [8,.9999999999999993,6.22096057427182e-16], [10,1,7.619853024160593e-24]
+  ].map(([x, cdf, survival]) => Object.freeze({ x, cdf, survival })));
+  const resolutions = Object.freeze([20,50,100,200,500,1000,2000,5000,10000]);
+  const tolerances = Object.freeze([1e-3,1e-5,1e-7,1e-9,1e-11,1e-13,1e-15]);
+  const tailXs = Object.freeze([-10,-8,-6,-4,4,6,8,10]);
+
+  function experimentOptions(options = {}) {
+    const normalized = { n: 1000, maxTerms: 100, tolerance: 1e-12, referenceKind: "erfc", repeats: 5, ...options };
+    if (typeof normalized.n !== "number" || typeof normalized.maxTerms !== "number") {
+      throw new RangeError("Experiment resolutions must be numeric integers.");
+    }
+    validateParameter("simpson", String(normalized.n));
+    validateParameter("erf-series", String(normalized.maxTerms));
+    validateTolerance(normalized.tolerance);
+    if (!["erfc", "nist"].includes(normalized.referenceKind)) throw new RangeError("Select a supported reference source.");
+    if (!Number.isSafeInteger(normalized.repeats) || normalized.repeats < 3 || normalized.repeats > 15) {
+      throw new RangeError("Benchmark repetitions must be an integer from 3 to 15.");
+    }
+    return normalized;
+  }
+
+  function experimentCase(methodId, x, options = {}) {
+    const config = experimentOptions(options);
+    methodById(methodId); validateX(x);
+    const parameter = methodId === "erf-series" ? config.maxTerms : config.n;
+    const supported = Math.abs(x) <= (methodId === "erf-series" ? 4 : 10);
+    const result = supported ? calculate(methodId, x, parameter, config.tolerance)
+      : { ...createPendingResult(methodId,x), status: "unsupported", converged: false,
+        parameterUsed: methodId === "erf-series" ? `max terms=${parameter}; tolerance=${config.tolerance}` : `n=${parameter}`,
+        message: `Unsupported: |x| must be <= ${methodId === "erf-series" ? 4 : 10}.`, evaluations: 0, iterations: 0 };
+    const numeric = numericReferences.find(reference => reference.x === x) ?? null;
+    const valid = Number.isFinite(result.approximation);
+    const survival = !valid ? null : x === 0 ? 0.5
+      : x > 0 && methodId !== "erf-series" ? result.tailProbability : 1 - result.approximation;
+    const smallTail = !valid ? null : x <= 0 ? result.approximation : survival;
+    const expectedTail = numeric ? Math.min(numeric.cdf,numeric.survival) : null;
+    const numericError = valid && numeric ? Math.abs(result.approximation - numeric.cdf) : null;
+    const referenceValue = config.referenceKind === "nist" ? result.reference : numeric?.cdf ?? null;
+    const error = valid && referenceValue !== null ? Math.abs(result.approximation - referenceValue) : null;
+    const errorClass = error === null ? "Unavailable" : error === 0 ? "Zero at stored reference precision"
+      : config.referenceKind === "nist" ? (error < source.displayResolution ? "Below NIST display resolution" : "Difference from rounded NIST")
+      : error <= 4 * Number.EPSILON * Math.abs(referenceValue) ? "Near binary64 reference rounding scale" : "Resolved difference";
+    return Object.freeze({ ...result, n: methodId === "erf-series" ? null : config.n,
+      maxTerms: methodId === "erf-series" ? config.maxTerms : null,
+      tolerance: methodId === "erf-series" ? config.tolerance : null,
+      numericReference: numeric?.cdf ?? null, numericError, referenceKind: config.referenceKind, referenceValue,
+      error, errorClass, survival, survivalReference: numeric?.survival ?? null,
+      survivalError: valid && numeric ? Math.abs(survival - numeric.survival) : null,
+      survivalSource: methodId !== "erf-series" && x > 0 ? "Direct quadrature tail" : "CDF complement / symmetry",
+      smallTailRelativeError: smallTail !== null && expectedTail !== null ? Math.abs(smallTail - expectedTail) / expectedTail : null,
+      cost: valid ? methodId === "erf-series" ? result.iterations : result.evaluations : null });
+  }
+
+  function accuracyExperiment(options = {}) {
+    const config = experimentOptions(options);
+    return references.map(reference => ({ x: reference.x, nist: reference.cdf,
+      numeric: numericReferences.find(value => value.x === reference.x).cdf,
+      results: methods.map(method => experimentCase(method.id,reference.x,config)) }));
+  }
+  function convergenceExperiment(x, options = {}) {
+    validateX(x); const config = experimentOptions(options);
+    return methods.map(method => ({ methodId: method.id,
+      rows: (method.id === "erf-series" ? tolerances : resolutions).map(resolution => ({
+        ...experimentCase(method.id,x,{ ...config, ...(method.id === "erf-series" ? { tolerance: resolution } : { n: resolution }) }),
+        resolution
+      })) }));
+  }
+  function tailExperiment(options = {}) {
+    const config = experimentOptions(options);
+    return tailXs.flatMap(x => methods.map(method => experimentCase(method.id,x,config)));
+  }
+
+  // Zero errors are deliberately omitted from logarithmic data, never replaced
+  // by epsilon. Their exact counts and locations remain in the table/summary.
+  function logPoints(rows, axis) {
+    return rows.filter(row => Number.isFinite(row.error) && row.error > 0 && Number.isFinite(row[axis]) && row[axis] > 0)
+      .map(row => ({ x: row[axis], y: row.error }));
+  }
+  function timingStatistics(samples) {
+    if (!Array.isArray(samples) || !samples.length || samples.some(value => !Number.isFinite(value) || value < 0)) {
+      throw new RangeError("Timing samples must be non-negative finite numbers.");
+    }
+    const sorted = samples.slice().sort((a,b) => a-b), middle = Math.floor(sorted.length/2);
+    return { minimumMs: sorted[0], medianMs: sorted.length % 2 ? sorted[middle] : (sorted[middle-1]+sorted[middle])/2,
+      maximumMs: sorted[sorted.length-1] };
+  }
+  function timerResolution(now) {
+    let previous = now(), smallest = Infinity;
+    for (let i=0; i<2048; i++) {
+      const current = now();
+      if (!Number.isFinite(current) || !Number.isFinite(previous) || current < previous) throw new RangeError("Invalid monotonic timer.");
+      if (current > previous) smallest = Math.min(smallest,current-previous);
+      previous = current;
+    }
+    return Number.isFinite(smallest) ? smallest : null;
+  }
+  function checkCancellation(runtime) {
+    if (runtime.isCancelled?.()) { const error = new Error("Benchmark cancelled: inputs changed."); error.name="AbortError"; throw error; }
+  }
+  async function benchmarkMethod(methodId, x, options = {}, runtime = {}) {
+    const config = experimentOptions(options), result = experimentCase(methodId,x,config);
+    if (!Number.isFinite(result.approximation)) return { ...result, benchmarkStatus: "Skipped: no valid approximation",
+      minimumMs: null, medianMs: null, maximumMs: null, batches: [], warmupCalls: 0, calibrationCalls: 0 };
+    const now = runtime.now ?? (() => performance.now());
+    const pause = runtime.pause ?? (() => new Promise(resolve => setTimeout(resolve,0)));
+    const resolution = timerResolution(now);
+    const compute = methodById(methodId).compute;
+    const invoke = () => compute(x, methodId === "erf-series" ? config.maxTerms : config.n,config.tolerance);
+    checkCancellation(runtime);
+    for (let i=0;i<3;i++) { checkCancellation(runtime); invoke(); await pause(); }
+    function batch(requested) {
+      checkCancellation(runtime);
+      const wallStart = Date.now(), start = now();
+      let calls=0;
+      while (calls < requested) {
+        invoke(); calls++;
+        // Bound each synchronous slice even with a coarse/frozen performance clock.
+        if (Date.now()-wallStart >= 20) break;
+      }
+      const elapsed = now()-start;
+      if (!Number.isFinite(elapsed) || elapsed < 0) throw new RangeError("Invalid benchmark duration.");
+      return { calls, elapsedMs: elapsed, meanMs: elapsed/calls };
+    }
+    const targetMs = Math.max(8, Math.min(20,20*(resolution ?? 0)));
+    let batchSize=1, calibrationCalls=0;
+    while (true) {
+      const measured=batch(batchSize); calibrationCalls+=measured.calls;
+      await pause(); checkCancellation(runtime);
+      if (measured.elapsedMs >= targetMs || measured.calls < batchSize || batchSize >= 65536) break;
+      batchSize*=2;
+    }
+    const batches=[];
+    for(let i=0;i<config.repeats;i++) {
+      batches.push(batch(batchSize)); await pause(); checkCancellation(runtime);
+    }
+    // The calibration target is a planning goal, not the timer's resolution.
+    // Judge resolution on aggregate durations (at least 20 observed ticks),
+    // rather than comparing the amortized per-call time with a single tick.
+    const limited = resolution === null || batches.some(value => value.elapsedMs <= 0 || value.elapsedMs < 20*resolution);
+    return { ...result, ...timingStatistics(batches.map(value => value.meanMs)), batches,
+      timerResolutionMs: resolution, targetBatchMs: targetMs, warmupCalls: 3, calibrationCalls,
+      measuredCalls: batches.reduce((sum,value)=>sum+value.calls,0), batchSize,
+      benchmarkStatus: limited ? "Timer/batch limit: timings are indicative only" : "Resolved batches; observed timing only" };
+  }
+  async function benchmarkExperiment(x, options = {}, runtime = {}) {
+    validateX(x); const config = experimentOptions(options), rows=[];
+    for(const method of methods) {
+      checkCancellation(runtime);
+      runtime.onProgress?.(method.label);
+      rows.push(await benchmarkMethod(method.id,x,config,runtime));
+    }
+    return rows;
+  }
+
+  const experimentState = { accuracy: null, convergence: null, tails: null, benchmark: null };
+  const experimentCharts = {};
+  let benchmarkGeneration=0;
+  function clearExperimentCharts() {
+    for(const id of Object.keys(experimentCharts)) { experimentCharts[id]?.destroy(); delete experimentCharts[id]; }
+  }
+  function invalidateExperiments() {
+    benchmarkGeneration++;
+    clearExperimentCharts();
+    for(const key of Object.keys(experimentState)) experimentState[key]=null;
+    for(const id of ["cdfAccuracyBody","cdfConvergenceBody","cdfTailBody","cdfBenchmarkBody"]) document.getElementById(id).replaceChildren();
+    document.getElementById("cdfAccuracySummary").textContent="No results. Editing experiment settings clears previous results and cancels a running benchmark.";
+    document.getElementById("cdfBenchmarkSummary").textContent="Benchmark not run.";
+    document.getElementById("cdfConvergenceSummary").textContent="Run convergence to display errors and cost.";
+    document.getElementById("runCdfBenchmarkBtn").disabled=false;
+  }
+  function readExperimentOptions() {
+    return experimentOptions({ n: parseNumericInput(document.getElementById("cdfExperimentN").value,"subintervals"),
+      maxTerms: parseNumericInput(document.getElementById("cdfExperimentTerms").value,"maximum terms"),
+      tolerance: parseNumericInput(document.getElementById("cdfExperimentTolerance").value,"erf tolerance"),
+      referenceKind: document.getElementById("cdfReferenceKind").value,
+      repeats: parseNumericInput(document.getElementById("cdfBenchmarkRepeats").value,"benchmark repetitions") });
+  }
+  function experimentRows(id, rows) {
+    const body = document.getElementById(id); body.replaceChildren();
+    for(const values of rows) {
+      const row=document.createElement("tr");
+      for(const value of values) { const cell=document.createElement("td"); cell.textContent=String(value); row.appendChild(cell); }
+      body.appendChild(row);
+    }
+  }
+  function resultStatus(row) { return `${row.status}: ${row.message}`; }
+  function runAccuracyUI() {
+    experimentState.accuracy=null; experimentState.tails=null;
+    experimentRows("cdfAccuracyBody",[]); experimentRows("cdfTailBody",[]);
+    try {
+      const config=readExperimentOptions(), rows=accuracyExperiment(config);
+      experimentState.accuracy=rows;
+      experimentRows("cdfAccuracyBody",rows.map(row=>[row.x,formatReference(row.nist),formatNumber(row.numeric),
+        ...row.results.flatMap(result=>[formatNumber(result.approximation),formatNumber(result.absoluteError),formatNumber(result.numericError),resultStatus(result)])]));
+      const tails=tailExperiment(config); experimentState.tails=tails;
+      experimentRows("cdfTailBody",tails.map(row=>[row.x,methodById(row.methodId).label,formatNumber(row.approximation),
+        formatNumber(row.numericReference),formatNumber(row.numericError),formatNumber(row.survival),formatNumber(row.survivalReference),
+        formatNumber(row.survivalError),formatNumber(row.smallTailRelativeError),row.survivalSource,resultStatus(row)]));
+      document.getElementById("cdfAccuracySummary").textContent=
+        `13 x values, both reference sources; 8 tail x values. n=${config.n}, max terms=${config.maxTerms}, tolerance=${config.tolerance}. `+
+        "A zero difference means equality at stored reference precision; a CDF rounded to 1 is not mathematically exact for finite x.";
+    } catch(error) { document.getElementById("cdfAccuracySummary").textContent=error.message; }
+  }
+  function drawConvergence(groups) {
+    clearExperimentCharts();
+    const colors=["#2471a3","#c0392b","#148f77"];
+    const label=groups[0].rows[0].referenceKind === "nist" ? "Difference from NIST (5 d.p.)" : "Difference from erfc (binary64)";
+    function draw(id,datasets,xTitle,reverse=false) {
+      experimentCharts[id]=new Chart(document.getElementById(id),{ type:"line",data:{datasets},options:{
+        responsive:true,maintainAspectRatio:false,animation:false,
+        scales:{x:{type:"logarithmic",reverse,title:{display:true,text:xTitle},
+          ticks:{maxTicksLimit:5,callback:value=>Number(value).toExponential(0)}},
+          y:{type:"logarithmic",title:{display:true,text:label},
+            ticks:{maxTicksLimit:6,callback:value=>Number(value).toExponential(0)}}},
+        plugins:{legend:{labels:{boxWidth:10}}}
+      }});
+    }
+    groups.forEach((group,i)=>draw(["cdfTrapezoidalConvergenceChart","cdfSimpsonConvergenceChart","cdfSeriesConvergenceChart"][i],
+      [{label:methodById(group.methodId).label,data:logPoints(group.rows,"resolution"),borderColor:colors[i],pointRadius:3}],
+      group.methodId === "erf-series" ? "Erf tolerance (tighter to the right)" : "Subintervals n",group.methodId === "erf-series"));
+    draw("cdfCostConvergenceChart",groups.map((group,i)=>({label:methodById(group.methodId).label,
+      data:logPoints(group.rows,"cost"),borderColor:colors[i],pointRadius:3})),"Density evaluations / series terms (different work units)");
+  }
+  function runConvergenceUI() {
+    clearExperimentCharts(); experimentState.convergence=null; experimentRows("cdfConvergenceBody",[]);
+    try {
+      const x=parseX(document.getElementById("cdfExperimentX").value), groups=convergenceExperiment(x,readExperimentOptions());
+      experimentState.convergence=groups;
+      const all=groups.flatMap(group=>group.rows);
+      experimentRows("cdfConvergenceBody",all.map(row=>[methodById(row.methodId).label,row.x,row.parameterUsed,
+        formatNumber(row.approximation),formatNumber(row.referenceValue),formatNumber(row.error),row.errorClass,
+        formatNumber(row.evaluations),formatNumber(row.iterations),resultStatus(row)]));
+      drawConvergence(groups);
+      document.getElementById("cdfConvergenceSummary").textContent=
+        `x=${x}. Zero errors omitted from log charts: ${all.filter(row=>row.error===0).length}. `+
+        `Unavailable/failed points: ${all.filter(row=>row.error===null).length}. `+
+        "Zero locations and precision warnings remain in the table. Kinds of work are not equivalent costs; tighter series tolerances may reach a rounding plateau.";
+    } catch(error) { document.getElementById("cdfConvergenceSummary").textContent=error.message; }
+  }
+  async function runBenchmarkUI() {
+    const token=++benchmarkGeneration, button=document.getElementById("runCdfBenchmarkBtn"), summary=document.getElementById("cdfBenchmarkSummary");
+    button.disabled=true; experimentRows("cdfBenchmarkBody",[]); experimentState.benchmark=null;
+    try {
+      const x=parseX(document.getElementById("cdfExperimentX").value), config=readExperimentOptions();
+      const rows=await benchmarkExperiment(x,config,{isCancelled:()=>token!==benchmarkGeneration,
+        onProgress:label=>{summary.textContent=`Warming up / benchmarking ${label}…`;}});
+      if(token!==benchmarkGeneration)return;
+      experimentState.benchmark=rows;
+      experimentRows("cdfBenchmarkBody",rows.map(row=>[methodById(row.methodId).label,row.x,row.parameterUsed,
+        formatNumber(row.approximation),formatNumber(row.error),row.referenceKind,formatNumber(row.evaluations),formatNumber(row.iterations),
+        formatNumber(row.medianMs),formatNumber(row.minimumMs),formatNumber(row.maximumMs),row.batches.length,
+        row.warmupCalls,row.calibrationCalls,formatNumber(row.measuredCalls),formatNumber(row.timerResolutionMs),
+        resultStatus(row),row.benchmarkStatus]));
+      summary.textContent=`${config.repeats} measured batches per available method; 3 warm-up calls, adaptive calibration, target 8–20 ms/batch, cap 65536 calls. `+
+        "Times are median/min/max of batch means (ms/call), include loop/clock overhead, exclude all rendering, reference lookup and warm-up. " +
+        "Observed clock tick is empirical, not guaranteed timer resolution; short or unresolved batches are flagged. No universal speed ranking is implied.";
+    } catch(error) { if(token===benchmarkGeneration) summary.textContent=error.message; }
+    finally { if(token===benchmarkGeneration)button.disabled=false; }
+  }
+  function initializeExperiments() {
+    invalidateExperiments();
+    for(const id of ["cdfExperimentN","cdfExperimentTerms","cdfExperimentTolerance","cdfReferenceKind","cdfExperimentX","cdfBenchmarkRepeats"]) {
+      document.getElementById(id).addEventListener("input",invalidateExperiments);
+    }
+    document.getElementById("runCdfAccuracyBtn").addEventListener("click",runAccuracyUI);
+    document.getElementById("runCdfConvergenceBtn").addEventListener("click",runConvergenceUI);
+    document.getElementById("runCdfBenchmarkBtn").addEventListener("click",runBenchmarkUI);
+  }
+  const experiments=Object.freeze({ numericSource,numericReferences,resolutions,tolerances,tailXs,
+    validateOptions:experimentOptions,calculate:experimentCase,accuracy:accuracyExperiment,convergence:convergenceExperiment,tails:tailExperiment,
+    logPoints,timingStatistics,timerResolution,benchmarkMethod,benchmark:benchmarkExperiment,
+    getState:()=>({...experimentState}) });
   return Object.freeze({ source, references, methods, validateX, parseX, validateParameter, validateTolerance,
     referenceAt, createPendingResult, formatNumber, formatReference, renderTable, updateCharts, initialize,
-    density, trapezoidal, simpson, erfSeries, calculate,
+    density, trapezoidal, simpson, erfSeries, calculate, experiments,
     getState: () => ({ x: state.x, error: state.error, results: state.results.slice() }) });
 })();
 

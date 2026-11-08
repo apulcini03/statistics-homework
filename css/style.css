@@ -1107,7 +1107,8 @@ button:disabled {
 #comparisonFunction,
 #dirichletSampling,
 #thomaeTagMethod,
-#normalCdfMethod {
+#normalCdfMethod,
+#cdfReferenceKind {
   display: block;
   width: 100%;
   max-width: 450px;
@@ -1151,7 +1152,9 @@ button:disabled {
 }
 
 /* HW 5 - Pending Normal CDF controls */
-#normalCdfControls button {
+#normalCdfControls button,
+#cdfExperimentControls button,
+#cdfBenchmarkControls button {
   max-width: 100%;
   white-space: normal;
 }

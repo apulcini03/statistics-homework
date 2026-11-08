@@ -145,8 +145,9 @@ test('Responsive: every homework contains uninitialized canvases at 320px and de
         .map(c=>({width:c.getBoundingClientRect().width,available:c.parentElement.clientWidth
           -parseFloat(getComputedStyle(c.parentElement).paddingLeft)
           -parseFloat(getComputedStyle(c.parentElement).paddingRight)}))})`);
-      assert.equal(dimensions.client, width);
-      assert.equal(dimensions.scroll, width, `HW${hw}, viewport ${width}`);
+      assert.equal(await browser.evaluate('window.innerWidth'), width, 'Requested outer viewport is preserved');
+      if (width === 320) assert.equal(dimensions.client, 320);
+      assert.equal(dimensions.scroll, dimensions.client, `HW${hw}, viewport ${width}: no horizontal overflow`);
       for (const c of dimensions.canvases) assert.ok(c.width <= c.available + 1, `HW${hw} canvas exceeds content width`);
     }
   }
@@ -348,7 +349,10 @@ test('Chart.js: repeated rendering at 320px and desktop preserves data and chart
           assert.ok(c.width > 0 && c.height > 0);
           assert.ok(c.display <= c.available + 1);
         }
-        assert.equal(await browser.evaluate('document.documentElement.scrollWidth'), width);
+        const page = await browser.evaluate('({inner:innerWidth,client:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth})');
+        assert.equal(page.inner, width);
+        if (width === 320) assert.equal(page.client, 320);
+        assert.equal(page.scroll, page.client, `HW${hw}: no horizontal overflow`);
         if (hw === 4) {
           assert.equal(await browser.evaluate(`Chart.getChart('totalScoreDistributionChart').data.datasets[0].data.reduce((a,b)=>a+b,0)`), run ? 11 : 7);
         }
