@@ -123,6 +123,25 @@ of mean and variance estimators.
 
 
 
+## Homework 5 — Riemann, Lebesgue & Normal CDF
+
+Explore two practical exercises: approximate definite integrals using domain and value-range partitions, and compute the standard normal CDF numerically.
+
+### Features
+
+- Left, right and midpoint Riemann sums
+- Lebesgue-inspired lower, upper and mid-level approximations with estimated preimage measures
+- Seven functions, including explicit numerical treatment of the improper integral of 1/sqrt(x)
+- Accuracy, convergence and computational-cost comparisons
+- Constructed rational and irrational sampling for Dirichlet's function
+- Exact fraction reduction and denominator-based visualization for Thomae's function
+- Composite trapezoidal and Simpson rules, and the error-function power series
+- Separate comparisons with NIST and independent erfc reference values
+- Repeated benchmarks with warm-up, median, minimum and maximum times
+- Tail accuracy, survival probabilities and floating-point limitations
+
+[Open Homework 5](https://apulcini03.github.io/statistics-homework/homework-06/)
+
 ## Project Structure
 
 ```text
@@ -132,6 +151,7 @@ statistics-homework/
 ├── homework-03/    # HW 2 — ECC vs Caesar Cipher & Cryptanalysis
 ├── homework-04/    # HW 3 — Stochastic Penetration Processes
 ├── homework-05/    # HW 4 — Welford & Sampling Statistics
+├── homework-06/    # HW 5 — Riemann, Lebesgue & Normal CDF
 ├── css/            # Shared styles
 ├── js/             # Homepage scripts
 ├── index.html      # Homepage
