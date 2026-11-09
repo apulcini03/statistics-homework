@@ -85,10 +85,9 @@
         </p>
 
         <p>
-          For sufficiently regular functions,
-          both approaches produce the same value.
-          However, Lebesgue integration applies
-          to a broader class of functions.
+          Every bounded Riemann-integrable function
+          on a compact interval is Lebesgue-integrable,
+          with the same integral. The converse does not hold.
         </p>
 
         <h3>Riemann Integration</h3>
@@ -105,9 +104,10 @@
         </p>
 
         <p>
-          The resulting Riemann sums approximate
-          the integral as the partition becomes
-          increasingly fine.
+          If f is Riemann-integrable on [a,b], these sums
+          converge to its integral as the largest subinterval
+          width tends to zero, independently of the chosen
+          sample points.
         </p>
 
         <p>
@@ -159,8 +159,9 @@
         </p>
 
         <p>
-          Here, c_j is a function level and
-          A_j is its associated measurable set.
+          Here, the measurable sets A_j are disjoint,
+          and c_j is the constant value of the simple
+          function on A_j.
         </p>
 
         <h3>Numerical Approximation vs Mathematical Definition</h3>
@@ -288,7 +289,7 @@
                 <td>sin(x) / x</td>
                 <td>[0, pi]</td>
                 <td>Si(pi) ≈ 1.851937</td>
-                <td>Removable singularity</td>
+                <td>Removable singularity; f(0) = 1 by continuity</td>
               </tr>
               <tr>
                 <td>Dirichlet function</td>
@@ -867,9 +868,13 @@
         </p>
 
         <p>
-          Liouville's theorem on elementary
-          integration provides the mathematical
-          framework for proving this fact.
+          Liouville's criterion for elementary integration
+          would require a rational function R satisfying
+          R'(x) - xR(x) = 1 for exp(-x²/2). Such a solution
+          could have no finite poles, so it would be polynomial;
+          comparison of the highest-degree terms rules it out.
+          This concerns an elementary antiderivative, not the
+          existence of the definite Gaussian integral.
         </p>
 
         <p>
@@ -901,34 +906,83 @@
         <h3>Integration Comparison</h3>
 
         <p>
-          The final analysis will compare
-          Riemann and Lebesgue-inspired
-          approximations, discussing their
-          accuracy, convergence and
-          numerical limitations.
+          For x² on [0,1], refining n from 20 to 1000 reduces the Midpoint
+          absolute error from about 2.08e-4 to 8.33e-8. At n=1000, Left and
+          Right errors are both about 5.00e-4. Raising (K,M) from (20,400) to
+          (1000,20000) reduces the Lebesgue-inspired Mid-Level error from
+          2.45e-3 to 6.75e-6. Midpoint is more accurate in this smooth example
+          at these settings; this is not a universal ranking.
+        </p>
+
+        <p>
+          Riemann uses n samples for a proper integral, whereas the level
+          method uses M samples and K levels, with time costs O(n) and O(M+K).
+          Increasing K alone does not refine the estimated preimage measures.
+          Repeated algorithm-only timings describe the chosen implementation
+          and settings, including allocation costs, not a universal speed order.
+        </p>
+
+        <p>
+          For bounded Riemann-integrable functions on a compact interval,
+          the Riemann and Lebesgue integrals agree, although finite numerical
+          approximations can differ. The unbounded 1/sqrt(x) instead has a
+          convergent improper integral of 2: the Riemann experiment integrates
+          its first cell exactly, while the hybrid level method adds the exact
+          contribution 0.2 on (0,0.01] and samples the rest.
+        </p>
+
+        <p>
+          Dirichlet has Lebesgue integral 0 but no Riemann integral; its
+          Darboux lower and upper sums remain 0 and 1. Thomae has both
+          integrals equal to 0 despite its rational spikes. Constructed tags
+          illustrate these distinctions, but finite samples alone cannot prove
+          integrability or determine exact preimage measures. In particular,
+          the sampled Lower and Upper estimates are not rigorous bounds
+          on the exact integral.
         </p>
 
         <h3>Normal CDF Comparison</h3>
 
         <p>
-          Numerical methods for the normal
-          CDF will be evaluated against
-          trusted reference values.
+          At x=1, increasing n from 20 to 10000 reduces the difference from
+          the independent erfc reference from 6.16e-3 to 2.44e-8 for trapezoids
+          and from 2.75e-4 to 3.89e-15 for Simpson. Tightening the erf tolerance
+          from 1e-3 to 1e-15 increases the terms used from 4 to 13 and reduces
+          the difference from 1.07e-4 to 3.33e-16 in this case, with a rounding
+          warning at the tightest setting. These are differences from stored
+          binary64 vectors, not certified errors against exact values. NIST's
+          five-decimal table supports only a coarser, separately labelled comparison.
         </p>
 
         <p>
-          The discussion will consider
-          accuracy, computational efficiency,
-          convergence and numerical stability.
+          In this example Simpson reaches a smaller reference difference at
+          the same density-evaluation count as trapezoids; erf uses few terms,
+          but a term and a density evaluation are different kinds of work.
+          The repeated batch benchmarks separate calculation from rendering;
+          their medians and ranges depend on the browser, timer and achieved
+          accuracy. The erf implementation is restricted to |x| ≤ 4 to limit
+          cancellation; quadrature supports |x| ≤ 10 with cutoff 12.
+        </p>
+
+        <p>
+          At x=10 and n=10000, Simpson returns a CDF rounded to 1 while
+          retaining a survival probability of about 7.62e-24; at x=-10 the
+          small CDF is computed directly. The rounded 1 is not a mathematically
+          exact probability for finite x. The omitted tail beyond 12 is below
+          2e-33, but can still affect relative accuracy in tiny tails. Tighter
+          tolerances cannot eliminate cancellation or guarantee decreasing
+          total error once floating-point and reference precision dominate.
         </p>
 
         <h3>Final Conclusions</h3>
 
         <p>
-          The conclusions will connect the
-          mathematical theory of integration
-          with practical numerical methods
-          used in probability and statistics.
+          These experiments separate the existence and analytic representation
+          of an integral from its numerical evaluation. Reliable calculations
+          require suitable sampling, explicit treatment of singularities and
+          tails, and accuracy checks that respect reference and floating-point
+          precision. The exact erf representation of the normal CDF remains
+          useful even though practical probability values need numerical evaluation.
         </p>
 
       </div>

@@ -15,7 +15,7 @@ const setFields=async fields=>{for(const [id,value] of Object.entries(fields))aw
 test('HW5 final integration: homepage status, navigation and all buttons repeatedly on one page',async()=>{
  await browser.navigate();
  const card=await browser.evaluate(`(()=>{const a=document.querySelector('a[href="homework-06/"]');return {href:a.getAttribute('href'),text:a.closest('.card').textContent,status:a.closest('.card').querySelector('.status').textContent}})()`);
- assert.equal(card.href,'homework-06/');assert.equal(card.status,'In progress');assert.match(card.text,/benchmarks and tail analysis/);
+ assert.equal(card.href,'homework-06/');assert.equal(card.status,'Completed');assert.match(card.text,/benchmarks and tail analysis/);
  await browser.evaluate("document.querySelector('a[href=\"homework-06/\"]').click()");
  await browser.waitFor("location.pathname==='/homework-06/' && document.readyState==='complete'");
  assert.equal((await chartIds()).length,0);
@@ -39,7 +39,7 @@ test('HW5 final integration: homepage status, navigation and all buttons repeate
  }
  await browser.evaluate("document.querySelector('a[href=\"../index.html\"]').click()");
  await browser.waitFor("location.pathname==='/index.html' && document.readyState==='complete'");
- assert.equal(await browser.evaluate("document.querySelector('a[href=\"homework-06/\"]').closest('.card').querySelector('.status').textContent"),'In progress');
+ assert.equal(await browser.evaluate("document.querySelector('a[href=\"homework-06/\"]').closest('.card').querySelector('.status').textContent"),'Completed');
 });
 
 test('HW5 final integration: lower valid limits, singularity correction and explicit failed series',async()=>{
