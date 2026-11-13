@@ -19,7 +19,8 @@
 }
 
 section[aria-labelledby="dataset-contingency"] .card,
-section[aria-labelledby="marginal-conditional"] .card {
+section[aria-labelledby="marginal-conditional"] .card,
+section[aria-labelledby="expected-frequencies"] .card {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -28,6 +29,11 @@ section[aria-labelledby="marginal-conditional"] .card {
 .independence-frequency-table {
   width: 100%;
   overflow-x: auto;
+}
+
+#independenceComparisonTable {
+  max-height: 420px;
+  overflow: auto;
 }
 
 #independenceTableContainer table,

@@ -55,7 +55,7 @@ test('HW6 dataset UI: initial 24 paired observations match every cell and total'
   assert.equal(initial.hasHeader, true);
   assert.match(initial.summary, /N\): 24.*Study Method: 2 categories; Exam Outcome: 2 categories/);
   assert.match(initial.origin, /Synthetic illustrative data/);
-  assert.equal(initial.future, 4);
+  assert.equal(initial.future, 3);
 });
 
 test('HW6 dataset UI: repeated 2×2, 2×3, 3×2, 3×3 and single-category changes publish fresh revisions', async () => {

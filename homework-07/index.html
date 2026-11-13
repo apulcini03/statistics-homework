@@ -30,9 +30,9 @@
           frequencies, and use a chi-square test to assess evidence of association.
         </p>
         <p>
-          Step 3 adds joint, marginal and conditional relative frequencies to the
-          dataset editor and observed contingency table. Statistical tests are
-          not yet implemented.
+          Step 4 adds expected counts under independence and a descriptive
+          observed-versus-expected comparison. Statistical tests are not yet
+          implemented.
         </p>
       </div>
     </section>
@@ -196,8 +196,42 @@
     <section class="homework-section" aria-labelledby="expected-frequencies">
       <h2 id="expected-frequencies">3. Expected Frequencies under Independence</h2>
       <div class="card">
-        <span class="status">Not yet implemented</span>
-        <p>Expected-frequency calculations and comparisons will be added later.</p>
+        <p>
+          Under the independence factorization of joint probabilities into
+          marginal products, the fitted expected count is
+          E<sub>ij</sub> = (row total<sub>i</sub> × column total<sub>j</sub>) / N.
+          These are model-based counts estimated under H₀ from the observed
+          margins, not directly observed measurements.
+        </p>
+        <p>
+          Equality between sample joint frequencies and products of sample
+          marginals is descriptive, not proof of population independence.
+          Observed deviations can arise through sampling variability even under
+          H₀ and do not by themselves establish population dependence.
+          No hypothesis-test decision is made here.
+        </p>
+        <h3>Expected Counts under H₀</h3>
+        <p>Expected counts and differences are displayed to six decimals; calculations use unrounded values.</p>
+        <div id="independenceExpectedTable" class="independence-frequency-table"
+             tabindex="0" role="region" aria-label="Expected counts under independence"></div>
+        <h3>Observed versus Expected Counts</h3>
+        <div id="independenceComparisonTable" class="independence-frequency-table"
+             tabindex="0" role="region" aria-label="Observed counts, expected counts and signed differences"></div>
+        <h3>Expected-Count Diagnostics</h3>
+        <p id="independenceExpectedDiagnostics"></p>
+        <p>
+          These descriptive diagnostics prepare a later assessment of Pearson's
+          chi-square approximation. Five is not a universal mathematical cutoff,
+          and these figures alone do not decide approximation validity or
+          independence.
+        </p>
+        <div class="independence-frequency-chart">
+          <canvas id="independenceExpectedChart" role="img"
+                  aria-label="Observed and expected cell counts"
+                  aria-describedby="independenceExpectedChartNote">See the observed-versus-expected table above.</canvas>
+        </div>
+        <p id="independenceExpectedChartNote"></p>
+        <p id="independenceExpectedChartFeedback" role="status"></p>
       </div>
     </section>
 

@@ -205,14 +205,63 @@ const StatisticalIndependence = (() => {
     return mode === 'percentage' ? `${(100 * value).toFixed(4)}%` : value.toFixed(6);
   }
 
+  function computeExpectedFrequencies(table) {
+    // Keep the verified frequency algorithms unchanged; validate the additional
+    // label/density constraints required by this public matrix-based function.
+    if (table?.rowCategories?.length > limits.categories || table?.columnCategories?.length > limits.categories) {
+      throw new Error(`Expected-count tables support at most ${limits.categories} categories per variable.`);
+    }
+    validateFrequencyTable(table);
+    for (const labels of [table.rowCategories, table.columnCategories]) {
+      if (!Array.from(labels).every(label => typeof label === 'string' && label.trim()
+          && label.length <= limits.labelLength) || new Set(labels).size !== labels.length) {
+        throw new Error('Category labels must be unique, nonempty strings within the documented length limit.');
+      }
+    }
+    const count = value => Number.isSafeInteger(value) && value >= 0;
+    if (![table.rowTotals, table.columnTotals, ...Array.from(table.observedCounts)].every(values =>
+      Array.isArray(values) && Array.from(values).every(count))) throw new Error('Sparse or invalid count arrays are not supported.');
+    const { rowTotals, columnTotals, totalObservations: n } = table;
+    const expectedCounts = rowTotals.map(rowTotal => columnTotals.map(columnTotal =>
+      n === 0 ? null : (rowTotal * columnTotal) / n));
+    const values = expectedCounts.flat();
+    const cellsBelow5 = n === 0 ? null : values.filter(value => value < 5).length;
+    const zeroExpectedCells = n === 0 ? null : values.filter(value => value === 0).length;
+    return Object.freeze({
+      status: n === 0 ? 'undefined' : 'defined',
+      reason: n === 0 ? 'Expected counts are undefined when N = 0.' : null,
+      expectedCounts: freezeMatrix(expectedCounts),
+      rowCategories: Object.freeze([...table.rowCategories]), columnCategories: Object.freeze([...table.columnCategories]),
+      rowTotals: Object.freeze([...rowTotals]), columnTotals: Object.freeze([...columnTotals]), totalObservations: n,
+      diagnostics: Object.freeze({
+        minExpectedCount: n === 0 ? null : Math.min(...values),
+        cellsBelow5, percentageBelow5: n === 0 ? null : 100 * cellsBelow5 / values.length,
+        zeroExpectedCells, hasZeroExpectedCounts: n === 0 ? null : zeroExpectedCells > 0,
+        numberOfRows: rowTotals.length, numberOfColumns: columnTotals.length, totalCells: values.length
+      })
+    });
+  }
+
+  function compareObservedExpected(table) {
+    const expected = computeExpectedFrequencies(table);
+    const cells = table.observedCounts.map((row, i) => row.map((observed, j) => {
+      const value = expected.expectedCounts[i][j];
+      const difference = value === null ? null : observed - value;
+      return Object.freeze({ observed, expected: value, difference,
+        absoluteDifference: difference === null ? null : Math.abs(difference) });
+    }));
+    return Object.freeze({ expected, cells: freezeMatrix(cells) });
+  }
+
   const initialTable = buildContingencyTable(observations);
   let state = Object.freeze({ activeDataset: dataset, contingencyTable: initialTable,
-    frequencies: computeFrequencies(initialTable), revision: 0 });
+    frequencies: computeFrequencies(initialTable), independenceComparison: compareObservedExpected(initialTable), revision: 0 });
   let ui = null;
 
   function commit(activeDataset, contingencyTable) {
     const frequencies = computeFrequencies(contingencyTable);
-    state = Object.freeze({ activeDataset, contingencyTable, frequencies, revision: state.revision + 1 });
+    const independenceComparison = compareObservedExpected(contingencyTable);
+    state = Object.freeze({ activeDataset, contingencyTable, frequencies, independenceComparison, revision: state.revision + 1 });
     if (ui) render();
     // Future sections must invalidate cached results when this revision changes.
     // No future calculations or result placeholders are populated here.
@@ -275,6 +324,85 @@ const StatisticalIndependence = (() => {
     ui.origin.textContent = activeDataset.description;
     ui.table.replaceChildren(renderTable(table, names));
     renderFrequencies();
+    renderExpectedFrequencies();
+  }
+
+  function formatExpectedCount(value, signed = false) {
+    if (value === null) return 'N/A';
+    const text = value.toFixed(6);
+    if (Number(text) === 0) return '0.000000';
+    return signed && value > 0 ? `+${text}` : text;
+  }
+
+  function renderExpectedFrequencies() {
+    const { independenceComparison: comparison, activeDataset } = state;
+    const e = comparison.expected, d = e.diagnostics;
+    const names = keys.map(key => activeDataset.variables[key].label);
+    const cell = (row, tag, value, scope) => {
+      const item = document.createElement(tag);
+      item.textContent = String(value);
+      if (scope) item.scope = scope;
+      row.append(item);
+    };
+    const expectedTable = document.createElement('table');
+    expectedTable.createCaption().textContent = `Expected counts under H₀: ${names[0]} (rows) × ${names[1]} (columns); N = ${e.totalObservations}`;
+    const header = expectedTable.createTHead().insertRow();
+    [`${names[0]} / ${names[1]}`, ...e.columnCategories, 'Row total'].forEach(label => cell(header, 'th', label, 'col'));
+    const body = expectedTable.createTBody();
+    e.rowCategories.forEach((label, i) => {
+      const row = body.insertRow();
+      cell(row, 'th', label, 'row');
+      e.expectedCounts[i].forEach(value => cell(row, 'td', formatExpectedCount(value)));
+      cell(row, 'td', e.rowTotals[i]);
+    });
+    const footer = expectedTable.createTFoot().insertRow();
+    cell(footer, 'th', 'Column total', 'row');
+    [...e.columnTotals, e.totalObservations].forEach(value => cell(footer, 'td', value));
+    ui.expectedTable.replaceChildren(expectedTable);
+
+    const comparisonTable = document.createElement('table');
+    comparisonTable.createCaption().textContent = 'Descriptive cell comparison: observed O, expected E and signed O − E (counts)';
+    const comparisonHeader = comparisonTable.createTHead().insertRow();
+    [names[0], names[1], 'Observed O', 'Expected E', 'Difference O − E'].forEach(label => cell(comparisonHeader, 'th', label, 'col'));
+    const comparisonBody = comparisonTable.createTBody();
+    comparison.cells.forEach((cells, i) => cells.forEach((entry, j) => {
+      const row = comparisonBody.insertRow();
+      cell(row, 'th', e.rowCategories[i], 'row');
+      cell(row, 'td', e.columnCategories[j]);
+      cell(row, 'td', entry.observed);
+      cell(row, 'td', formatExpectedCount(entry.expected));
+      cell(row, 'td', formatExpectedCount(entry.difference, true));
+    }));
+    ui.comparisonTable.replaceChildren(comparisonTable);
+    ui.expectedDiagnostics.textContent = `Rows: ${d.numberOfRows}; columns: ${d.numberOfColumns}; expected cells: ${d.totalCells}. Minimum expected count: ${formatExpectedCount(d.minExpectedCount)}. Expected cells below 5: ${d.cellsBelow5 ?? 'N/A'} (${d.percentageBelow5 === null ? 'N/A' : d.percentageBelow5.toFixed(4) + '%'}). Expected cells equal to zero: ${d.zeroExpectedCells ?? 'N/A'}. ${e.reason ?? 'Descriptive diagnostics only; no test decision.'}`;
+
+    const plotted = [];
+    comparison.cells.forEach((cells, i) => cells.forEach((entry, j) => {
+      if (plotted.length < 50) plotted.push({ ...entry, label: `${names[0]}: ${e.rowCategories[i]} | ${names[1]}: ${e.columnCategories[j]}` });
+    }));
+    ui.expectedChartNote.textContent = `Showing ${plotted.length === d.totalCells ? 'all ' : 'the first '}${plotted.length} of ${d.totalCells} cells in table row order. Both tables include all cells. Values are counts; the vertical axis starts at zero. Long axis labels are shortened; full labels are available in tooltips and tables.`;
+    if (typeof Chart === 'undefined') {
+      ui.expectedChartFeedback.textContent = 'Chart unavailable: Chart.js failed to load. Both tables and diagnostics remain available.';
+      return;
+    }
+    ui.expectedChartFeedback.textContent = '';
+    const previous = Chart.getChart('independenceExpectedChart');
+    if (previous) previous.destroy();
+    new Chart(document.getElementById('independenceExpectedChart'), {
+      type: 'bar',
+      data: { labels: plotted.map(entry => entry.label), datasets: [
+        { label: 'Observed counts O', data: plotted.map(entry => entry.observed), backgroundColor: '#2563a6' },
+        { label: 'Expected counts E', data: plotted.map(entry => entry.expected), backgroundColor: '#d97706' }
+      ] },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        scales: {
+          x: { title: { display: true, text: `${names[0]} × ${names[1]} cells (table order)` },
+            ticks: { callback(index) { const label = this.getLabelForValue(index); return label.length > 24 ? label.slice(0, 21) + '…' : label; } } },
+          y: { beginAtZero: true, min: 0, title: { display: true, text: 'Cell count' } }
+        }
+      }
+    });
   }
 
   function renderFrequencyTable(values, names, caption, options = {}) {
@@ -377,7 +505,12 @@ const StatisticalIndependence = (() => {
       rowGivenColumn: document.getElementById('independenceRowGivenColumnTable'),
       columnGivenRowTitle: document.getElementById('independenceColumnGivenRowTitle'),
       rowGivenColumnTitle: document.getElementById('independenceRowGivenColumnTitle'),
-      chartFeedback: document.getElementById('independenceChartFeedback') };
+      chartFeedback: document.getElementById('independenceChartFeedback'),
+      expectedTable: document.getElementById('independenceExpectedTable'),
+      comparisonTable: document.getElementById('independenceComparisonTable'),
+      expectedDiagnostics: document.getElementById('independenceExpectedDiagnostics'),
+      expectedChartNote: document.getElementById('independenceExpectedChartNote'),
+      expectedChartFeedback: document.getElementById('independenceExpectedChartFeedback') };
     ui.format.addEventListener('change', renderFrequencies);
     const showDefaultInput = () => {
       ui.input.value = ['studyMethod,examOutcome', ...dataset.observations.map(row => `${row.studyMethod},${row.examOutcome}`)].join('\n');
@@ -410,5 +543,6 @@ const StatisticalIndependence = (() => {
 
   return Object.freeze({ dataset, limits, parseDataset, validateDataset, extractCategories, buildContingencyTable,
     computeJointFrequencies, computeConditionalFrequencies, computeFrequencies, formatFrequency,
+    computeExpectedFrequencies, compareObservedExpected,
     applyDataset, resetDataset, getState: () => state });
 })();

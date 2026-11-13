@@ -11,7 +11,7 @@ after(async () => {
   }
 });
 
-test('HW6 setup: six sections remain, with dataset/frequency panels and four future placeholders', async () => {
+test('HW6 setup: six sections remain, with descriptive panels and three future placeholders', async () => {
   await browser.navigate(7);
   const page = await browser.evaluate(`({
     headings: [...document.querySelectorAll('main section > h2')].map(e => e.textContent),
@@ -29,8 +29,8 @@ test('HW6 setup: six sections remain, with dataset/frequency panels and four fut
     '3. Expected Frequencies under Independence', '4. Chi-Square Test',
     '5. Statistical Interpretation', '6. Experiments and Conclusions'
   ]);
-  assert.deepEqual(page.statuses, Array(4).fill('Not yet implemented'));
-  assert.equal(page.placeholders.length, 4);
+  assert.deepEqual(page.statuses, Array(3).fill('Not yet implemented'));
+  assert.equal(page.placeholders.length, 3);
   for (const text of page.placeholders) {
     assert.doesNotMatch(text, /\d/, 'No placeholder numerical results');
     assert.doesNotMatch(text, /reject H₀|significant association|proves independence/i);

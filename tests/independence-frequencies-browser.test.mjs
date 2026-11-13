@@ -11,7 +11,7 @@ after(async () => {
   }
 });
 
-const chartIds = () => browser.evaluate('Object.values(Chart.instances).map(chart => chart.id)');
+const chartIds = () => browser.evaluate("Object.values(Chart.instances).filter(chart => chart.canvas.closest('section[aria-labelledby=\"marginal-conditional\"]')).map(chart => chart.id)");
 const display = (value, mode) => value === null ? 'N/A'
   : mode === 'percentage' ? `${(value * 100).toFixed(4)}%` : value.toFixed(6);
 
@@ -43,7 +43,7 @@ async function checkViews() {
       rowTitle: document.getElementById('independenceColumnGivenRowTitle').textContent,
       columnTitle: document.getElementById('independenceRowGivenColumnTitle').textContent,
       rowChart: readChart('independenceColumnGivenRowChart'), columnChart: readChart('independenceRowGivenColumnChart'),
-      count: Object.keys(Chart.instances).length,
+      count: Object.values(Chart.instances).filter(chart => chart.canvas.closest('section[aria-labelledby="marginal-conditional"]')).length,
       tables: document.querySelectorAll('section[aria-labelledby="marginal-conditional"] table').length };
   })()`);
   const { contingencyTable: t, frequencies: f } = view.state;
@@ -157,7 +157,7 @@ test('HW6 frequency UI: HTML-like names and categories remain literal text in al
 test('HW6 frequency UI: destroyed charts recreate exactly two instances on repeated format and dataset updates', async () => {
   await browser.navigate(7);
   for (let repeat = 0; repeat < 3; repeat++) {
-    await browser.evaluate('Object.values(Chart.instances).forEach(chart=>chart.destroy())');
+    await browser.evaluate("Object.values(Chart.instances).filter(chart=>chart.canvas.closest('section[aria-labelledby=\"marginal-conditional\"]')).forEach(chart=>chart.destroy())");
     assert.deepEqual(await chartIds(), []);
     await browser.set('independenceFrequencyFormat', repeat % 2 ? 'decimal' : 'percentage');
     await checkViews();
@@ -179,7 +179,7 @@ test('HW6 frequency UI: 320/768/1440px contain tables and canvases before, after
     for (const width of [320, 768, 1440]) {
       await browser.viewport(width);
       for (const destroyed of [false, true]) {
-        if (destroyed) await browser.evaluate('Object.values(Chart.instances).forEach(chart=>chart.destroy())');
+        if (destroyed) await browser.evaluate("Object.values(Chart.instances).filter(chart=>chart.canvas.closest('section[aria-labelledby=\"marginal-conditional\"]')).forEach(chart=>chart.destroy())");
         const bounds = await browser.evaluate(`(() => {
           const available = document.documentElement.clientWidth;
           return { fits: document.documentElement.scrollWidth <= available,
