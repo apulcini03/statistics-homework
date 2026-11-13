@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HW 6 — Statistical Independence</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="script.js" defer></script>
+</head>
+
+<body>
+  <header>
+    <h1>HW 6 — Statistical Independence</h1>
+    <p>Statistics for Cybersecurity</p>
+    <p>Academic Year 2026/2027</p>
+  </header>
+
+  <main>
+    <a href="../index.html" class="homework-button">← Back to homepage</a>
+
+    <section class="homework-section" aria-labelledby="assignment">
+      <h2 id="assignment">Assignment</h2>
+      <div class="card">
+        <p>
+          Investigate statistical independence between two categorical variables:
+          Study Method and Exam Outcome. Subsequent steps will organize paired
+          observations into a contingency table, compare observed and expected
+          frequencies, and use a chi-square test to assess evidence of association.
+        </p>
+        <p>
+          Step 2 provides a dataset editor and observed contingency table.
+          Further frequency analysis and statistical tests are not yet implemented.
+        </p>
+      </div>
+    </section>
+
+    <section class="homework-section" aria-labelledby="theoretical-background">
+      <h2 id="theoretical-background">Theoretical Background</h2>
+      <div class="card">
+        <h3>Joint, Marginal and Conditional Probabilities</h3>
+        <p>
+          Let X and Y be discrete random variables. The joint probability describes
+          a pair of values; marginal probabilities describe each variable separately.
+        </p>
+        <p>P(X = x, Y = y) is the joint probability.</p>
+        <p>P(X = x) = ∑<sub>y</sub> P(X = x, Y = y).</p>
+        <p>P(Y = y) = ∑<sub>x</sub> P(X = x, Y = y).</p>
+        <p>
+          P(Y = y | X = x) = P(X = x, Y = y) / P(X = x),
+          provided P(X = x) &gt; 0.
+        </p>
+
+        <h3>Independence in Probability</h3>
+        <p>
+          X and Y are independent if their joint probabilities factor into their
+          marginal probabilities for every pair of possible values:
+        </p>
+        <p>P(X = x, Y = y) = P(X = x) P(Y = y) for all x and y.</p>
+        <p>
+          Equivalently, whenever P(X = x) &gt; 0, independence means
+          P(Y = y | X = x) = P(Y = y) for every y.
+        </p>
+
+        <h3>Population Probabilities and Sample Frequencies</h3>
+        <p>
+          Statistical independence is a hypothesis about the joint distribution
+          in the underlying population. Sample frequencies are observed counts,
+          not population probabilities. With n paired observations, a contingency
+          table records counts n<sub>ij</sub> for combinations of the categories
+          x<sub>i</sub> and y<sub>j</sub>; its margins give the row and column totals.
+        </p>
+        <p>
+          The relative frequency n<sub>ij</sub> / n estimates
+          P(X = x<sub>i</sub>, Y = y<sub>j</sub>). Sampling variation can produce
+          differences from independence even when the population variables are
+          independent. Inference requires an appropriate sampling design; a usual
+          contingency-table test assumes independent observations and sufficiently
+          large expected cell counts for its chi-square approximation.
+        </p>
+
+        <h3>Hypotheses and Interpretation</h3>
+        <p>
+          H₀: X and Y are independent in the population; the factorization above
+          holds for every category pair.
+        </p>
+        <p>
+          H₁: X and Y are associated in the population; the factorization fails
+          for at least one category pair.
+        </p>
+        <p>
+          Failure to reject H₀ does not prove independence: the sample may provide
+          insufficient evidence to detect an association. Statistical association
+          does not establish causation; confounding or selection effects may
+          explain an observed relationship.
+        </p>
+      </div>
+    </section>
+
+    <section class="homework-section" aria-labelledby="dataset-contingency">
+      <h2 id="dataset-contingency">1. Dataset and Contingency Table</h2>
+      <div class="card">
+        <p>
+          The default example contains synthetic illustrative data: fictional
+          paired observations of Study Method (Individual / Group) and Exam
+          Outcome (Pass / Fail). These example data are not a real student sample
+          and support no population claim.
+        </p>
+        <p>
+          Edit the paired observations below, then apply the dataset. Counts use
+          the active dataset; categories follow their order of first occurrence
+          and matching is case-sensitive.
+        </p>
+        <label for="independenceDatasetInput">Paired observations</label>
+        <textarea id="independenceDatasetInput" rows="12" spellcheck="false"
+                  aria-describedby="independenceFormatHelp independenceLimits"></textarea>
+        <p id="independenceFormatHelp">
+          Use one observation per line with exactly two comma-separated values.
+          Blank lines are ignored and surrounding whitespace is trimmed.
+          Quoted fields, embedded commas and multiline values are not supported.
+          If checked below, the first nonblank row supplies two variable names,
+          distinct ignoring case (for example, studyMethod,examOutcome); otherwise
+          every nonblank row is an observation, using the default variable names. In header mode,
+          variable names are reserved: later rows containing either name are
+          rejected as repeated or inconsistent headers.
+        </p>
+        <p id="independenceLimits">
+          Limits: 5,000 observations, 50 categories per variable, 100 characters
+          per value or variable name, and 1,100,000 characters of input text.
+          Only absolute observed frequencies are calculated.
+        </p>
+        <label>
+          <input type="checkbox" id="independenceHasHeader" checked>
+          First nonblank row is a header
+        </label>
+        <div class="independence-actions">
+          <button type="button" id="applyIndependenceDataset">Apply Dataset</button>
+          <button type="button" id="resetIndependenceDataset">Reset Dataset</button>
+        </div>
+        <p id="independenceDatasetFeedback" role="status" aria-live="polite"></p>
+        <p id="independenceDatasetSummary"></p>
+        <p id="independenceDatasetOrigin"></p>
+        <div id="independenceTableContainer" tabindex="0" role="region"
+             aria-label="Observed contingency table; scroll horizontally if needed"></div>
+      </div>
+    </section>
+
+    <section class="homework-section" aria-labelledby="marginal-conditional">
+      <h2 id="marginal-conditional">2. Marginal and Conditional Frequencies</h2>
+      <div class="card">
+        <span class="status">Not yet implemented</span>
+        <p>Marginal totals and conditional frequency displays will be added later.</p>
+      </div>
+    </section>
+
+    <section class="homework-section" aria-labelledby="expected-frequencies">
+      <h2 id="expected-frequencies">3. Expected Frequencies under Independence</h2>
+      <div class="card">
+        <span class="status">Not yet implemented</span>
+        <p>Expected-frequency calculations and comparisons will be added later.</p>
+      </div>
+    </section>
+
+    <section class="homework-section" aria-labelledby="chi-square">
+      <h2 id="chi-square">4. Chi-Square Test</h2>
+      <div class="card">
+        <span class="status">Not yet implemented</span>
+        <p>Test statistics, assumption checks and p-values will be added later.</p>
+      </div>
+    </section>
+
+    <section class="homework-section" aria-labelledby="statistical-interpretation">
+      <h2 id="statistical-interpretation">5. Statistical Interpretation</h2>
+      <div class="card">
+        <span class="status">Not yet implemented</span>
+        <p>Interpretation of computed test results will be added later.</p>
+      </div>
+    </section>
+
+    <section class="homework-section" aria-labelledby="experiments-conclusions">
+      <h2 id="experiments-conclusions">6. Experiments and Conclusions</h2>
+      <div class="card">
+        <span class="status">Not yet implemented</span>
+        <p>Final results and conclusions are pending the subsequent experiments.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Statistics for Cybersecurity - 2026/2027</p>
+  </footer>
+</body>
+</html>
