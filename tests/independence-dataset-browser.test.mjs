@@ -55,7 +55,7 @@ test('HW6 dataset UI: initial 24 paired observations match every cell and total'
   assert.equal(initial.hasHeader, true);
   assert.match(initial.summary, /N\): 24.*Study Method: 2 categories; Exam Outcome: 2 categories/);
   assert.match(initial.origin, /Synthetic illustrative data/);
-  assert.equal(initial.future, 5);
+  assert.equal(initial.future, 4);
 });
 
 test('HW6 dataset UI: repeated 2×2, 2×3, 3×2, 3×3 and single-category changes publish fresh revisions', async () => {
@@ -149,7 +149,8 @@ test('HW6 dataset UI: default and maximum-size tables remain contained at 320, 7
         return { overflowX: getComputedStyle(container).overflowX,
           pageFits: document.documentElement.scrollWidth <= available,
           overflowing: [...document.querySelectorAll('body *')].filter(e => {
-            if (e !== container && container.contains(e)) return false;
+            const wrapper = e.closest('#independenceTableContainer, .independence-frequency-table');
+            if (wrapper && e !== wrapper) return false;
             const r = e.getBoundingClientRect();
             return r.width > 0 && (r.left < -1 || r.right > available + 1);
           }).map(e => e.tagName + '#' + e.id),

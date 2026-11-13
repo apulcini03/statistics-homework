@@ -18,23 +18,28 @@
   margin-top: 16px;
 }
 
-#dataset-contingency .card {
+section[aria-labelledby="dataset-contingency"] .card,
+section[aria-labelledby="marginal-conditional"] .card {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-#independenceTableContainer {
+#independenceTableContainer,
+.independence-frequency-table {
   width: 100%;
   overflow-x: auto;
 }
 
-#independenceTableContainer table {
+#independenceTableContainer table,
+.independence-frequency-table table {
   border-collapse: collapse;
   width: 100%;
 }
 
 #independenceTableContainer th,
-#independenceTableContainer td {
+#independenceTableContainer td,
+.independence-frequency-table th,
+.independence-frequency-table td {
   border: 1px solid #cbd5e1;
   padding: 8px;
   text-align: left;
@@ -42,12 +47,40 @@
   max-width: 180px;
 }
 
-#independenceTableContainer td {
+#independenceTableContainer td,
+.independence-frequency-table td {
   font-variant-numeric: tabular-nums;
 }
 
-#independenceTableContainer th {
+#independenceTableContainer th,
+.independence-frequency-table th {
   background-color: #edf2f7;
+}
+
+#independenceFrequencyFormat {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font: inherit;
+  background: white;
+}
+
+.independence-frequency-chart {
+  position: relative;
+  height: 280px;
+  width: 100%;
+  min-width: 0;
+  margin-top: 20px;
+}
+
+.independence-frequency-chart canvas {
+  display: block;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Global styles */

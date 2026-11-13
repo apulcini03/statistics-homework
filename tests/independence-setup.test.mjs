@@ -26,7 +26,10 @@ test('HW6 setup: English document, shared stylesheet, local navigation and uniqu
     assert.ok(ids.includes(target), `Missing section heading ${target}`);
   }
   for (const [, ref] of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
-    assert.doesNotMatch(ref, /^https?:/, 'No external dependencies are needed');
+    if (/^https?:/.test(ref)) {
+      assert.equal(ref, 'https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js', 'Only the existing Chart.js dependency is allowed');
+      continue;
+    }
     assert.ok(existsSync(path.resolve(root, 'homework-07', ref)), ref);
   }
 });

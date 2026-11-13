@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HW 6 — Statistical Independence</title>
   <link rel="stylesheet" href="../css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js" defer></script>
   <script src="script.js" defer></script>
 </head>
 
@@ -29,8 +30,9 @@
           frequencies, and use a chi-square test to assess evidence of association.
         </p>
         <p>
-          Step 2 provides a dataset editor and observed contingency table.
-          Further frequency analysis and statistical tests are not yet implemented.
+          Step 3 adds joint, marginal and conditional relative frequencies to the
+          dataset editor and observed contingency table. Statistical tests are
+          not yet implemented.
         </p>
       </div>
     </section>
@@ -148,8 +150,46 @@
     <section class="homework-section" aria-labelledby="marginal-conditional">
       <h2 id="marginal-conditional">2. Marginal and Conditional Frequencies</h2>
       <div class="card">
-        <span class="status">Not yet implemented</span>
-        <p>Marginal totals and conditional frequency displays will be added later.</p>
+        <label for="independenceFrequencyFormat">Relative-frequency display</label>
+        <select id="independenceFrequencyFormat">
+          <option value="decimal">Decimals (6 places)</option>
+          <option value="percentage">Percentages (4 places)</option>
+        </select>
+        <p>
+          The preceding table shows absolute counts. These tables show sample
+          proportions or percentages, not population probabilities. Calculations
+          use unrounded values; displayed values may not sum exactly to the
+          displayed total because of rounding. N/A means that the conditioning
+          total is zero and the conditional distribution is undefined.
+        </p>
+        <h3>Joint and Marginal Relative Frequencies</h3>
+        <p id="independenceMarginalSummary"></p>
+        <div id="independenceJointTable" class="independence-frequency-table"
+             tabindex="0" role="region" aria-label="Joint and marginal relative frequencies"></div>
+        <h3 id="independenceColumnGivenRowTitle"></h3>
+        <div id="independenceColumnGivenRowTable" class="independence-frequency-table"
+             tabindex="0" role="region" aria-labelledby="independenceColumnGivenRowTitle"></div>
+        <div class="independence-frequency-chart">
+          <canvas id="independenceColumnGivenRowChart" role="img"
+                  aria-labelledby="independenceColumnGivenRowTitle"
+                  aria-describedby="independenceChartNote">See the conditional-frequency table above.</canvas>
+        </div>
+        <h3 id="independenceRowGivenColumnTitle"></h3>
+        <div id="independenceRowGivenColumnTable" class="independence-frequency-table"
+             tabindex="0" role="region" aria-labelledby="independenceRowGivenColumnTitle"></div>
+        <div class="independence-frequency-chart">
+          <canvas id="independenceRowGivenColumnChart" role="img"
+                  aria-labelledby="independenceRowGivenColumnTitle"
+                  aria-describedby="independenceChartNote">See the conditional-frequency table above.</canvas>
+        </div>
+        <p id="independenceChartNote">
+          Each stacked bar is conditioned on its category and uses that category's
+          count as the denominator. Chart data remain proportions in both display
+          modes. Long axis labels are shortened; tooltips and tables retain full
+          labels. Legends are hidden above ten categories; all values remain in
+          the tables and tooltips.
+        </p>
+        <p id="independenceChartFeedback" role="status"></p>
       </div>
     </section>
 

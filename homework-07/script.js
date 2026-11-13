@@ -1,6 +1,6 @@
 'use strict';
 
-// Data and observed absolute frequencies only; no inferential calculations.
+// Descriptive observed frequencies only; no inferential calculations.
 const StatisticalIndependence = (() => {
   const variables = Object.freeze({
     studyMethod: Object.freeze({
@@ -143,11 +143,76 @@ const StatisticalIndependence = (() => {
       rowTotals: Object.freeze(rowTotals), columnTotals: Object.freeze(columnTotals), totalObservations });
   }
 
-  let state = Object.freeze({ activeDataset: dataset, contingencyTable: buildContingencyTable(observations), revision: 0 });
+  // Validate externally supplied matrices as well as Step 2 output. Zero margins
+  // are allowed here even though automatic category detection excludes them.
+  function validateFrequencyTable(table) {
+    if (!table || !Array.isArray(table.rowCategories) || !Array.isArray(table.columnCategories)
+        || !table.rowCategories.length || !table.columnCategories.length
+        || !Array.isArray(table.observedCounts) || !Array.isArray(table.rowTotals)
+        || !Array.isArray(table.columnTotals)) throw new Error('Invalid observed-frequency table structure.');
+    const { rowCategories, columnCategories, observedCounts, rowTotals, columnTotals, totalObservations } = table;
+    const count = value => Number.isSafeInteger(value) && value >= 0;
+    if (!count(totalObservations) || observedCounts.length !== rowCategories.length
+        || rowTotals.length !== rowCategories.length || columnTotals.length !== columnCategories.length
+        || !rowTotals.every(count) || !columnTotals.every(count)
+        || !observedCounts.every(row => Array.isArray(row) && row.length === columnCategories.length && row.every(count))) {
+      throw new Error('Observed counts and totals must be nonnegative safe integers with consistent dimensions.');
+    }
+    const sum = values => values.reduce((a, b) => a + b, 0);
+    if (sum(rowTotals) !== totalObservations || sum(columnTotals) !== totalObservations
+        || observedCounts.some((row, i) => sum(row) !== rowTotals[i])
+        || columnTotals.some((total, j) => sum(observedCounts.map(row => row[j])) !== total)) {
+      throw new Error('Observed-frequency totals are inconsistent.');
+    }
+  }
+
+  const freezeMatrix = matrix => Object.freeze(matrix.map(row => Object.freeze(row)));
+
+  function computeJointFrequencies(table) {
+    validateFrequencyTable(table);
+    const divide = value => table.totalObservations === 0 ? null : value / table.totalObservations;
+    return Object.freeze({
+      jointRelativeFrequencies: freezeMatrix(table.observedCounts.map(row => row.map(divide))),
+      rowMarginals: Object.freeze(table.rowTotals.map(divide)),
+      columnMarginals: Object.freeze(table.columnTotals.map(divide)),
+      totalRelativeFrequency: divide(table.totalObservations)
+    });
+  }
+
+  function computeConditionalFrequencies(table) {
+    validateFrequencyTable(table);
+    return Object.freeze({
+      columnGivenRow: freezeMatrix(table.observedCounts.map((row, i) =>
+        row.map(value => table.rowTotals[i] === 0 ? null : value / table.rowTotals[i]))),
+      rowGivenColumn: freezeMatrix(table.observedCounts.map(row =>
+        row.map((value, j) => table.columnTotals[j] === 0 ? null : value / table.columnTotals[j])))
+    });
+  }
+
+  function computeFrequencies(table) {
+    return Object.freeze({ ...computeJointFrequencies(table), ...computeConditionalFrequencies(table) });
+  }
+
+  function formatFrequency(value, mode = 'decimal') {
+    if (!['decimal', 'percentage'].includes(mode)) throw new Error('Unknown relative-frequency display format.');
+    if (value === null) return 'N/A';
+    const roundingTolerance = 32 * Number.EPSILON;
+    if (!Number.isFinite(value) || value < -roundingTolerance || value > 1 + roundingTolerance) {
+      throw new Error('A relative frequency must be finite and between 0 and 1.');
+    }
+    // Correct only endpoint roundoff in display totals; never round stored data.
+    value = Math.max(0, Math.min(1, value));
+    return mode === 'percentage' ? `${(100 * value).toFixed(4)}%` : value.toFixed(6);
+  }
+
+  const initialTable = buildContingencyTable(observations);
+  let state = Object.freeze({ activeDataset: dataset, contingencyTable: initialTable,
+    frequencies: computeFrequencies(initialTable), revision: 0 });
   let ui = null;
 
   function commit(activeDataset, contingencyTable) {
-    state = Object.freeze({ activeDataset, contingencyTable, revision: state.revision + 1 });
+    const frequencies = computeFrequencies(contingencyTable);
+    state = Object.freeze({ activeDataset, contingencyTable, frequencies, revision: state.revision + 1 });
     if (ui) render();
     // Future sections must invalidate cached results when this revision changes.
     // No future calculations or result placeholders are populated here.
@@ -209,6 +274,92 @@ const StatisticalIndependence = (() => {
     ui.summary.textContent = `Observations (N): ${table.totalObservations}. ${names[0]}: ${table.rowCategories.length} categories; ${names[1]}: ${table.columnCategories.length} categories. Order: first occurrence.`;
     ui.origin.textContent = activeDataset.description;
     ui.table.replaceChildren(renderTable(table, names));
+    renderFrequencies();
+  }
+
+  function renderFrequencyTable(values, names, caption, options = {}) {
+    const table = state.contingencyTable;
+    const element = document.createElement('table');
+    element.createCaption().textContent = caption;
+    const cell = (row, tag, value, scope) => {
+      const item = document.createElement(tag);
+      item.textContent = value;
+      if (scope) item.scope = scope;
+      row.append(item);
+    };
+    const header = element.createTHead().insertRow();
+    cell(header, 'th', `${names[0]} / ${names[1]}`, 'col');
+    table.columnCategories.forEach(label => cell(header, 'th', label, 'col'));
+    if (options.finalColumn) cell(header, 'th', options.finalColumnTitle, 'col');
+    const body = element.createTBody();
+    table.rowCategories.forEach((label, i) => {
+      const row = body.insertRow();
+      cell(row, 'th', label, 'row');
+      values[i].forEach(value => cell(row, 'td', formatFrequency(value, ui.format.value)));
+      if (options.finalColumn) cell(row, 'td', formatFrequency(options.finalColumn[i], ui.format.value));
+    });
+    if (options.finalRow) {
+      const row = element.createTFoot().insertRow();
+      cell(row, 'th', options.finalRowTitle, 'row');
+      options.finalRow.forEach(value => cell(row, 'td', formatFrequency(value, ui.format.value)));
+      if (options.finalColumn) cell(row, 'td', formatFrequency(options.corner, ui.format.value));
+    }
+    return element;
+  }
+
+  function renderConditionalChart(id, labels, datasets, conditioningName) {
+    const canvas = document.getElementById(id);
+    const previous = Chart.getChart(canvas);
+    if (previous) previous.destroy();
+    new Chart(canvas, {
+      type: 'bar',
+      data: { labels: [...labels], datasets: datasets.map((entry, index) => ({ ...entry,
+        backgroundColor: `hsl(${(index * 137.508) % 360}, 65%, 48%)` })) },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: {
+          legend: { display: datasets.length <= 10 },
+          tooltip: { callbacks: { label: item => `${item.dataset.label}: ${formatFrequency(item.raw, ui.format.value)}` } }
+        },
+        scales: {
+          x: { stacked: true, title: { display: true, text: `Conditioning variable: ${conditioningName}` },
+            ticks: { callback(index) { const label = this.getLabelForValue(index); return label.length > 24 ? `${label.slice(0, 21)}…` : label; } } },
+          y: { stacked: true, min: 0, max: 1,
+            title: { display: true, text: ui.format.value === 'percentage' ? 'Conditional percentage' : 'Conditional proportion' },
+            ticks: { callback: value => formatFrequency(value, ui.format.value) } }
+        }
+      }
+    });
+  }
+
+  function renderFrequencies() {
+    const { activeDataset, contingencyTable: table, frequencies: f } = state;
+    const names = keys.map(key => activeDataset.variables[key].label);
+    const unit = ui.format.value === 'percentage' ? 'percentages' : 'proportions';
+    const format = value => formatFrequency(value, ui.format.value);
+    ui.marginals.textContent = `${names[0]} marginal ${unit}: ${table.rowCategories.map((label, i) => `${label} = ${format(f.rowMarginals[i])}`).join('; ')}. ${names[1]} marginal ${unit}: ${table.columnCategories.map((label, i) => `${label} = ${format(f.columnMarginals[i])}`).join('; ')}.`;
+    ui.joint.replaceChildren(renderFrequencyTable(f.jointRelativeFrequencies, names, `Joint relative frequencies (${unit}); denominator N = ${table.totalObservations}`, {
+      finalColumn: f.rowMarginals, finalColumnTitle: 'Row marginal',
+      finalRow: f.columnMarginals, finalRowTitle: 'Column marginal', corner: f.totalRelativeFrequency
+    }));
+    ui.columnGivenRowTitle.textContent = `${names[1]} given ${names[0]} — conditional ${unit} (each row)`;
+    ui.rowGivenColumnTitle.textContent = `${names[0]} given ${names[1]} — conditional ${unit} (each column)`;
+    const sumDistribution = values => values.some(value => value === null) ? null : values.reduce((a, b) => a + b, 0);
+    ui.columnGivenRow.replaceChildren(renderFrequencyTable(f.columnGivenRow, names, ui.columnGivenRowTitle.textContent, {
+      finalColumn: f.columnGivenRow.map(sumDistribution), finalColumnTitle: 'Row sum'
+    }));
+    ui.rowGivenColumn.replaceChildren(renderFrequencyTable(f.rowGivenColumn, names, ui.rowGivenColumnTitle.textContent, {
+      finalRow: table.columnCategories.map((_, j) => sumDistribution(f.rowGivenColumn.map(row => row[j]))), finalRowTitle: 'Column sum'
+    }));
+    if (typeof Chart === 'undefined') {
+      ui.chartFeedback.textContent = 'Charts unavailable: Chart.js failed to load. All frequencies are available in the tables.';
+      return;
+    }
+    ui.chartFeedback.textContent = '';
+    renderConditionalChart('independenceColumnGivenRowChart', table.rowCategories,
+      table.columnCategories.map((label, j) => ({ label, data: f.columnGivenRow.map(row => row[j]) })), names[0]);
+    renderConditionalChart('independenceRowGivenColumnChart', table.columnCategories,
+      table.rowCategories.map((label, i) => ({ label, data: [...f.rowGivenColumn[i]] })), names[1]);
   }
 
   function initializeUi() {
@@ -218,7 +369,16 @@ const StatisticalIndependence = (() => {
       feedback: document.getElementById('independenceDatasetFeedback'),
       summary: document.getElementById('independenceDatasetSummary'),
       origin: document.getElementById('independenceDatasetOrigin'),
-      table: document.getElementById('independenceTableContainer') };
+      table: document.getElementById('independenceTableContainer'),
+      format: document.getElementById('independenceFrequencyFormat'),
+      marginals: document.getElementById('independenceMarginalSummary'),
+      joint: document.getElementById('independenceJointTable'),
+      columnGivenRow: document.getElementById('independenceColumnGivenRowTable'),
+      rowGivenColumn: document.getElementById('independenceRowGivenColumnTable'),
+      columnGivenRowTitle: document.getElementById('independenceColumnGivenRowTitle'),
+      rowGivenColumnTitle: document.getElementById('independenceRowGivenColumnTitle'),
+      chartFeedback: document.getElementById('independenceChartFeedback') };
+    ui.format.addEventListener('change', renderFrequencies);
     const showDefaultInput = () => {
       ui.input.value = ['studyMethod,examOutcome', ...dataset.observations.map(row => `${row.studyMethod},${row.examOutcome}`)].join('\n');
       ui.header.checked = true;
@@ -249,5 +409,6 @@ const StatisticalIndependence = (() => {
   }
 
   return Object.freeze({ dataset, limits, parseDataset, validateDataset, extractCategories, buildContingencyTable,
+    computeJointFrequencies, computeConditionalFrequencies, computeFrequencies, formatFrequency,
     applyDataset, resetDataset, getState: () => state });
 })();

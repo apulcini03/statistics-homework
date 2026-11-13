@@ -11,7 +11,7 @@ after(async () => {
   }
 });
 
-test('HW6 setup: six sections remain, with an operational dataset panel and five future placeholders', async () => {
+test('HW6 setup: six sections remain, with dataset/frequency panels and four future placeholders', async () => {
   await browser.navigate(7);
   const page = await browser.evaluate(`({
     headings: [...document.querySelectorAll('main section > h2')].map(e => e.textContent),
@@ -29,8 +29,8 @@ test('HW6 setup: six sections remain, with an operational dataset panel and five
     '3. Expected Frequencies under Independence', '4. Chi-Square Test',
     '5. Statistical Interpretation', '6. Experiments and Conclusions'
   ]);
-  assert.deepEqual(page.statuses, Array(5).fill('Not yet implemented'));
-  assert.equal(page.placeholders.length, 5);
+  assert.deepEqual(page.statuses, Array(4).fill('Not yet implemented'));
+  assert.equal(page.placeholders.length, 4);
   for (const text of page.placeholders) {
     assert.doesNotMatch(text, /\d/, 'No placeholder numerical results');
     assert.doesNotMatch(text, /reject H₀|significant association|proves independence/i);
@@ -52,7 +52,8 @@ test('HW6 setup: layout fits 320, 768 and 1440 px with standard Chrome scrollbar
         scroll: document.documentElement.scrollWidth,
         overflowing: [...document.querySelectorAll('body *')].filter(e => {
           const r = e.getBoundingClientRect();
-          const insideScrollableTable = e.closest('#independenceTableContainer') && e.id !== 'independenceTableContainer';
+          const wrapper = e.closest('#independenceTableContainer, .independence-frequency-table');
+          const insideScrollableTable = wrapper && e !== wrapper;
           return !insideScrollableTable && r.width > 0 && (r.left < -1 || r.right > available + 1);
         }).map(e => e.tagName + '#' + e.id)
       };
