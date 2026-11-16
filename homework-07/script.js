@@ -50,6 +50,46 @@ const StatisticalIndependence = (() => {
     observations
   });
 
+  // These are input observation multiplicities, never precomputed statistics.
+  const experimentCatalog = Object.freeze([
+    Object.freeze({ id: 'A', name: 'A — Default example', counts: null }),
+    Object.freeze({ id: 'B', name: 'B — Exact sample independence', counts: Object.freeze([20, 20, 20, 20]) }),
+    Object.freeze({ id: 'C', name: 'C — Weak observed association', counts: Object.freeze([22, 18, 18, 22]) }),
+    Object.freeze({ id: 'D', name: 'D — Clear observed association', counts: Object.freeze([35, 5, 5, 35]) })
+  ]);
+
+  function experimentById(id) {
+    const experiment = experimentCatalog.find(entry => entry.id === id);
+    if (!experiment) throw new Error('Choose one of the four experiments A, B, C or D.');
+    return experiment;
+  }
+
+  function generateExperimentObservations(id) {
+    const experiment = experimentById(id);
+    if (id === 'A') return dataset.observations;
+    const rows = [];
+    variables.studyMethod.categories.forEach((studyMethod, i) => {
+      variables.examOutcome.categories.forEach((examOutcome, j) => {
+        for (let k = 0; k < experiment.counts[2 * i + j]; k++) rows.push({ studyMethod, examOutcome });
+      });
+    });
+    return validateDataset(rows);
+  }
+
+  let experimentResults = null;
+  function getExperimentResults() {
+    if (experimentResults === null) {
+      experimentResults = Object.freeze(experimentCatalog.map(experiment => {
+        const contingencyTable = buildContingencyTable(generateExperimentObservations(experiment.id));
+        const chiSquareTest = computeChiSquareTest(contingencyTable);
+        return Object.freeze({ id: experiment.id, name: experiment.name, contingencyTable, chiSquareTest,
+          cramersV: computeCramersV(chiSquareTest.chiSquare, contingencyTable.totalObservations,
+            contingencyTable.rowCategories.length, contingencyTable.columnCategories.length) });
+      }));
+    }
+    return experimentResults;
+  }
+
   const limits = Object.freeze({ observations: 5000, categories: 50, labelLength: 100, textLength: 1100000 });
   const keys = ['studyMethod', 'examOutcome'];
 
@@ -465,10 +505,10 @@ const StatisticalIndependence = (() => {
     frequencies: computeFrequencies(initialTable), independenceComparison: initialComparison,
     chiSquareTest: initialTest, alpha: .05,
     cramersV: computeCramersV(initialTest.chiSquare, initialTable.totalObservations, initialTable.rowCategories.length, initialTable.columnCategories.length),
-    interpretation: interpretChiSquareTest(initialTest, .05), revision: 0 });
+    interpretation: interpretChiSquareTest(initialTest, .05), activeExperimentId: 'A', revision: 0 });
   let ui = null;
 
-  function commit(activeDataset, contingencyTable) {
+  function commit(activeDataset, contingencyTable, activeExperimentId = null) {
     const frequencies = computeFrequencies(contingencyTable);
     const independenceComparison = compareObservedExpected(contingencyTable);
     const chiSquareTest = chiSquareFromComparison(contingencyTable, independenceComparison);
@@ -476,7 +516,7 @@ const StatisticalIndependence = (() => {
       contingencyTable.rowCategories.length, contingencyTable.columnCategories.length);
     const interpretation = interpretChiSquareTest(chiSquareTest, state.alpha);
     state = Object.freeze({ activeDataset, contingencyTable, frequencies, independenceComparison, chiSquareTest,
-      alpha: state.alpha, cramersV, interpretation, revision: state.revision + 1 });
+      alpha: state.alpha, cramersV, interpretation, activeExperimentId, revision: state.revision + 1 });
     if (ui) render();
     // Future sections must invalidate cached results when this revision changes.
     // No future calculations or result placeholders are populated here.
@@ -508,7 +548,33 @@ const StatisticalIndependence = (() => {
   }
 
   function resetDataset() {
-    return commit(dataset, buildContingencyTable(dataset.observations));
+    writeDatasetEditor(dataset.observations);
+    if (ui) ui.experimentSelect.value = 'A';
+    return commit(dataset, buildContingencyTable(dataset.observations), 'A');
+  }
+
+  function writeDatasetEditor(rows) {
+    if (!ui) return;
+    ui.input.value = ['studyMethod,examOutcome', ...rows.map(row => `${row.studyMethod},${row.examOutcome}`)].join('\n');
+    ui.header.checked = true;
+    ui.input.removeAttribute('aria-invalid');
+  }
+
+  function loadExperiment(id) {
+    const experiment = experimentById(id);
+    const rows = generateExperimentObservations(id);
+    const table = buildContingencyTable(rows);
+    const activeDataset = id === 'A' ? dataset : Object.freeze({ ...dataset,
+      title: experiment.name,
+      description: `Synthetic illustrative data — ${experiment.name}; not a real student sample.`,
+      observations: rows
+    });
+    writeDatasetEditor(rows);
+    if (ui) {
+      ui.experimentSelect.value = id;
+      ui.feedback.textContent = 'Synthetic illustrative experiment loaded. All active statistics use its observations.';
+    }
+    return commit(activeDataset, table, id);
   }
 
   function renderTable(table, names) {
@@ -549,6 +615,40 @@ const StatisticalIndependence = (() => {
     renderExpectedFrequencies();
     renderChiSquare();
     renderInterpretation();
+    renderExperiments();
+  }
+
+  function renderExperiments() {
+    ui.experimentFeedback.textContent = '';
+    const active = experimentCatalog.find(entry => entry.id === state.activeExperimentId);
+    ui.activeExperiment.textContent = active
+      ? `Active experiment: ${active.name}. Synthetic illustrative data.`
+      : 'Active dataset: manually supplied observations, not attributed to any preset experiment. The comparison below still describes the four fixed synthetic scenarios.';
+    if (!ui.experimentTable.firstChild) {
+      const table = document.createElement('table');
+      table.createCaption().textContent = 'Four fixed scenarios — synthetic illustrative data; computed with the existing algorithms';
+      const cell = (row, tag, value, scope) => {
+        const node = document.createElement(tag); node.textContent = value;
+        if (scope) node.scope = scope;
+        row.append(node);
+      };
+      const header = table.createTHead().insertRow();
+      ['Scenario', 'N', 'Dimensions', 'Pearson χ²', 'df', 'Asymptotic p-value', "Cramér's V", 'Minimum expected count', 'Reliability notes']
+        .forEach(label => cell(header, 'th', label, 'col'));
+      const body = table.createTBody();
+      getExperimentResults().forEach(entry => {
+        const { contingencyTable: t, chiSquareTest: test, cramersV: v } = entry;
+        const row = body.insertRow();
+        cell(row, 'th', entry.name, 'row');
+        [String(t.totalObservations), `${t.rowCategories.length} × ${t.columnCategories.length}`,
+          test.chiSquare === null ? 'N/A' : test.chiSquare.toPrecision(12), String(test.degreesOfFreedom),
+          formatPValue(test.pValueDetails), v.value === null ? 'N/A' : v.value.toPrecision(10),
+          formatExpectedCount(test.diagnostics.minExpectedCount),
+          test.applicability.warnings.join(' ') || 'No small-expected-count warning; sampling assumptions still require assessment.']
+          .forEach(value => cell(row, 'td', value));
+      });
+      ui.experimentTable.replaceChildren(table);
+    }
   }
 
   function renderInterpretation() {
@@ -806,7 +906,24 @@ const StatisticalIndependence = (() => {
       interpretationMetrics: document.getElementById('independenceInterpretationMetrics'),
       interpretationDecision: document.getElementById('independenceInterpretationDecision'),
       interpretationExplanation: document.getElementById('independenceInterpretationExplanation'),
-      interpretationWarnings: document.getElementById('independenceInterpretationWarnings') };
+      interpretationWarnings: document.getElementById('independenceInterpretationWarnings'),
+      experimentSelect: document.getElementById('independenceExperiment'),
+      experimentFeedback: document.getElementById('independenceExperimentFeedback'),
+      activeExperiment: document.getElementById('independenceActiveExperiment'),
+      experimentTable: document.getElementById('independenceExperimentsTable') };
+    experimentCatalog.forEach(experiment => {
+      const option = document.createElement('option');
+      option.value = experiment.id; option.textContent = experiment.name;
+      ui.experimentSelect.append(option);
+    });
+    document.getElementById('loadIndependenceExperiment').addEventListener('click', () => {
+      try {
+        loadExperiment(ui.experimentSelect.value);
+      } catch (error) {
+        ui.experimentSelect.value = state.activeExperimentId ?? 'A';
+        ui.experimentFeedback.textContent = `${error.message} The active dataset and results are unchanged.`;
+      }
+    });
     ui.format.addEventListener('change', renderFrequencies);
     ui.alpha.addEventListener('change', () => {
       try {
@@ -817,10 +934,6 @@ const StatisticalIndependence = (() => {
         ui.alphaFeedback.textContent = `${error.message} The previous significance level and interpretation are unchanged.`;
       }
     });
-    const showDefaultInput = () => {
-      ui.input.value = ['studyMethod,examOutcome', ...dataset.observations.map(row => `${row.studyMethod},${row.examOutcome}`)].join('\n');
-      ui.header.checked = true;
-    };
     document.getElementById('applyIndependenceDataset').addEventListener('click', () => {
       try {
         applyDataset(ui.input.value, { hasHeader: ui.header.checked });
@@ -832,12 +945,11 @@ const StatisticalIndependence = (() => {
       }
     });
     document.getElementById('resetIndependenceDataset').addEventListener('click', () => {
-      showDefaultInput();
       resetDataset();
       ui.input.removeAttribute('aria-invalid');
       ui.feedback.textContent = 'Default synthetic illustrative dataset restored.';
     });
-    showDefaultInput();
+    writeDatasetEditor(dataset.observations);
     render();
   }
 
@@ -851,5 +963,6 @@ const StatisticalIndependence = (() => {
     computeExpectedFrequencies, compareObservedExpected,
     computeChiSquareTest, chiSquareSurvival, formatPValue,
     interpretChiSquareTest, computeCramersV, setSignificanceLevel,
+    experimentCatalog, generateExperimentObservations, getExperimentResults, loadExperiment,
     applyDataset, resetDataset, getState: () => state });
 })();

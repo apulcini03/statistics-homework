@@ -70,7 +70,7 @@ test('HW6 expected UI: default matrices, signed differences, diagnostics and cha
   assert.match(view.diagnostics, /below 5: 2 \(50\.0000%\)/);
   assert.match(view.diagnostics, /equal to zero: 0/);
   assert.match(view.note, /all 4 of 4 cells/);
-  assert.equal(await browser.evaluate("document.querySelectorAll('.status').length"), 1);
+  assert.equal(await browser.evaluate("document.querySelectorAll('.status').length"), 0);
 });
 
 test('HW6 expected UI: category dimensions, zero cells and single categories refresh labels and unrounded chart values', async () => {

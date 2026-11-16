@@ -22,7 +22,8 @@ section[aria-labelledby="dataset-contingency"] .card,
 section[aria-labelledby="marginal-conditional"] .card,
 section[aria-labelledby="expected-frequencies"] .card,
 section[aria-labelledby="chi-square"] .card,
-section[aria-labelledby="statistical-interpretation"] .card {
+section[aria-labelledby="statistical-interpretation"] .card,
+section[aria-labelledby="experiments-conclusions"] .card {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -66,7 +67,8 @@ section[aria-labelledby="statistical-interpretation"] .card {
 }
 
 #independenceFrequencyFormat,
-#independenceAlpha {
+#independenceAlpha,
+#independenceExperiment {
   display: block;
   width: 100%;
   max-width: 280px;

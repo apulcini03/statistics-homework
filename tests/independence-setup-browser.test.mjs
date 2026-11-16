@@ -11,7 +11,7 @@ after(async () => {
   }
 });
 
-test('HW6 setup: six sections remain, with interpretation panel and one future placeholder', async () => {
+test('HW6 setup: all six sections are operational, with experiment controls and no remaining placeholders', async () => {
   await browser.navigate(7);
   const page = await browser.evaluate(`({
     headings: [...document.querySelectorAll('main section > h2')].map(e => e.textContent),
@@ -20,6 +20,8 @@ test('HW6 setup: six sections remain, with interpretation panel and one future p
     futureControls: [...document.querySelectorAll('section:has(.status)')].reduce((n, e) =>
       n + e.querySelectorAll('button,input,select,textarea,canvas,table').length, 0),
     datasetButtons: [...document.querySelectorAll('section[aria-labelledby="dataset-contingency"] button')].map(e => e.textContent),
+    experimentButtons: [...document.querySelectorAll('section[aria-labelledby="experiments-conclusions"] button')].map(e => e.textContent),
+    experimentRows: document.querySelectorAll('#independenceExperimentsTable tbody tr').length,
     observations: StatisticalIndependence.dataset.observations.length,
     headerBackground: getComputedStyle(document.querySelector('header')).backgroundImage
   })`);
@@ -29,14 +31,16 @@ test('HW6 setup: six sections remain, with interpretation panel and one future p
     '3. Expected Frequencies under Independence', '4. Chi-Square Test',
     '5. Statistical Interpretation', '6. Experiments and Conclusions'
   ]);
-  assert.deepEqual(page.statuses, Array(1).fill('Not yet implemented'));
-  assert.equal(page.placeholders.length, 1);
+  assert.deepEqual(page.statuses, []);
+  assert.equal(page.placeholders.length, 0);
   for (const text of page.placeholders) {
     assert.doesNotMatch(text, /\d/, 'No placeholder numerical results');
     assert.doesNotMatch(text, /reject H₀|significant association|proves independence/i);
   }
   assert.equal(page.futureControls, 0);
   assert.deepEqual(page.datasetButtons, ['Apply Dataset', 'Reset Dataset']);
+  assert.deepEqual(page.experimentButtons, ['Load Experiment']);
+  assert.equal(page.experimentRows, 4);
   assert.ok(page.observations >= 20);
   assert.match(page.headerBackground, /linear-gradient/);
 });

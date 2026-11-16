@@ -30,8 +30,9 @@
           frequencies, and use a chi-square test to assess evidence of association.
         </p>
         <p>
-          Step 6 adds a formal significance-level comparison and Cramér's V.
-          Further experiments and final conclusions are not yet implemented.
+          Compare synthetic examples using the dataset editor, descriptive
+          frequencies, Pearson's asymptotic test and Cramér's V. Interpret
+          the results subject to the sampling and approximation limits below.
         </p>
       </div>
     </section>
@@ -302,8 +303,62 @@
     <section class="homework-section" aria-labelledby="experiments-conclusions">
       <h2 id="experiments-conclusions">6. Experiments and Conclusions</h2>
       <div class="card">
-        <span class="status">Not yet implemented</span>
-        <p>Final results and conclusions are pending the subsequent experiments.</p>
+        <p>
+          All four scenarios are synthetic illustrative data. Their names describe
+          these constructed examples, not universal thresholds for Cramér's V.
+          Choose an experiment and load its individual paired observations into
+          the editor and every active analysis section.
+        </p>
+        <label for="independenceExperiment">Experiment to load</label>
+        <select id="independenceExperiment"></select>
+        <button type="button" id="loadIndependenceExperiment">Load Experiment</button>
+        <p id="independenceExperimentFeedback" role="status"></p>
+        <p id="independenceActiveExperiment" aria-live="polite"></p>
+        <h3>Experiment Comparison</h3>
+        <p>
+          The following rows always describe the four fixed synthetic scenarios,
+          not subsequent manual edits. Statistics do not depend on α; see
+          Statistical Interpretation for the formal decision on the active dataset.
+          The selected experiment is loaded only when Load Experiment is pressed.
+        </p>
+        <div id="independenceExperimentsTable" class="independence-frequency-table"
+             tabindex="0" role="region" aria-label="Comparison of all four synthetic experiments"></div>
+        <h3>Results and Conclusions</h3>
+        <div id="independenceExperimentConclusions">
+          <p>
+            The contingency table counts paired observations; its margins describe
+            each variable, while conditional frequencies use the relevant category
+            total. In C, both marginal distributions are (0.5, 0.5), but Pass given
+            Individual is 22/40 = 0.55 versus 18/40 = 0.45 given Group. Under H₀,
+            the fitted expected count is 20 in every cell of B, C and D.
+          </p>
+          <p>
+            In B, observed counts equal expected counts: χ² = 0, p = 1 and V = 0.
+            This is exact independence of the empirical frequencies, not proof
+            of independence in the population. In C, χ² = 0.8, df = 1,
+            p ≈ 0.3711 and V = 0.1: all three offered α values give Fail to reject H₀.
+            This does not establish population independence. V describes sample
+            association; it is neither a probability nor a causal measure.
+          </p>
+          <p>
+            D gives χ² = 45, df = 1, V = 0.75 and p ≈ 1.97e-11, so the formal
+            asymptotic comparison gives Reject H₀ at every offered α. The statistic
+            summarizes deviations relative to the expected counts, while the
+            p-value relies on a reference distribution and sampling assumptions.
+            In A, two expected counts are 4.5: its asymptotic result requires
+            caution. Larger expected counts in B–D do not verify the sampling
+            design. Changing α changes the formal comparison, not the data,
+            χ², p-value or V.
+          </p>
+          <p>
+            An association between study method and exam outcome does not show
+            that the method causes the outcome. The paired-record format represents
+            an observational comparison, not a randomized intervention; prior
+            preparation or motivation could confound an actual study. These
+            synthetic illustrative data support no empirical conclusions about
+            real students.
+          </p>
+        </div>
       </div>
     </section>
   </main>

@@ -58,7 +58,7 @@ test('HW6 Pearson UI: default statistic, independent p-value, sparse warning and
   assert.match(view.summary,/Asymptotic p-value: 0\.673289979660/);
   assert.match(view.diagnostics,/Minimum expected count: 4\.500000.*below 5: 2 \(50\.0000%\)/);
   assert.match(view.warnings,/Sparse expected counts.*may be unreliable/);
-  assert.equal(await browser.evaluate("document.querySelectorAll('.status').length"),1);
+  assert.equal(await browser.evaluate("document.querySelectorAll('.status').length"),0);
   const prose=await browser.evaluate("document.querySelector('section[aria-labelledby=\"chi-square\"]').textContent");
   assert.match(prose,/not the\s+probability that H₀ is true/);
   assert.match(prose,/independent observations, mutually\s+exclusive categories/);
