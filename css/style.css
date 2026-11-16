@@ -20,7 +20,9 @@
 
 section[aria-labelledby="dataset-contingency"] .card,
 section[aria-labelledby="marginal-conditional"] .card,
-section[aria-labelledby="expected-frequencies"] .card {
+section[aria-labelledby="expected-frequencies"] .card,
+section[aria-labelledby="chi-square"] .card,
+section[aria-labelledby="statistical-interpretation"] .card {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -63,7 +65,8 @@ section[aria-labelledby="expected-frequencies"] .card {
   background-color: #edf2f7;
 }
 
-#independenceFrequencyFormat {
+#independenceFrequencyFormat,
+#independenceAlpha {
   display: block;
   width: 100%;
   max-width: 280px;

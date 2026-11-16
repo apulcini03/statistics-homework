@@ -30,9 +30,8 @@
           frequencies, and use a chi-square test to assess evidence of association.
         </p>
         <p>
-          Step 4 adds expected counts under independence and a descriptive
-          observed-versus-expected comparison. Statistical tests are not yet
-          implemented.
+          Step 6 adds a formal significance-level comparison and Cramér's V.
+          Further experiments and final conclusions are not yet implemented.
         </p>
       </div>
     </section>
@@ -238,16 +237,65 @@
     <section class="homework-section" aria-labelledby="chi-square">
       <h2 id="chi-square">4. Chi-Square Test</h2>
       <div class="card">
-        <span class="status">Not yet implemented</span>
-        <p>Test statistics, assumption checks and p-values will be added later.</p>
+        <p>
+          Pearson's statistic sums (O − E)² / E over the displayed cells, without
+          a continuity correction. For a supported table the asymptotic reference
+          has (rows − 1) × (columns − 1) degrees of freedom. The p-value is the
+          right-tail probability under this reference distribution, not the
+          probability that H₀ is true. No significance decision is made here.
+        </p>
+        <p>
+          The usual independence test assumes independent observations, mutually
+          exclusive categories and an appropriate sampling design. These
+          assumptions cannot all be verified from a contingency table alone.
+          Small expected counts call for caution about the asymptotic p-value;
+          a count of five is not an absolute validity rule. No exact test is
+          performed. Categories are never silently removed.
+        </p>
+        <p id="independenceChiSquareSummary"></p>
+        <p id="independenceChiSquareDiagnostics"></p>
+        <p id="independenceChiSquareWarnings" role="status"></p>
+        <h3>Per-Cell Pearson Contributions</h3>
+        <div id="independenceChiSquareTable" class="independence-frequency-table"
+             tabindex="0" role="region" aria-label="Unrounded calculations of Pearson cell contributions, displayed to ten significant digits"></div>
+        <div class="independence-frequency-chart">
+          <canvas id="independenceChiSquareChart" role="img"
+                  aria-label="Pearson cell contributions"
+                  aria-describedby="independenceChiSquareChartNote">See the contribution table above.</canvas>
+        </div>
+        <p id="independenceChiSquareChartNote"></p>
+        <p id="independenceChiSquareChartFeedback" role="status"></p>
       </div>
     </section>
 
     <section class="homework-section" aria-labelledby="statistical-interpretation">
       <h2 id="statistical-interpretation">5. Statistical Interpretation</h2>
       <div class="card">
-        <span class="status">Not yet implemented</span>
-        <p>Interpretation of computed test results will be added later.</p>
+        <label for="independenceAlpha">Significance level α</label>
+        <select id="independenceAlpha">
+          <option value="0.01">0.01</option>
+          <option value="0.05" selected>0.05</option>
+          <option value="0.1">0.10</option>
+        </select>
+        <p id="independenceAlphaFeedback" role="status"></p>
+        <p id="independenceInterpretationHypotheses"></p>
+        <h3>Descriptive Sample Result</h3>
+        <p id="independenceInterpretationDescriptive"></p>
+        <p>Cramér's V describes the association observed in this sample; it does not establish causation.</p>
+        <h3>Formal Inferential Decision</h3>
+        <p id="independenceInterpretationMetrics"></p>
+        <p>The comparison is strictly p &lt; α: equality p = α belongs to Fail to reject H₀.</p>
+        <p id="independenceInterpretationDecision" aria-live="polite"></p>
+        <p id="independenceInterpretationExplanation"></p>
+        <h3>Interpretation Limits</h3>
+        <p id="independenceInterpretationWarnings" role="status"></p>
+        <p>
+          A decision based on an asymptotic p-value depends on the model and
+          sampling assumptions. Small expected counts can make this formal
+          comparison unreliable. The p-value is not the probability that H₀ is
+          true, and failure to reject does not establish population independence.
+          Statistical association does not establish causation.
+        </p>
       </div>
     </section>
 

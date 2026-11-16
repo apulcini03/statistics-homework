@@ -253,21 +253,243 @@ const StatisticalIndependence = (() => {
     return Object.freeze({ expected, cells: freezeMatrix(cells) });
   }
 
+  // Q(df/2, statistic/2): DLMF 8.7 (series), 8.9 (continued fraction).
+  // The series is used only where the upper tail is not tiny. Right tails
+  // are evaluated directly in the log domain, never by 1 - lowerCDF.
+  function chiSquareSurvival(statistic, degreesOfFreedom, { maxIterations = 10000 } = {}) {
+    if (!Number.isFinite(statistic) || statistic < 0) throw new Error('Chi-square must be finite and nonnegative.');
+    if (!Number.isInteger(degreesOfFreedom) || degreesOfFreedom < 1 || degreesOfFreedom > 2401) {
+      throw new Error('Supported degrees of freedom: integers from 1 to 2401.');
+    }
+    if (!Number.isInteger(maxIterations) || maxIterations < 1 || maxIterations > 10000) throw new Error('Invalid iteration limit.');
+    const result = (probability, logProbability, status, iterations, algorithm, reason = null) =>
+      Object.freeze({ probability, logProbability, status, iterations, algorithm, reason });
+    if (statistic === 0) return result(1, 0, 'exact-zero-statistic', 0, 'boundary');
+    const a = degreesOfFreedom / 2, x = statistic / 2;
+    if (x === 0) return result(1, 0, 'rounded-to-one', 0, 'boundary');
+    const correction = z => {
+      const inverse = 1 / z, t = inverse * inverse;
+      return inverse * (1 / 12 + t * (-1 / 360 + t * (1 / 1260 + t * (-1 / 1680 + t * (1 / 1188 - t * 691 / 360360)))));
+    };
+    let z = a, shift = 0;
+    while (z < 16) { shift += Math.log(z); z++; }
+    const logGamma = (z - .5) * Math.log(z) - z + .5 * Math.log(2 * Math.PI) + correction(z) - shift;
+    const ratio = x / a;
+    const r = (x - a) / a;
+    const logFactor = a >= 16 && ratio >= .5 && ratio <= 1.5
+      ? a * (Math.log1p(r) - r) + .5 * Math.log(a / (2 * Math.PI)) - correction(a)
+      : a * Math.log(x) - x - logGamma;
+    const epsilon = 4 * Number.EPSILON;
+    let logQ, iterations = 0, algorithm;
+    if (x < a + 1) {
+      algorithm = 'lower-series / upper complement with expm1';
+      let term = 1 / a, sum = term, converged = false;
+      for (let i = 1; i <= maxIterations; i++) {
+        term *= x / (a + i);
+        sum += term;
+        iterations = i;
+        if (!Number.isFinite(sum)) break;
+        if (Math.abs(term) <= Math.abs(sum) * epsilon) { converged = true; break; }
+      }
+      if (!converged) return result(null, null, 'not-converged', iterations, algorithm, 'Gamma series did not converge.');
+      const logP = Math.log(sum) + logFactor;
+      if (!Number.isFinite(logP) || logP >= 0) return result(null, null, 'numerical-error', iterations, algorithm, 'Invalid lower-tail intermediate result.');
+      const upper = -Math.expm1(logP);
+      logQ = upper === 1 ? Math.log1p(-Math.exp(logP)) : Math.log(upper);
+    } else {
+      algorithm = 'upper continued fraction (log domain)';
+      const tiny = 1e-300;
+      const protect = value => Math.abs(value) < tiny ? (value < 0 ? -tiny : tiny) : value;
+      let b = x + 1 - a, c = 1 / tiny, d = 1 / b, h = d, converged = false;
+      for (let i = 1; i <= maxIterations; i++) {
+        const an = -i * (i - a);
+        b += 2;
+        d = 1 / protect(an * d + b);
+        c = protect(b + an / c);
+        const delta = d * c;
+        h *= delta;
+        iterations = i;
+        if (!Number.isFinite(h) || h <= 0 || !Number.isFinite(delta)) break;
+        if (Math.abs(delta - 1) <= epsilon) { converged = true; break; }
+      }
+      if (!converged) return result(null, null, 'not-converged', iterations, algorithm, 'Gamma continued fraction did not converge.');
+      logQ = logFactor + Math.log(h);
+    }
+    if (!Number.isFinite(logQ) || logQ > 0) return result(null, null, 'numerical-error', iterations, algorithm, 'Invalid upper-tail logarithm.');
+    const probability = Math.exp(logQ);
+    const status = probability === 0 ? 'underflow' : probability === 1 ? 'rounded-to-one'
+      : probability < 2.2250738585072014e-308 ? 'subnormal' : 'converged';
+    return result(probability, logQ, status, iterations, algorithm);
+  }
+
+  function chiSquareFromComparison(table, comparison) {
+    const expected = comparison.expected, diagnostics = expected.diagnostics;
+    const degreesOfFreedom = (diagnostics.numberOfRows - 1) * (diagnostics.numberOfColumns - 1);
+    const nonemptyRows = table.rowTotals.filter(value => value > 0).length;
+    const nonemptyColumns = table.columnTotals.filter(value => value > 0).length;
+    let status = 'computed', reason = null;
+    if (expected.status !== 'defined') { status = 'undefined'; reason = expected.reason; }
+    else if (diagnostics.hasZeroExpectedCounts) {
+      status = 'unsupported'; reason = 'Zero expected counts: division by zero is not performed and categories are not removed.';
+    } else if (nonemptyRows < 2 || nonemptyColumns < 2) {
+      status = 'not-applicable'; reason = 'At least two nonempty categories per variable are required for the asymptotic test.';
+    }
+    const computable = expected.status === 'defined' && !diagnostics.hasZeroExpectedCounts;
+    let total = 0, compensation = 0;
+    const contributions = comparison.cells.map(row => row.map(cell => {
+      if (!computable) return null;
+      const value = cell.difference * cell.difference / cell.expected;
+      const adjusted = value - compensation, next = total + adjusted;
+      compensation = (next - total) - adjusted;
+      total = next;
+      return value;
+    }));
+    let tail = null;
+    if (computable) {
+      if (!Number.isFinite(total) || !contributions.flat().every(Number.isFinite)) {
+        status = 'numerical-error'; reason = 'Nonfinite Chi-square calculation.';
+      } else {
+        if (status === 'computed') {
+          tail = chiSquareSurvival(total, degreesOfFreedom);
+          if (tail.probability === null) { status = 'numerical-error'; reason = tail.reason; }
+        }
+      }
+    }
+    const warnings = [];
+    if (tail && diagnostics.cellsBelow5 > 0) warnings.push('Sparse expected counts: the asymptotic p-value may be unreliable. Five is a diagnostic guideline, not an absolute validity rule.');
+    if (tail?.status === 'underflow') warnings.push('The p-value underflows double precision; it is mathematically positive. Use the reported log p.');
+    if (tail?.status === 'subnormal') warnings.push('The p-value is subnormal; relative precision is reduced.');
+    if (tail?.status === 'rounded-to-one') warnings.push('The p-value rounds to 1 in double precision for this positive statistic.');
+    return Object.freeze({
+      status, reason, chiSquare: computable && Number.isFinite(total) ? total : null,
+      contributions: freezeMatrix(contributions), degreesOfFreedom,
+      pValue: tail?.probability ?? null, pValueDetails: tail, diagnostics,
+      applicability: Object.freeze({ statisticComputable: computable && Number.isFinite(total),
+        asymptoticReference: status !== 'computed' ? 'not-applicable' : diagnostics.cellsBelow5 > 0 ? 'caution-sparse' : 'no-small-expected-count-warning',
+        nonemptyRows, nonemptyColumns, assumptionsVerified: false, warnings: Object.freeze(warnings) })
+    });
+  }
+
+  function computeChiSquareTest(table) {
+    return chiSquareFromComparison(table, compareObservedExpected(table));
+  }
+
+  function formatPValue(tail) {
+    if (!tail || tail.probability === null) return 'N/A';
+    const p = tail.probability;
+    if (!Number.isFinite(p) || p < 0 || p > 1) throw new Error('Invalid p-value.');
+    if (p === 0) {
+      if (tail.status !== 'underflow' || !Number.isFinite(tail.logProbability)) throw new Error('Zero p-value requires an explicit underflow status.');
+      return `Underflow (p > 0; log p = ${tail.logProbability.toPrecision(12)})`;
+    }
+    if (tail.status === 'rounded-to-one') return '1 (rounded in double precision)';
+    const text = p < 1e-4 ? p.toExponential(8) : p.toPrecision(12);
+    return tail.status === 'subnormal' ? `${text} (subnormal; reduced precision)` : text;
+  }
+
+  function validateAlpha(alpha) {
+    if (typeof alpha !== 'number' || ![.01, .05, .10].includes(alpha)) {
+      throw new Error('Choose a significance level of 0.01, 0.05 or 0.10.');
+    }
+    return alpha;
+  }
+
+  function interpretChiSquareTest(testResult, alpha) {
+    validateAlpha(alpha);
+    const warnings = Array.isArray(testResult?.applicability?.warnings)
+      ? testResult.applicability.warnings.filter(text => typeof text === 'string') : [];
+    const sparse = (testResult?.diagnostics?.cellsBelow5 ?? 0) > 0
+      || testResult?.applicability?.asymptoticReference === 'caution-sparse';
+    if (sparse && testResult?.status === 'computed' && !warnings.some(text => /Sparse expected counts/.test(text))) {
+      warnings.push('Sparse expected counts: the asymptotic approximation may be unreliable. This formal comparison is not a robust conclusion.');
+    }
+    const answer = (decision, status, basis, explanation) => Object.freeze({
+      alpha, decision, status, basis, explanation,
+      caution: sparse || warnings.length > 0, warnings: Object.freeze([...new Set(warnings)])
+    });
+    const unavailable = reason => answer('Decision unavailable', 'unavailable', null, reason);
+    if (!testResult || testResult.status !== 'computed'
+        || !Number.isFinite(testResult.chiSquare) || testResult.chiSquare < 0
+        || !Number.isInteger(testResult.degreesOfFreedom) || testResult.degreesOfFreedom <= 0
+        || testResult.applicability?.asymptoticReference === 'not-applicable') {
+      return unavailable(testResult?.reason || 'The test is not applicable or its numerical result is unavailable.');
+    }
+    const p = testResult.pValue, tail = testResult.pValueDetails;
+    if (!Number.isFinite(p) || p < 0 || p > 1
+        || (tail && !['converged', 'exact-zero-statistic', 'rounded-to-one', 'subnormal', 'underflow'].includes(tail.status))
+        || (tail && tail.probability !== p)) {
+      return unavailable('The asymptotic p-value is unavailable, invalid or did not converge.');
+    }
+    let reject, basis = 'asymptotic-p-value';
+    if (p === 0) {
+      if (tail?.status !== 'underflow' || !Number.isFinite(tail.logProbability)
+          || tail.logProbability >= 0 || Math.exp(tail.logProbability) !== 0) {
+        return unavailable('A numerical zero without a consistent finite underflow log p cannot support a decision.');
+      }
+      reject = tail.logProbability < Math.log(alpha);
+      basis = 'log-asymptotic-p-value';
+      warnings.push('Numerical underflow: the formal comparison uses log p, not a mathematically exact zero probability.');
+    } else {
+      if (tail?.status === 'underflow') return unavailable('The p-value and its underflow status are inconsistent.');
+      reject = p < alpha; // Strict comparison: equality belongs to fail-to-reject.
+      if (tail?.status === 'subnormal') warnings.push('The p-value is subnormal and has reduced relative precision.');
+      if (tail?.status === 'rounded-to-one') warnings.push('The p-value is rounded to 1; this does not establish population independence.');
+    }
+    return answer(reject ? 'Reject H₀' : 'Fail to reject H₀', 'available', basis,
+      reject ? 'Formal asymptotic comparison: p < α. This decision depends on the model and sampling assumptions; it is not proof of population association or causation.'
+        : 'Formal asymptotic comparison: p ≥ α. Failure to reject does not establish population independence.');
+  }
+
+  function computeCramersV(chiSquare, totalObservations, rows, columns) {
+    if (!Number.isSafeInteger(totalObservations) || totalObservations < 0
+        || !Number.isInteger(rows) || rows < 0 || rows > limits.categories
+        || !Number.isInteger(columns) || columns < 0 || columns > limits.categories) {
+      throw new Error('Cramér\'s V requires a nonnegative integer N and supported integer dimensions.');
+    }
+    const result = (value, status, reason, roundedToBoundary = false) => Object.freeze({ value, status, reason, roundedToBoundary });
+    if (totalObservations === 0) return result(null, 'undefined', 'Cramér\'s V is undefined when N = 0.');
+    if (rows < 2 || columns < 2) return result(null, 'undefined', 'Cramér\'s V requires at least two categories per variable.');
+    if (chiSquare === null) return result(null, 'undefined', 'The Pearson statistic is unavailable.');
+    if (!Number.isFinite(chiSquare) || chiSquare < 0) throw new Error('Cramér\'s V requires a finite, nonnegative Pearson statistic.');
+    const squared = (chiSquare / totalObservations) / Math.min(rows - 1, columns - 1);
+    if (!Number.isFinite(squared) || squared > 1 + 64 * Number.EPSILON) {
+      return result(null, 'invalid', 'The supplied statistic exceeds the bounds for Cramér\'s V.');
+    }
+    return result(Math.sqrt(Math.min(1, squared)), 'defined', null, squared > 1);
+  }
+
   const initialTable = buildContingencyTable(observations);
+  const initialComparison = compareObservedExpected(initialTable);
+  const initialTest = chiSquareFromComparison(initialTable, initialComparison);
   let state = Object.freeze({ activeDataset: dataset, contingencyTable: initialTable,
-    frequencies: computeFrequencies(initialTable), independenceComparison: compareObservedExpected(initialTable), revision: 0 });
+    frequencies: computeFrequencies(initialTable), independenceComparison: initialComparison,
+    chiSquareTest: initialTest, alpha: .05,
+    cramersV: computeCramersV(initialTest.chiSquare, initialTable.totalObservations, initialTable.rowCategories.length, initialTable.columnCategories.length),
+    interpretation: interpretChiSquareTest(initialTest, .05), revision: 0 });
   let ui = null;
 
   function commit(activeDataset, contingencyTable) {
     const frequencies = computeFrequencies(contingencyTable);
     const independenceComparison = compareObservedExpected(contingencyTable);
-    state = Object.freeze({ activeDataset, contingencyTable, frequencies, independenceComparison, revision: state.revision + 1 });
+    const chiSquareTest = chiSquareFromComparison(contingencyTable, independenceComparison);
+    const cramersV = computeCramersV(chiSquareTest.chiSquare, contingencyTable.totalObservations,
+      contingencyTable.rowCategories.length, contingencyTable.columnCategories.length);
+    const interpretation = interpretChiSquareTest(chiSquareTest, state.alpha);
+    state = Object.freeze({ activeDataset, contingencyTable, frequencies, independenceComparison, chiSquareTest,
+      alpha: state.alpha, cramersV, interpretation, revision: state.revision + 1 });
     if (ui) render();
     // Future sections must invalidate cached results when this revision changes.
     // No future calculations or result placeholders are populated here.
     if (typeof document !== 'undefined') {
       document.dispatchEvent(new CustomEvent('statistical-independence:dataset-change', { detail: state }));
     }
+    return state;
+  }
+
+  function setSignificanceLevel(alpha) {
+    validateAlpha(alpha);
+    state = Object.freeze({ ...state, alpha, interpretation: interpretChiSquareTest(state.chiSquareTest, alpha) });
+    if (ui) renderInterpretation();
     return state;
   }
 
@@ -325,6 +547,66 @@ const StatisticalIndependence = (() => {
     ui.table.replaceChildren(renderTable(table, names));
     renderFrequencies();
     renderExpectedFrequencies();
+    renderChiSquare();
+    renderInterpretation();
+  }
+
+  function renderInterpretation() {
+    const { chiSquareTest: test, cramersV: v, interpretation: result, alpha } = state;
+    const names = keys.map(key => state.activeDataset.variables[key].label);
+    ui.alpha.value = String(alpha);
+    ui.alphaFeedback.textContent = '';
+    ui.interpretationHypotheses.textContent = `H₀: ${names[0]} and ${names[1]} are independent in the population. H₁: ${names[0]} and ${names[1]} are associated in the population.`;
+    ui.interpretationDescriptive.textContent = `Observations (N): ${state.contingencyTable.totalObservations}. Cramér's V: ${v.value === null ? 'N/A' : v.value.toPrecision(10)}. ${v.reason ?? 'This describes association in the observed sample; no universal strength label is assigned.'}`;
+    ui.interpretationMetrics.textContent = `Significance level α: ${alpha.toFixed(2)}. Pearson χ²: ${test.chiSquare === null ? 'N/A' : test.chiSquare.toPrecision(12)}. Degrees of freedom: ${test.degreesOfFreedom}. Asymptotic p-value: ${formatPValue(test.pValueDetails)}.`;
+    ui.interpretationDecision.textContent = result.decision;
+    ui.interpretationExplanation.textContent = result.explanation;
+    ui.interpretationWarnings.textContent = result.warnings.length ? result.warnings.join(' ')
+      : result.status === 'unavailable' ? 'No inferential decision is reported. Review the applicability conditions above.'
+        : 'No small-expected-count warning. Sampling assumptions still require assessment.';
+  }
+
+  function renderChiSquare() {
+    const test = state.chiSquareTest, table = state.contingencyTable;
+    const names = keys.map(key => state.activeDataset.variables[key].label);
+    ui.chiSummary.textContent = `Pearson Chi-square: ${test.chiSquare === null ? 'N/A' : test.chiSquare.toPrecision(12)}. Degrees of freedom (displayed dimensions): ${test.degreesOfFreedom}. Asymptotic p-value: ${formatPValue(test.pValueDetails)}. Numerical status: ${test.pValueDetails?.status ?? test.status}.`;
+    const d = test.diagnostics;
+    ui.chiDiagnostics.textContent = `Minimum expected count: ${formatExpectedCount(d.minExpectedCount)}. Expected cells below 5: ${d.cellsBelow5 ?? 'N/A'} (${d.percentageBelow5 === null ? 'N/A' : d.percentageBelow5.toFixed(4) + '%'}). Zero expected counts: ${d.zeroExpectedCells ?? 'N/A'}. Applicability: ${test.applicability.asymptoticReference}. Sampling assumptions are not verified by these counts.`;
+    ui.chiWarnings.textContent = [test.reason, ...test.applicability.warnings].filter(Boolean).join(' ') || 'No numerical or small-expected-count warning; sampling assumptions still require assessment.';
+    const element = document.createElement('table');
+    element.createCaption().textContent = `Pearson cell contributions: ${names[0]} (rows) × ${names[1]} (columns)`;
+    const cell = (row, tag, value, scope) => {
+      const node = document.createElement(tag); node.textContent = value;
+      if (scope) node.scope = scope;
+      row.append(node);
+    };
+    const header = element.createTHead().insertRow();
+    [names[0] + ' / ' + names[1], ...table.columnCategories].forEach(label => cell(header, 'th', label, 'col'));
+    const body = element.createTBody(), plotted = [];
+    table.rowCategories.forEach((label, i) => {
+      const row = body.insertRow(); cell(row, 'th', label, 'row');
+      test.contributions[i].forEach((value, j) => {
+        cell(row, 'td', value === null ? 'N/A' : value.toPrecision(10));
+        if (plotted.length < 50) plotted.push({ label: `${names[0]}: ${label} | ${names[1]}: ${table.columnCategories[j]}`, value });
+      });
+    });
+    ui.chiTable.replaceChildren(element);
+    ui.chiChartNote.textContent = `Showing ${plotted.length} of ${d.totalCells} cells in table row order; the table retains all contributions. Axis starts at zero. Display rounding does not affect the statistic.`;
+    if (typeof Chart === 'undefined') { ui.chiChartFeedback.textContent = 'Chart unavailable: Chart.js failed to load. Results and contributions remain in the table.'; return; }
+    const previous = Chart.getChart('independenceChiSquareChart');
+    if (previous) previous.destroy();
+    if (test.chiSquare === null) { ui.chiChartFeedback.textContent = 'Contribution chart unavailable: the test is undefined or unsupported.'; return; }
+    ui.chiChartFeedback.textContent = '';
+    new Chart(document.getElementById('independenceChiSquareChart'), {
+      type: 'bar', data: { labels: plotted.map(entry => entry.label), datasets: [
+        { label: 'Pearson cell contribution', data: plotted.map(entry => entry.value), backgroundColor: '#2563a6' }
+      ] },
+      options: { responsive: true, maintainAspectRatio: false, animation: false,
+        scales: {
+          x: { ticks: { callback(index) { const label = this.getLabelForValue(index); return label.length > 24 ? label.slice(0, 21) + '…' : label; } } },
+          y: { min: 0, beginAtZero: true, title: { display: true, text: 'Chi-square contribution' } }
+        } }
+    });
   }
 
   function formatExpectedCount(value, signed = false) {
@@ -510,8 +792,31 @@ const StatisticalIndependence = (() => {
       comparisonTable: document.getElementById('independenceComparisonTable'),
       expectedDiagnostics: document.getElementById('independenceExpectedDiagnostics'),
       expectedChartNote: document.getElementById('independenceExpectedChartNote'),
-      expectedChartFeedback: document.getElementById('independenceExpectedChartFeedback') };
+      expectedChartFeedback: document.getElementById('independenceExpectedChartFeedback'),
+      chiSummary: document.getElementById('independenceChiSquareSummary'),
+      chiDiagnostics: document.getElementById('independenceChiSquareDiagnostics'),
+      chiWarnings: document.getElementById('independenceChiSquareWarnings'),
+      chiTable: document.getElementById('independenceChiSquareTable'),
+      chiChartNote: document.getElementById('independenceChiSquareChartNote'),
+      chiChartFeedback: document.getElementById('independenceChiSquareChartFeedback'),
+      alpha: document.getElementById('independenceAlpha'),
+      alphaFeedback: document.getElementById('independenceAlphaFeedback'),
+      interpretationHypotheses: document.getElementById('independenceInterpretationHypotheses'),
+      interpretationDescriptive: document.getElementById('independenceInterpretationDescriptive'),
+      interpretationMetrics: document.getElementById('independenceInterpretationMetrics'),
+      interpretationDecision: document.getElementById('independenceInterpretationDecision'),
+      interpretationExplanation: document.getElementById('independenceInterpretationExplanation'),
+      interpretationWarnings: document.getElementById('independenceInterpretationWarnings') };
     ui.format.addEventListener('change', renderFrequencies);
+    ui.alpha.addEventListener('change', () => {
+      try {
+        setSignificanceLevel(Number(ui.alpha.value));
+        ui.alphaFeedback.textContent = '';
+      } catch (error) {
+        ui.alpha.value = String(state.alpha);
+        ui.alphaFeedback.textContent = `${error.message} The previous significance level and interpretation are unchanged.`;
+      }
+    });
     const showDefaultInput = () => {
       ui.input.value = ['studyMethod,examOutcome', ...dataset.observations.map(row => `${row.studyMethod},${row.examOutcome}`)].join('\n');
       ui.header.checked = true;
@@ -544,5 +849,7 @@ const StatisticalIndependence = (() => {
   return Object.freeze({ dataset, limits, parseDataset, validateDataset, extractCategories, buildContingencyTable,
     computeJointFrequencies, computeConditionalFrequencies, computeFrequencies, formatFrequency,
     computeExpectedFrequencies, compareObservedExpected,
+    computeChiSquareTest, chiSquareSurvival, formatPValue,
+    interpretChiSquareTest, computeCramersV, setSignificanceLevel,
     applyDataset, resetDataset, getState: () => state });
 })();

@@ -55,7 +55,7 @@ async function checkView() {
   assert.equal(view.min, 0);
   assert.equal(view.startsAtZero, true);
   assert.equal(view.stacked, false);
-  assert.equal(view.totalCharts, 3);
+  assert.equal(view.totalCharts, 4);
   assert.equal(view.totalTables, 2);
   return view;
 }
@@ -70,7 +70,7 @@ test('HW6 expected UI: default matrices, signed differences, diagnostics and cha
   assert.match(view.diagnostics, /below 5: 2 \(50\.0000%\)/);
   assert.match(view.diagnostics, /equal to zero: 0/);
   assert.match(view.note, /all 4 of 4 cells/);
-  assert.equal(await browser.evaluate("document.querySelectorAll('.status').length"), 3);
+  assert.equal(await browser.evaluate("document.querySelectorAll('.status').length"), 1);
 });
 
 test('HW6 expected UI: category dimensions, zero cells and single categories refresh labels and unrounded chart values', async () => {
@@ -109,11 +109,11 @@ test('HW6 expected UI: invalid edits preserve statistics, tables and chart; form
   assert.equal(reset.header[0], 'Study Method / Exam Outcome');
 });
 
-test('HW6 expected UI: repeated updates and explicit chart destruction recreate exactly three live plots', async () => {
+test('HW6 expected UI: repeated updates and explicit chart destruction recreate exactly four live plots', async () => {
   await browser.navigate(7);
   for (let repeat = 0; repeat < 3; repeat++) {
     await browser.evaluate("Chart.getChart('independenceExpectedChart').destroy()");
-    assert.equal((await chartIds()).length, 2);
+    assert.equal((await chartIds()).length, 3);
     await apply(`Row${repeat},Col${repeat}\nOther,Else`, false);
     await checkView();
     await browser.click('resetIndependenceDataset');
