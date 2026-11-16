@@ -142,6 +142,23 @@ Explore two practical exercises: approximate definite integrals using domain and
 
 [Open Homework 5](https://apulcini03.github.io/statistics-homework/homework-06/)
 
+## Homework 6 — Statistical Independence
+
+Explore independence and association between two categorical variables through editable paired observations and four synthetic illustrative scenarios.
+
+### Features
+
+- Editable bivariate datasets and programmatically constructed contingency tables
+- Joint, marginal and conditional frequencies in both directions
+- Expected frequencies under independence and expected-count diagnostics
+- Pearson's Chi-square statistic, cell contributions and stable asymptotic p-values
+- Cramér's V as a descriptive measure of sample association
+- Configurable significance level with explicit approximation and applicability warnings
+- Computed comparison of four synthetic scenarios and statistical interpretation
+- Distinction between empirical and population independence, association and causality
+
+[Open Homework 6](https://apulcini03.github.io/statistics-homework/homework-07/)
+
 ## Project Structure
 
 ```text
@@ -152,6 +169,7 @@ statistics-homework/
 ├── homework-04/    # HW 3 — Stochastic Penetration Processes
 ├── homework-05/    # HW 4 — Welford & Sampling Statistics
 ├── homework-06/    # HW 5 — Riemann, Lebesgue & Normal CDF
+├── homework-07/    # HW6 — Statistical Independence
 ├── css/            # Shared styles
 ├── js/             # Homepage scripts
 ├── index.html      # Homepage

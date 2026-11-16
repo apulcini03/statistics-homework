@@ -72,8 +72,8 @@ test('HW6 setup: return navigation works and repeated loads preserve the reusabl
   const initial = await browser.evaluate('JSON.stringify(StatisticalIndependence.dataset)');
   await browser.evaluate("document.querySelector('a.homework-button').click()");
   await browser.waitFor("location.pathname === '/index.html' && document.readyState === 'complete'");
-  assert.equal(await browser.evaluate("document.querySelector('a[href=\"homework-07/\"]') === null"), true,
-    'Homepage entry remains deferred to Step 8');
+  assert.equal(await browser.evaluate("document.querySelector('a[href=\"homework-07/\"]').closest('.card').querySelector('.status').textContent"), 'Completed',
+    'Published homework entry is reachable from the homepage');
   for (let repeat = 0; repeat < 2; repeat++) {
     await browser.navigate(7);
     assert.equal(await browser.evaluate('JSON.stringify(StatisticalIndependence.dataset)'), initial);

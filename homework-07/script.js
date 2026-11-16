@@ -1,6 +1,6 @@
 'use strict';
 
-// Descriptive observed frequencies only; no inferential calculations.
+// Descriptive and inferential analysis of paired categorical observations.
 const StatisticalIndependence = (() => {
   const variables = Object.freeze({
     studyMethod: Object.freeze({
