@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HW 7 — Modes of Convergence &amp; Bayesian Inference</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="script.js" defer></script>
+  <style>
+    /* Page-local layout keeps the shared stylesheet and earlier homework unchanged. */
+    header, main { overflow-wrap: anywhere; }
+    .card { min-width: 0; }
+    .comparison { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .comparison th, .comparison td {
+      border: 1px solid #cbd5e1; padding: 10px; text-align: left; vertical-align: top;
+    }
+    .comparison th { background: #edf2f7; }
+    .comparison caption { text-align: left; margin-bottom: 12px; font-weight: bold; }
+    .formula { color: #253044; }
+    .future-component { min-width: 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>HW 7 — Modes of Convergence &amp; Bayesian Inference</h1>
+    <p>Statistics for Cybersecurity</p>
+    <p>Academic Year 2026/2027</p>
+  </header>
+  <main>
+    <a href="../index.html" class="homework-button">← Back to homepage</a>
+
+    <section class="homework-section" aria-labelledby="assignment">
+      <h2 id="assignment">Assignment</h2>
+      <div class="card">
+        <p>Explore modes of convergence in probability theory, then conditional probability,
+          Bayes' theorem and statistical inference.</p>
+        <p>This first step provides theoretical background and prepares the page structure.
+          Simulations, numerical algorithms, calculators and charts are not yet implemented.</p>
+        <nav aria-label="Exercises">
+          <ul>
+            <li><a href="#exercise-1">Exercise 1 — Modes of Convergence</a></li>
+            <li><a href="#exercise-2">Exercise 2 — Conditional Probability &amp; Bayesian Inference</a></li>
+            <li><a href="#conclusions">Conclusions</a></li>
+          </ul>
+        </nav>
+      </div>
+    </section>
+
+    <section class="homework-section" aria-labelledby="exercise-1">
+      <h2 id="exercise-1">Exercise 1 — Modes of Convergence</h2>
+      <section class="card" aria-labelledby="definitions-comparison">
+        <h3 id="definitions-comparison">Definitions and Comparison</h3>
+        <p>Let X_n be a sequence of random variables and X a limiting random variable.
+          For the first three modes, the variables are defined on a common probability space.</p>
+        <table class="comparison">
+          <caption>Four modes of convergence as n → ∞</caption>
+          <thead><tr><th scope="col">Mode and definition</th><th scope="col">Meaning</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Convergence in probability
+              <p class="formula">For every ε &gt; 0, P(|X_n − X| &gt; ε) → 0.</p></th>
+              <td>The probability of an error larger than any fixed positive tolerance vanishes.</td></tr>
+            <tr><th scope="row">Almost sure convergence
+              <p class="formula">P(lim_{n→∞} X_n = X) = 1.</p></th>
+              <td>Sample paths converge outside an event of probability zero.</td></tr>
+            <tr><th scope="row">Mean-square convergence (L²)
+              <p class="formula">E[(X_n − X)²] → 0.</p></th>
+              <td>The expected squared error vanishes; in the L² setting the variables have finite second moments.</td></tr>
+            <tr><th scope="row">Convergence in distribution
+              <p class="formula">F_{X_n}(x) → F_X(x) at every continuity point x of F_X.</p></th>
+              <td>Cumulative distribution functions converge at continuity points of the limiting CDF;
+                a common probability space is not required.</td></tr>
+          </tbody>
+        </table>
+        <h4>Implications, not a linear ranking</h4>
+        <ul>
+          <li>Almost sure convergence ⇒ convergence in probability.</li>
+          <li>L² convergence ⇒ convergence in probability.</li>
+          <li>Convergence in probability ⇒ convergence in distribution.</li>
+        </ul>
+        <p>The converses do not hold in general. Almost sure convergence and L² convergence
+          are not generally equivalent: neither implies the other without additional assumptions.</p>
+      </section>
+
+      <section class="card" aria-labelledby="convergence-simulations">
+        <h3 id="convergence-simulations">Convergence Simulations</h3>
+        <p class="status">Not yet implemented</p>
+        <p>Future experiments will compare the different modes using random sequences.</p>
+        <div id="convergence-controls" class="future-component" data-placeholder="controls"></div>
+        <div id="convergence-chart" class="future-component" data-placeholder="chart"></div>
+      </section>
+
+      <section class="card" aria-labelledby="law-large-numbers">
+        <h3 id="law-large-numbers">Law of Large Numbers</h3>
+        <p>For the statements below, let X_1, …, X_n be independent and identically distributed
+          (i.i.d.) with E[X_i] = μ and finite variance σ². Define the sample mean:</p>
+        <p class="formula">X̄_n = (X_1 + … + X_n) / n.</p>
+        <p>The <strong>Weak Law of Large Numbers (WLLN)</strong> gives X̄_n → μ in probability.</p>
+        <p>The <strong>Strong Law of Large Numbers (SLLN)</strong> gives X̄_n → μ almost surely
+          under these assumptions. For i.i.d. variables, a finite absolute first moment
+          E[|X_1|] &lt; ∞ already suffices for the SLLN.</p>
+        <p>These are sufficient assumptions for the versions stated here. Independence is
+          not a universal requirement of all convergence theorems; versions for dependent
+          variables require their own hypotheses.</p>
+        <p class="status">Experiment not yet implemented</p>
+        <div id="lln-controls" class="future-component" data-placeholder="controls"></div>
+        <div id="lln-chart" class="future-component" data-placeholder="chart"></div>
+      </section>
+
+      <section class="card" aria-labelledby="central-limit-theorem">
+        <h3 id="central-limit-theorem">Central Limit Theorem</h3>
+        <p>Under the i.i.d. assumptions above, with 0 &lt; σ² &lt; ∞, the
+          <strong>Central Limit Theorem (CLT)</strong> states:</p>
+        <p class="formula">√n (X̄_n − μ) / σ → N(0, 1) in distribution.</p>
+        <p>The sample mean itself converges to μ. The centered mean multiplied by √n
+          instead has a non-degenerate limiting distribution:
+          √n (X̄_n − μ) → N(0, σ²) in distribution.
+          Dividing by σ makes this limit standard normal.</p>
+        <p class="status">Experiment not yet implemented</p>
+        <div id="clt-controls" class="future-component" data-placeholder="controls"></div>
+        <div id="clt-chart" class="future-component" data-placeholder="chart"></div>
+      </section>
+
+      <section class="card" aria-labelledby="square-root-scaling">
+        <h3 id="square-root-scaling">Square-Root Scaling and Variance</h3>
+        <p>Under the stated i.i.d. finite-variance assumptions:</p>
+        <p class="formula">E[X̄_n] = μ.</p>
+        <p class="formula">Var(X̄_n) = σ² / n.</p>
+        <p class="formula">SD(X̄_n) = σ / √n.</p>
+        <p>For finite-variance variables in general:</p>
+        <p class="formula">Var(X_1 + … + X_n) = ∑_{i=1}^n Var(X_i) + 2 ∑_{i&lt;j} Cov(X_i, X_j).</p>
+        <p>Variance additivity requires the covariance contribution to vanish; pairwise zero
+          covariances ensure this. Independence guarantees zero covariances when variances
+          exist. Equal variances then give the sample-mean variance above.</p>
+        <p>The √n factor counteracts the 1/√n decrease in sampling standard deviation,
+          explaining the CLT normalization. These variance identities alone do not prove a CLT.</p>
+        <p class="status">Experiment not yet implemented</p>
+        <div id="scaling-controls" class="future-component" data-placeholder="controls"></div>
+        <div id="scaling-chart" class="future-component" data-placeholder="chart"></div>
+      </section>
+    </section>
+
+    <section class="homework-section" aria-labelledby="exercise-2">
+      <h2 id="exercise-2">Exercise 2 — Conditional Probability &amp; Bayesian Inference</h2>
+      <section class="card" aria-labelledby="conditional-probability">
+        <h3 id="conditional-probability">Conditional Probability</h3>
+        <p>Conditioning on an event B restricts the reference population to outcomes in B.</p>
+        <p class="formula">P(A | B) = P(A ∩ B) / P(B), for P(B) &gt; 0.</p>
+      </section>
+      <section class="card" aria-labelledby="bayes-theorem">
+        <h3 id="bayes-theorem">Bayes' Theorem</h3>
+        <p class="formula">P(A | B) = P(B | A) P(A) / P(B).</p>
+        <p>Here P(B) &gt; 0; the displayed event formula also assumes P(A) &gt; 0
+          so that P(B | A) is defined. Bayes' theorem reverses the direction of conditioning.</p>
+      </section>
+      <section class="card" aria-labelledby="prior-likelihood-posterior">
+        <h3 id="prior-likelihood-posterior">Prior, Likelihood and Posterior</h3>
+        <p>Conditional probabilities above concern events. Bayesian inference uses conditioning
+          to update a distribution over an unknown parameter θ after observing data D.</p>
+        <dl>
+          <dt><strong>Prior</strong></dt>
+          <dd>The distribution of θ expressing information before observing D.</dd>
+          <dt><strong>Likelihood</strong></dt>
+          <dd>The probability or density of the observed data, viewed as a function of θ:
+            L(θ; D) = p(D | θ). It is not generally a normalized probability distribution
+            over the parameter.</dd>
+          <dt><strong>Posterior</strong></dt>
+          <dd>The updated distribution of θ after observing D.</dd>
+        </dl>
+        <p class="formula">Posterior ∝ Likelihood × Prior.</p>
+        <p class="formula">p(θ | D) = p(D | θ) p(θ) / p(D).</p>
+        <p>The evidence p(D) normalizes the posterior, provided it is positive and finite.
+          For a continuous parameter, p(D) = ∫ p(D | θ) p(θ) dθ;
+          for a discrete parameter, replace the integral with a sum.</p>
+      </section>
+      <section class="card" aria-labelledby="bayesian-experiments">
+        <h3 id="bayesian-experiments">Bayesian Experiments</h3>
+        <p class="status">Not yet implemented</p>
+        <p>Future controls and charts will illustrate how data update a prior distribution.</p>
+        <div id="bayesian-controls" class="future-component" data-placeholder="controls"></div>
+        <div id="bayesian-chart" class="future-component" data-placeholder="chart"></div>
+      </section>
+      <section class="card" aria-labelledby="bayesian-results">
+        <h3 id="bayesian-results">Results and Conclusions</h3>
+        <p>No experiments have been run. Results and their interpretation will be added in later steps.</p>
+        <div id="bayesian-results-container" class="future-component" data-placeholder="results"></div>
+      </section>
+    </section>
+
+    <section class="homework-section" aria-labelledby="conclusions">
+      <h2 id="conclusions">Conclusions</h2>
+      <div class="card">
+        <p>The theoretical framework distinguishes pathwise convergence, error control and
+          distributional limits, and introduces Bayesian updating. Experimental comparisons
+          and numerical conclusions remain pending.</p>
+      </div>
+    </section>
+  </main>
+  <footer><p>Statistics — HW 7</p></footer>
+</body>
+</html>
