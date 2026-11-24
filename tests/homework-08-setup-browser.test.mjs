@@ -31,12 +31,12 @@ test('HW7 Step 1 browser: ordered exercises, English content and inactive future
   assert.deepEqual(state.exercises, [
     ['Definitions and Comparison', 'Convergence Simulations', '3. Law of Large Numbers',
       '4. Central Limit Theorem', '5. Square-Root Scaling and Variance'],
-    ['Conditional Probability', "Bayes' Theorem", 'Prior, Likelihood and Posterior',
+    ['1. Conditional Probability', "2. Bayes' Theorem", 'Prior, Likelihood and Posterior',
       'Bayesian Experiments', 'Results and Conclusions']
   ]);
   assert.equal(state.slots.length, 3);
   assert.ok(state.slots.every(s => s === ''));
-  assert.equal(state.active, 25);
+  assert.equal(state.active, 37);
   assert.equal(state.statuses.length, 1);
   assert.ok(state.statuses.every(s => /not yet implemented/i.test(s)));
   assert.match(state.header, /linear-gradient/);

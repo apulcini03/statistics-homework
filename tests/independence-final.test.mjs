@@ -23,5 +23,5 @@ test('HW6 final: event targets, accessible references, function names and public
   assert.match(homepage,/<h3>Homework 6 — Statistical Independence<\/h3>/);
   assert.match(readme,/## Homework 6 — Statistical Independence/);
   assert.match(readme,/\[Open Homework 6\]\(https:\/\/apulcini03\.github\.io\/statistics-homework\/homework-07\/\)/);
-  assert.match(readme,/homework-07\/\s+# HW6 — Statistical Independence/);
+  assert.match(readme,/homework-07\/\s+# HW 6 — Statistical Independence/);
 });

@@ -44,6 +44,15 @@
     .means-table th { background: #edf2f7; }
     .means-table caption { text-align: left; font-weight: bold; margin: 12px 0; }
     #means-feedback { font-weight: bold; }
+    .event-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 16px; }
+    .event-form label { display: block; font-weight: bold; }
+    .event-form input {
+      display: block; width: 100%; min-width: 0; max-width: none; margin: 8px 0;
+      padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit;
+    }
+    .event-results dt { font-weight: bold; }
+    .event-results dd { margin: 0 0 12px; }
+    #conditional-visual meter { display: block; width: 100%; height: 20px; }
     @media (max-width: 600px) {
       .means-table, .means-table caption, .means-table tbody { display: block; width: 100%; }
       .means-table thead { display: none; }
@@ -290,15 +299,70 @@
     <section class="homework-section" aria-labelledby="exercise-2">
       <h2 id="exercise-2">Exercise 2 — Conditional Probability &amp; Bayesian Inference</h2>
       <section class="card" aria-labelledby="conditional-probability">
-        <h3 id="conditional-probability">Conditional Probability</h3>
+        <h3 id="conditional-probability">1. Conditional Probability</h3>
         <p>Conditioning on an event B restricts the reference population to outcomes in B.</p>
         <p class="formula">P(A | B) = P(A ∩ B) / P(B), for P(B) &gt; 0.</p>
+        <p>P(A | B) and P(B | A) are generally different. Supply coherent event probabilities:
+          max(0, P(A) + P(B) − 1) ≤ P(A ∩ B) ≤ min(P(A), P(B)).
+          A zero conditioning probability makes the corresponding conditional probability undefined.</p>
+        <form id="conditional-form" class="event-form" novalidate>
+          <div><label for="conditional-a">P(A)</label>
+            <input id="conditional-a" type="number" min="0" max="1" step="any" value="0.4"></div>
+          <div><label for="conditional-b">P(B)</label>
+            <input id="conditional-b" type="number" min="0" max="1" step="any" value="0.5"></div>
+          <div><label for="conditional-joint">P(A ∩ B)</label>
+            <input id="conditional-joint" type="number" min="0" max="1" step="any" value="0.2"></div>
+          <div class="simulation-actions"><button type="submit" id="calculate-conditional">Calculate Conditional Probabilities</button>
+            <button type="button" id="reset-conditional">Reset</button></div>
+        </form>
+        <p id="conditional-feedback" role="status" aria-live="polite">No conditional probabilities have been calculated.</p>
+        <dl id="conditional-results" class="event-results"></dl>
+        <div id="conditional-visual" aria-label="Disjoint event probabilities"></div>
+        <p>The bars represent disjoint parts of the probability space on a common [0, 1] scale.
+          Their numerical labels are the calculated probabilities, not estimates from bar lengths.</p>
       </section>
       <section class="card" aria-labelledby="bayes-theorem">
-        <h3 id="bayes-theorem">Bayes' Theorem</h3>
+        <h3 id="bayes-theorem">2. Bayes' Theorem</h3>
         <p class="formula">P(A | B) = P(B | A) P(A) / P(B).</p>
         <p>Here P(B) &gt; 0; the displayed event formula also assumes P(A) &gt; 0
           so that P(B | A) is defined. Bayes' theorem reverses the direction of conditioning.</p>
+        <p>For a binary hypothesis H and evidence E:</p>
+        <p class="formula">P(E) = P(E | H) P(H) + P(E | not H) (1 − P(H)).</p>
+        <p class="formula">P(H | E) = P(E | H) P(H) / P(E), when P(E) &gt; 0.</p>
+        <p>The prior describes probability before the evidence. Each likelihood describes how compatible
+          the evidence is with a hypothesis; it is not the posterior. The posterior updates the hypothesis
+          probability after the evidence. Bayes' theorem does not create information from nothing:
+          the answer depends on the model and probabilities supplied.</p>
+        <h4>Synthetic Diagnostic Test</h4>
+        <p>H means the condition is present; E means the test is positive. The prior is prevalence,
+          P(E | H) is sensitivity and P(E | not H) is the false positive rate.
+          This is a synthetic probability exercise, not an individual diagnostic assessment.</p>
+        <p>A sensitivity of 95% does not imply a 95% probability of the condition after a positive result.
+          The prevalence and false positive rate also matter.</p>
+        <form id="bayes-event-form" class="event-form" novalidate>
+          <div><label for="bayes-prior">Prior P(H) / prevalence</label>
+            <input id="bayes-prior" type="number" min="0" max="1" step="any" value="0.01"></div>
+          <div><label for="bayes-likelihood-h">Likelihood P(E | H) / sensitivity</label>
+            <input id="bayes-likelihood-h" type="number" min="0" max="1" step="any" value="0.95"></div>
+          <div><label for="bayes-likelihood-not-h">Likelihood P(E | not H) / false positive rate</label>
+            <input id="bayes-likelihood-not-h" type="number" min="0" max="1" step="any" value="0.05"></div>
+          <div class="simulation-actions"><button type="submit" id="calculate-bayes">Calculate Bayes</button>
+            <button type="button" id="bayes-diagnostic-preset">Load Synthetic Diagnostic Test</button>
+            <button type="button" id="reset-bayes-event">Reset</button></div>
+        </form>
+        <p id="bayes-event-feedback" role="status" aria-live="polite">No Bayesian update has been calculated.</p>
+        <p id="bayes-event-chart-warning" role="status"></p>
+        <dl id="bayes-event-results" class="event-results"></dl>
+        <p id="bayes-prior-summary"></p>
+        <h4 id="bayes-prior-title">Posterior versus Prior — Fixed Likelihoods</h4>
+        <p id="bayes-prior-note">This formula-based curve varies only the prior between 0 and 1, keeping both
+          likelihoods fixed. The marker shows the selected prior and posterior. Points where P(E) = 0
+          are undefined and have no plotted value or marker. This preview is not the full sensitivity experiment.</p>
+        <div class="simulation-chart"><canvas id="bayes-prior-chart" role="img" aria-labelledby="bayes-prior-title"
+          aria-describedby="bayes-prior-note">Calculate Bayes to compare prior and posterior; numerical results remain available without charts.</canvas></div>
+        <p>Numbers are displayed to 12 significant digits. Calculations use floating-point arithmetic;
+          very small values may underflow. Such evidence probabilities are explicitly distinguished from
+          impossible evidence, and logarithmic weights preserve the posterior where possible.</p>
       </section>
       <section class="card" aria-labelledby="prior-likelihood-posterior">
         <h3 id="prior-likelihood-posterior">Prior, Likelihood and Posterior</h3>

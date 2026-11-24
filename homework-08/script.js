@@ -755,3 +755,222 @@ function initializeSampleMeanUI() {
     }
   });
 }
+
+// Step 4: event probabilities only. Parameter-distribution inference is left to
+// later steps. This API is independent of DOM state and chart rendering.
+const EventProbabilityCalculators = (() => {
+  const diagnostic = Object.freeze({ prior: 0.01, likelihoodH: 0.95, likelihoodNotH: 0.05 });
+
+  function validateProbability(value, label = 'Probability') {
+    if (!['number', 'string'].includes(typeof value) || String(value).trim() === '') {
+      throw new RangeError(`${label} must be a number; empty values are not allowed.`);
+    }
+    const number = Number(value);
+    if (!Number.isFinite(number) || number < 0 || number > 1) throw new RangeError(`${label} must be finite and between 0 and 1.`);
+    return number === 0 ? 0 : number;
+  }
+
+  function formatResult(value) {
+    if (value === null) return 'Undefined';
+    if (!Number.isFinite(value)) throw new RangeError('Only finite or explicitly undefined results can be formatted.');
+    return value === 0 ? '0' : value === 1 ? '1' : value.toPrecision(12);
+  }
+
+  function conditionalProbabilities(raw) {
+    const a = validateProbability(raw.a, 'P(A)'), b = validateProbability(raw.b, 'P(B)');
+    const joint = validateProbability(raw.joint, 'P(A ∩ B)');
+    const lower = Math.max(0, a + b - 1), upper = Math.min(a, b);
+    // The upper bound uses no arithmetic, so compare it exactly. Only the
+    // subtracted lower boundary has an explicit floating-point error allowance.
+    const tolerance = 4 * Number.EPSILON * Math.max(a, b);
+    if (joint > upper || joint < lower - tolerance) {
+      throw new RangeError(`Fréchet bounds require ${formatResult(lower)} ≤ P(A ∩ B) ≤ ${formatResult(upper)}.`);
+    }
+    let neither = (1 - a) - (b - joint);
+    const roundingAdjusted = neither < 0 && neither >= -tolerance;
+    if (roundingAdjusted) neither = 0; // Only a certified boundary-rounding residual.
+    if (neither < 0) throw new RangeError('The event probabilities violate the Fréchet lower bound.');
+    return { a, b, joint, givenB: b === 0 ? null : joint / b, givenA: a === 0 ? null : joint / a,
+      lower, upper, roundingAdjusted, atoms: [
+        { label: 'A ∩ B', value: joint }, { label: 'A only', value: a - joint },
+        { label: 'B only', value: b - joint }, { label: 'Neither A nor B', value: neither }
+      ] };
+  }
+
+  function evidenceProbability(priorValue, hValue, notHValue) {
+    const prior = validateProbability(priorValue, 'Prior P(H)');
+    const h = validateProbability(hValue, 'P(E | H)'), notH = validateProbability(notHValue, 'P(E | not H)');
+    const logH = prior > 0 && h > 0 ? Math.log(prior) + Math.log(h) : -Infinity;
+    const logNotH = prior < 1 && notH > 0 ? Math.log1p(-prior) + Math.log(notH) : -Infinity;
+    const impossible = logH === -Infinity && logNotH === -Infinity;
+    // Scale likelihoods first: two subnormal weighted terms can round to zero
+    // separately even when their sum is representable (e.g. equal tiny likelihoods).
+    const scale = Math.max(h, notH);
+    const value = scale === 0 ? 0 : scale * ((h / scale) * prior + (notH / scale) * (1 - prior));
+    const max = Math.max(logH, logNotH), min = Math.min(logH, logNotH);
+    return { value, impossible, underflow: value === 0 && !impossible,
+      logValue: impossible ? -Infinity : max + Math.log1p(Math.exp(min - max)), logH, logNotH };
+  }
+
+  function bayes(raw) {
+    const prior = validateProbability(raw.prior, 'Prior P(H)');
+    const likelihoodH = validateProbability(raw.likelihoodH, 'P(E | H)');
+    const likelihoodNotH = validateProbability(raw.likelihoodNotH, 'P(E | not H)');
+    const evidence = evidenceProbability(prior, likelihoodH, likelihoodNotH);
+    let posterior = null;
+    if (!evidence.impossible) {
+      if (evidence.logH === -Infinity) posterior = 0;
+      else if (evidence.logNotH === -Infinity) posterior = 1;
+      else {
+        const difference = evidence.logNotH - evidence.logH;
+        // Stable normalization of the two weights, without clipping to [0,1].
+        if (difference >= 0) {
+          const ratio = Math.exp(-difference);
+          posterior = ratio / (1 + ratio);
+        } else posterior = 1 / (1 + Math.exp(difference));
+      }
+    }
+    const bayesFactor = likelihoodNotH === 0 ? null : likelihoodH / likelihoodNotH;
+    return { prior, likelihoodH, likelihoodNotH, evidence, posterior, bayesFactor,
+      factorOverflow: bayesFactor !== null && !Number.isFinite(bayesFactor),
+      posteriorUnderflow: posterior === 0 && evidence.logH !== -Infinity && !evidence.impossible };
+  }
+
+  function priorPosteriorCurve(likelihoodH, likelihoodNotH, selectedPrior) {
+    const selected = bayes({ prior: selectedPrior, likelihoodH, likelihoodNotH });
+    const points = Array.from({ length: 201 }, (_, i) => {
+      const prior = i / 200;
+      return { x: prior, y: bayes({ prior, likelihoodH: selected.likelihoodH,
+        likelihoodNotH: selected.likelihoodNotH }).posterior };
+    });
+    return { points, selected: { x: selected.prior, y: selected.posterior } };
+  }
+
+  function priorSummary(h, notH) {
+    h = validateProbability(h); notH = validateProbability(notH);
+    if (h === 0 && notH === 0) return 'The evidence is impossible for every prior; no posterior is defined.';
+    if (h === 0) return 'For every prior below 1, this evidence rules out H and the posterior is 0. At prior 1, the evidence is impossible.';
+    if (notH === 0) return 'For every positive prior, this evidence rules out not H and the posterior is 1. At prior 0, the evidence is impossible.';
+    if (h === notH) return 'The likelihoods are equal: this evidence does not change the prior, so posterior = prior.';
+    return `The evidence favors ${h > notH ? 'H' : 'not H'}. With these positive likelihoods held fixed, increasing the prior increases the posterior. `
+      + 'The posterior depends on both the prior and the relative likelihoods, not sensitivity alone.';
+  }
+
+  return Object.freeze({ diagnostic, validateProbability, formatResult, conditionalProbabilities,
+    evidenceProbability, bayes, priorPosteriorCurve, priorSummary });
+})();
+
+if (typeof document !== 'undefined' && document.getElementById('conditional-form')) initializeEventProbabilityUI();
+
+function initializeEventProbabilityUI() {
+  const api = EventProbabilityCalculators, byId = id => document.getElementById(id);
+  let priorChart = null;
+  const conditionalForm = byId('conditional-form'), bayesForm = byId('bayes-event-form');
+
+  function addResult(container, label, value) {
+    const dt = document.createElement('dt'), dd = document.createElement('dd');
+    dt.textContent = label; dd.textContent = value; container.append(dt, dd);
+  }
+
+  function clearConditional(message) {
+    byId('conditional-results').replaceChildren();
+    byId('conditional-visual').replaceChildren();
+    byId('conditional-feedback').textContent = message;
+  }
+
+  function clearBayes(message) {
+    priorChart?.destroy(); priorChart = null;
+    if (typeof Chart !== 'undefined' && Chart.getChart) Chart.getChart('bayes-prior-chart')?.destroy();
+    byId('bayes-event-results').replaceChildren();
+    byId('bayes-prior-summary').textContent = '';
+    byId('bayes-event-chart-warning').textContent = '';
+    byId('bayes-event-feedback').textContent = message;
+  }
+
+  function calculateConditional(event) {
+    event?.preventDefault();
+    clearConditional('');
+    try {
+      const r = api.conditionalProbabilities({ a: byId('conditional-a').value,
+        b: byId('conditional-b').value, joint: byId('conditional-joint').value });
+      const out = byId('conditional-results');
+      addResult(out, 'Input P(A)', api.formatResult(r.a));
+      addResult(out, 'Input P(B)', api.formatResult(r.b));
+      addResult(out, 'P(A ∩ B)', api.formatResult(r.joint));
+      addResult(out, 'P(A | B)', r.givenB === null ? 'Undefined: P(B) = 0.' : api.formatResult(r.givenB));
+      addResult(out, 'P(B | A)', r.givenA === null ? 'Undefined: P(A) = 0.' : api.formatResult(r.givenA));
+      for (const atom of r.atoms) {
+        const p = document.createElement('p'), meter = document.createElement('meter');
+        p.textContent = `${atom.label}: ${api.formatResult(atom.value)}`;
+        meter.min = 0; meter.max = 1; meter.value = atom.value;
+        meter.setAttribute('aria-label', atom.label); meter.textContent = api.formatResult(atom.value);
+        p.append(meter); byId('conditional-visual').append(p);
+      }
+      byId('conditional-feedback').textContent = 'Conditional probabilities calculated.'
+        + (r.roundingAdjusted ? ' A boundary rounding residual was resolved within floating-point tolerance.' : '');
+    } catch (error) { clearConditional(error.message); }
+  }
+
+  function drawPriorCurve(curve) {
+    if (typeof Chart === 'undefined') {
+      byId('bayes-event-chart-warning').textContent = 'Chart.js is unavailable. The calculator and numerical results remain operational; calculate again when charts are available.';
+      return;
+    }
+    try {
+      priorChart = new Chart(byId('bayes-prior-chart'), { type: 'line', data: { datasets: [
+        { label: 'Posterior P(H | E)', data: curve.points, borderColor: '#174ea6',
+          borderWidth: 2, pointRadius: 0, spanGaps: false },
+        { label: 'Selected prior and posterior', data: [curve.selected], borderColor: '#c2410c',
+          backgroundColor: '#c2410c', pointRadius: 6, showLine: false }
+      ] }, options: { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+        scales: { x: { type: 'linear', min: 0, max: 1, title: { display: true, text: 'Prior P(H)' } },
+          y: { min: 0, max: 1, title: { display: true, text: 'Posterior P(H | E)' } } },
+        plugins: { legend: { labels: { boxWidth: 12, font: { size: 10 } } } }
+      } });
+    } catch {
+      priorChart?.destroy(); priorChart = null;
+      if (Chart.getChart) Chart.getChart('bayes-prior-chart')?.destroy();
+      byId('bayes-event-chart-warning').textContent = 'The prior/posterior chart could not be rendered. Numerical results remain available.';
+    }
+  }
+
+  function calculateBayes(event) {
+    event?.preventDefault();
+    clearBayes('');
+    try {
+      const r = api.bayes({ prior: byId('bayes-prior').value, likelihoodH: byId('bayes-likelihood-h').value,
+        likelihoodNotH: byId('bayes-likelihood-not-h').value });
+      const out = byId('bayes-event-results');
+      addResult(out, 'Prior P(H)', api.formatResult(r.prior));
+      addResult(out, 'Likelihood P(E | H)', api.formatResult(r.likelihoodH));
+      addResult(out, 'Likelihood P(E | not H)', api.formatResult(r.likelihoodNotH));
+      addResult(out, 'Evidence probability P(E)', r.evidence.underflow
+        ? 'Positive, below floating-point range (underflow); evidence is not impossible.' : api.formatResult(r.evidence.value));
+      addResult(out, 'Posterior P(H | E)', r.posterior === null ? 'Undefined: P(E) = 0; the evidence is impossible under this model.'
+        : api.formatResult(r.posterior) + (r.posteriorUnderflow ? ' (positive value below floating-point range)' : ` (${api.formatResult(100 * r.posterior)}%).`));
+      addResult(out, 'Bayes factor P(E | H) / P(E | not H)', r.bayesFactor === null
+        ? 'Undefined: P(E | not H) = 0.' : r.factorOverflow ? 'Defined, but exceeds the finite floating-point range.' : api.formatResult(r.bayesFactor));
+      byId('bayes-prior-summary').textContent = api.priorSummary(r.likelihoodH, r.likelihoodNotH)
+        + (r.posterior === null ? ' The selected prior has no defined posterior, so no selected marker is drawn.'
+          : ` Selected prior: ${api.formatResult(r.prior)}; posterior: ${api.formatResult(r.posterior)}.`);
+      drawPriorCurve(api.priorPosteriorCurve(r.likelihoodH, r.likelihoodNotH, r.prior));
+      byId('bayes-event-feedback').textContent = r.posterior === null ? 'Inputs are valid; the posterior is undefined because P(E) = 0.'
+        : 'Bayesian event update calculated from the supplied probabilities.';
+    } catch (error) { clearBayes(error.message); }
+  }
+
+  conditionalForm.addEventListener('submit', calculateConditional);
+  bayesForm.addEventListener('submit', calculateBayes);
+  for (const event of ['input', 'change']) {
+    conditionalForm.addEventListener(event, () => clearConditional('Inputs changed. Calculate again to update the results.'));
+    bayesForm.addEventListener(event, () => clearBayes('Inputs changed. Calculate again to update the results and curve.'));
+  }
+  byId('reset-conditional').addEventListener('click', () => { conditionalForm.reset(); clearConditional('Reset complete. No conditional probabilities have been calculated.'); });
+  byId('reset-bayes-event').addEventListener('click', () => { bayesForm.reset(); clearBayes('Reset complete. No Bayesian update has been calculated.'); });
+  byId('bayes-diagnostic-preset').addEventListener('click', () => {
+    byId('bayes-prior').value = api.diagnostic.prior;
+    byId('bayes-likelihood-h').value = api.diagnostic.likelihoodH;
+    byId('bayes-likelihood-not-h').value = api.diagnostic.likelihoodNotH;
+    calculateBayes();
+  });
+}
