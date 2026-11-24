@@ -29,15 +29,15 @@ test('HW7 Step 1 browser: ordered exercises, English content and inactive future
   assert.deepEqual(state.headings, ['Assignment', 'Exercise 1 — Modes of Convergence',
     'Exercise 2 — Conditional Probability & Bayesian Inference', 'Conclusions']);
   assert.deepEqual(state.exercises, [
-    ['Definitions and Comparison', 'Convergence Simulations', 'Law of Large Numbers',
-      'Central Limit Theorem', 'Square-Root Scaling and Variance'],
+    ['Definitions and Comparison', 'Convergence Simulations', '3. Law of Large Numbers',
+      '4. Central Limit Theorem', '5. Square-Root Scaling and Variance'],
     ['Conditional Probability', "Bayes' Theorem", 'Prior, Likelihood and Posterior',
       'Bayesian Experiments', 'Results and Conclusions']
   ]);
-  assert.equal(state.slots.length, 9);
+  assert.equal(state.slots.length, 3);
   assert.ok(state.slots.every(s => s === ''));
-  assert.equal(state.active, 11);
-  assert.equal(state.statuses.length, 4);
+  assert.equal(state.active, 25);
+  assert.equal(state.statuses.length, 1);
   assert.ok(state.statuses.every(s => /not yet implemented/i.test(s)));
   assert.match(state.header, /linear-gradient/);
   assert.ok(state.styles.some(s => s?.endsWith('/css/style.css')));

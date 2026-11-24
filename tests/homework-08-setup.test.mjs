@@ -88,15 +88,15 @@ test('HW7 Step 1: conditional events and parameter inference are distinguished',
   assert.match(text, /positive and finite/);
 });
 
-test('HW7 scaffold: future experiments stay empty outside the implemented convergence section', () => {
+test('HW7 scaffold: Bayesian experiments remain empty after implementing sample-mean experiments', () => {
   assert.doesNotThrow(() => new vm.Script(source));
   assert.doesNotThrow(() => vm.runInNewContext(source, {}));
-  const future = html.slice(html.indexOf('<section class="card" aria-labelledby="law-large-numbers">'));
+  const future = html.slice(html.indexOf('<section class="homework-section" aria-labelledby="exercise-2">'));
   assert.doesNotMatch(future, /<(?:canvas|input|select|button|output|iframe)\b|\bon\w+=/i);
   const slots = [...future.matchAll(/<div id="([^"]+)" class="future-component" data-placeholder="(controls|chart|results)">([\s\S]*?)<\/div>/g)];
-  assert.equal(slots.length, 9);
+  assert.equal(slots.length, 3);
   for (const [, id, , content] of slots) assert.equal(content.trim(), '', id);
-  assert.equal((html.match(/class="status"/g) || []).length, 4);
+  assert.equal((html.match(/class="status"/g) || []).length, 1);
   assert.match(text, /No experiments have been run/);
   assert.match(text, /Other experiments remain pending/);
 });

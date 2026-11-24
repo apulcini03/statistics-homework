@@ -384,3 +384,374 @@ function initializeConvergenceUI(form) {
   });
   describeModel();
 }
+
+// Step 3: independent numerical API. The verified convergence models above are
+// unchanged; only their seeded RNG is reused. A row is one independent replica.
+const SampleMeanExperiments = (() => {
+  const defaults = Object.freeze({ distribution: 'bernoulli', p: 0.5, maxN: 500,
+    count: 3000, paths: 6, epsilon: 0.1, seed: 42 });
+  const sizes = Object.freeze([1, 2, 5, 10, 30, 50, 100, 200]);
+
+  function finiteNumber(value, label) {
+    if (!['number', 'string'].includes(typeof value) || String(value).trim() === '' || !Number.isFinite(Number(value))) {
+      throw new RangeError(`${label} must be a finite number; empty values are not allowed.`);
+    }
+    return Number(value);
+  }
+
+  function checkN(n) {
+    if (!Number.isInteger(n) || n < 1 || n > 2000) throw new RangeError('Maximum n must be an integer from 1 to 2,000.');
+  }
+
+  function populationMoments(distribution, p) {
+    if (distribution === 'uniform') return { mean: 0.5, variance: 1 / 12, sd: Math.sqrt(1 / 12) };
+    if (distribution !== 'bernoulli') throw new RangeError('Select Bernoulli or Uniform.');
+    if (!Number.isFinite(p) || p < 0 || p > 1) throw new RangeError('Bernoulli p must be between 0 and 1.');
+    const variance = p * (1 - p);
+    return { mean: p, variance, sd: Math.sqrt(variance) };
+  }
+
+  function validateParameters(raw) {
+    if (!raw) throw new RangeError('Parameters are required.');
+    const p = { distribution: raw.distribution,
+      p: raw.distribution === 'bernoulli' ? finiteNumber(raw.p, 'Bernoulli p') : null };
+    populationMoments(p.distribution, p.p);
+    for (const key of ['maxN', 'count', 'paths', 'epsilon', 'seed']) p[key] = finiteNumber(raw[key], key);
+    checkN(p.maxN);
+    if (!Number.isInteger(p.count) || p.count < 200 || p.count > 5000) throw new RangeError('Replicas must be an integer from 200 to 5,000.');
+    if (!Number.isInteger(p.paths) || p.paths < 1 || p.paths > 8) throw new RangeError('Displayed paths must be an integer from 1 to 8.');
+    if (p.epsilon <= 0) throw new RangeError('ε must be strictly positive.');
+    ConvergenceSimulations.createRng(p.seed); // Validate seed with the shared implementation.
+    return p;
+  }
+
+  function generateSample(distribution, p, n, random) {
+    populationMoments(distribution, p);
+    checkN(n);
+    return Array.from({ length: n }, () => distribution === 'uniform' ? random() : Number(random() < p));
+  }
+
+  function sampleFromSeed(distribution, p, n, seed) {
+    return generateSample(distribution, p, n, ConvergenceSimulations.createRng(seed));
+  }
+
+  function cumulativeMeans(observations) {
+    if (!observations.length) throw new RangeError('A sample must be nonempty.');
+    let sum = 0;
+    return observations.map((x, i) => {
+      if (!Number.isFinite(x)) throw new RangeError('Observations must be finite.');
+      sum += x;
+      return sum / (i + 1);
+    });
+  }
+
+  function finalMeans(samples) {
+    if (!samples.length) throw new RangeError('At least one replica is required.');
+    return samples.map(sample => cumulativeMeans(sample).at(-1));
+  }
+
+  function sampleMoments(values) {
+    if (values.length < 2) throw new RangeError('At least two replicas are required for sample variance.');
+    let mean = 0, m2 = 0, count = 0;
+    for (const value of values) {
+      if (!Number.isFinite(value)) throw new RangeError('Values must be finite.');
+      const delta = value - mean;
+      mean += delta / ++count;
+      m2 += delta * (value - mean);
+    }
+    const variance = Math.max(0, m2 / (count - 1));
+    return { mean, variance, sd: Math.sqrt(variance) };
+  }
+
+  function meanTheory(distribution, p, n, dependent = false) {
+    checkN(n);
+    const moments = populationMoments(distribution, p);
+    const variance = dependent ? moments.variance : moments.variance / n;
+    return { mean: moments.mean, variance, sd: Math.sqrt(variance) };
+  }
+
+  function standardizeMean(mean, n, moments) {
+    checkN(n);
+    if (!Number.isFinite(mean) || !Number.isFinite(moments.mean) || !Number.isFinite(moments.sd) || moments.sd < 0) {
+      throw new RangeError('Finite mean and population moments required.');
+    }
+    return moments.sd === 0 ? null : Math.sqrt(n) * (mean - moments.mean) / moments.sd;
+  }
+
+  function deviationProbability(means, mu, epsilon) {
+    if (!means.length || !Number.isFinite(mu) || !Number.isFinite(epsilon) || epsilon <= 0 || !means.every(Number.isFinite)) {
+      throw new RangeError('Finite means and positive finite ε required.');
+    }
+    return means.filter(x => Math.abs(x - mu) > epsilon).length / means.length;
+  }
+
+  function chebyshevBound(variance, n, epsilon) {
+    checkN(n);
+    if (!Number.isFinite(variance) || variance < 0 || !Number.isFinite(epsilon) || epsilon <= 0) {
+      throw new RangeError('Nonnegative finite variance and positive finite ε required.');
+    }
+    // Sequential division avoids underflow in epsilon²; an overflowing raw bound
+    // is legitimately displayed as infinity and capped at one for plotting.
+    const raw = variance === 0 ? 0 : variance / n / epsilon / epsilon;
+    return { raw, capped: Math.min(1, raw) };
+  }
+
+  function histogram(values, edges) {
+    if (!values.length || edges.length < 2 || !values.every(Number.isFinite)
+      || !edges.every((x, i) => Number.isFinite(x) && (!i || x > edges[i - 1]))) {
+      throw new RangeError('Finite samples and strictly increasing bin edges required.');
+    }
+    const counts = Array(edges.length - 1).fill(0);
+    for (const x of values) {
+      if (x < edges[0] || x > edges.at(-1)) throw new RangeError('Histogram edges must cover every sample.');
+      let lo = 0, hi = counts.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi + 1) >>> 1;
+        if (x >= edges[mid]) lo = mid;
+        else hi = mid - 1;
+      }
+      counts[lo]++;
+    }
+    return counts.map((count, i) => ({ left: edges[i], right: edges[i + 1],
+      x: (edges[i] + edges[i + 1]) / 2, count, density: count / values.length / (edges[i + 1] - edges[i]) }));
+  }
+
+  const normalDensity = x => Math.exp(-x * x / 2) / Math.sqrt(2 * Math.PI);
+
+  function displayIndices(maxN) {
+    checkN(maxN);
+    const indices = new Set(Array.from({ length: Math.min(30, maxN) }, (_, i) => i + 1));
+    for (let i = 0; i < 270; i++) indices.add(1 + Math.round((maxN - 1) * i / 269));
+    return [...indices].sort((a, b) => a - b);
+  }
+
+  function* simulationSteps(parameters) {
+    const p = validateParameters(parameters);
+    const population = populationMoments(p.distribution, p.p);
+    const random = ConvergenceSimulations.createRng(p.seed);
+    const dependentRandom = ConvergenceSimulations.createRng((p.seed ^ 0x9e3779b9) >>> 0);
+    const nValues = [...new Set([...sizes.filter(n => n <= p.maxN), p.maxN])].sort((a, b) => a - b);
+    const snapshots = nValues.map(n => ({ n, means: [] }));
+    const aggregates = Array.from({ length: p.maxN }, () => ({ mean: 0, m2: 0, hits: 0 }));
+    const dependentMeans = [], paths = [], indices = displayIndices(p.maxN);
+    for (let replica = 0; replica < p.count; replica++) {
+      const observations = generateSample(p.distribution, p.p, p.maxN, random);
+      const means = cumulativeMeans(observations);
+      means.forEach((value, i) => {
+        const row = aggregates[i], delta = value - row.mean;
+        row.mean += delta / (replica + 1);
+        row.m2 += delta * (value - row.mean);
+        row.hits += Math.abs(value - population.mean) > p.epsilon ? 1 : 0;
+      });
+      if (replica < p.paths) paths.push(indices.map(n => ({ x: n, y: means[n - 1] })));
+      for (const snapshot of snapshots) snapshot.means.push(means[snapshot.n - 1]);
+      // This single Y is the dependent mean at every n, with no CLT applied.
+      dependentMeans.push(generateSample(p.distribution, p.p, 1, dependentRandom)[0]);
+      if ((replica + 1) % 16 === 0) yield (replica + 1) / p.count;
+    }
+    const statistics = aggregates.map((row, i) => {
+      const variance = Math.max(0, row.m2 / (p.count - 1));
+      return { n: i + 1, mean: row.mean, variance, sd: Math.sqrt(variance), probability: row.hits / p.count,
+        theory: meanTheory(p.distribution, p.p, i + 1), bound: chebyshevBound(population.variance, i + 1, p.epsilon) };
+    });
+    const dependent = { ...sampleMoments(dependentMeans), theory: population.variance };
+    const standardized = population.sd === 0 ? [] : snapshots.map(s => ({ n: s.n,
+      values: s.means.map(mean => standardizeMean(mean, s.n, population)) }));
+    let min = -4, max = 4;
+    for (const s of standardized) for (const x of s.values) { min = Math.min(min, x); max = Math.max(max, x); }
+    const edges = Array.from({ length: 41 }, (_, i) => min + (max - min) * i / 40);
+    // Preserve exact extreme endpoints against floating-point interpolation.
+    edges[0] = min;
+    edges[40] = max;
+    return { parameters: p, population, statistics, paths, snapshots, dependent, edges,
+      clt: standardized.map(s => ({ n: s.n, ...sampleMoments(s.values), histogram: histogram(s.values, edges) })) };
+  }
+
+  function simulate(parameters) {
+    const steps = simulationSteps(parameters);
+    let step;
+    do { step = steps.next(); } while (!step.done);
+    return step.value;
+  }
+
+  return Object.freeze({ defaults, sizes, validateParameters, populationMoments, generateSample,
+    sampleFromSeed, cumulativeMeans, finalMeans, sampleMoments, meanTheory, standardizeMean,
+    deviationProbability, chebyshevBound, histogram, normalDensity, displayIndices, simulationSteps, simulate });
+})();
+
+if (typeof document !== 'undefined' && document.getElementById('means-form')) initializeSampleMeanUI();
+
+function initializeSampleMeanUI() {
+  const api = SampleMeanExperiments, byId = id => document.getElementById(id);
+  const form = byId('means-form'), run = byId('run-lln'), selectN = byId('clt-n');
+  const feedback = byId('means-feedback'), warning = byId('means-chart-warning');
+  const fields = { distribution: 'means-distribution', p: 'means-p', maxN: 'means-max',
+    count: 'means-count', paths: 'means-paths', epsilon: 'means-epsilon', seed: 'means-seed' };
+  const charts = new Map();
+  let revision = 0, result = null;
+  const format = x => x === Infinity ? '∞' : x === 0 ? '0' : x.toPrecision(6);
+
+  function destroyChart(id) {
+    charts.get(id)?.destroy();
+    charts.delete(id);
+    if (typeof Chart !== 'undefined' && Chart.getChart) Chart.getChart(id)?.destroy();
+  }
+
+  function destroyCharts() {
+    for (const id of ['means-lln-chart', 'means-probability-chart', 'means-clt-chart', 'means-scaling-chart']) destroyChart(id);
+  }
+
+  function invalidate(message) {
+    revision++;
+    result = null;
+    destroyCharts();
+    run.disabled = false;
+    form.setAttribute('aria-busy', 'false');
+    byId('means-p').disabled = byId('means-distribution').value === 'uniform';
+    for (const id of ['means-parameters', 'means-population', 'lln-results', 'means-scaling-table', 'means-dependence-table']) byId(id).replaceChildren();
+    selectN.replaceChildren(new Option('Run LLN Simulation first', ''));
+    selectN.disabled = true;
+    byId('clt-results').textContent = 'Run the shared experiment above to compare standardized means.';
+    byId('scaling-results').textContent = 'Run the shared experiment above to populate the variance table.';
+    warning.textContent = '';
+    feedback.textContent = message;
+  }
+
+  function makeTable(containerId, captionText, headings, rows) {
+    const table = document.createElement('table');
+    table.className = 'means-table';
+    const caption = table.createCaption();
+    caption.textContent = captionText;
+    const head = table.createTHead().insertRow();
+    for (const heading of headings) {
+      const th = document.createElement('th');
+      th.scope = 'col'; th.textContent = heading; head.append(th);
+    }
+    const body = table.createTBody();
+    for (const row of rows) {
+      const tr = body.insertRow();
+      row.forEach((value, i) => {
+        const cell = document.createElement(i ? 'td' : 'th');
+        if (!i) cell.scope = 'row';
+        cell.dataset.label = headings[i];
+        cell.textContent = value;
+        tr.append(cell);
+      });
+    }
+    byId(containerId).replaceChildren(table);
+  }
+
+  function series(label, data, color = '#174ea6', extra = {}) {
+    return { label, data, borderColor: color, backgroundColor: color, pointRadius: 0, borderWidth: 2, ...extra };
+  }
+
+  function chart(id, datasets, xTitle, yTitle, probability = false) {
+    destroyChart(id);
+    if (typeof Chart === 'undefined') {
+      warning.textContent = 'Chart.js is unavailable. Tables and numerical results remain available. Run again when Chart.js becomes available.';
+      return;
+    }
+    try {
+      charts.set(id, new Chart(byId(id), { type: 'line', data: { datasets }, options: {
+        animation: false, responsive: true, maintainAspectRatio: false, parsing: false,
+        scales: { x: { type: 'linear', title: { display: true, text: xTitle } },
+          y: { min: probability ? 0 : undefined, max: probability ? 1 : undefined,
+            title: { display: true, text: yTitle } } },
+        plugins: { legend: { labels: { boxWidth: 12, font: { size: 10 } } } }
+      } }));
+    } catch {
+      destroyChart(id);
+      warning.textContent = 'A chart could not be rendered. Tables and numerical results remain available; run again to retry.';
+    }
+  }
+
+  function renderCLT() {
+    if (!result) return;
+    destroyChart('means-clt-chart');
+    const n = Number(selectN.value), p = result.parameters;
+    if (result.population.sd === 0) {
+      byId('clt-results').textContent = `σ = 0: standardization is undefined for Bernoulli p = ${p.p}. `
+        + `All ${p.count} sample means equal μ = ${p.p}; no standardized histogram or normal comparison is drawn.`;
+      return;
+    }
+    const row = result.clt.find(s => s.n === n);
+    if (!row) return;
+    const area = row.histogram.reduce((s, bin) => s + bin.density * (bin.right - bin.left), 0);
+    byId('clt-results').textContent = `n = ${n}; independent replicas = ${p.count}; empirical mean of Z_n = ${format(row.mean)}; `
+      + `empirical variance of Z_n (R − 1) = ${format(row.variance)}. Population targets: mean 0 and variance 1. `
+      + `Histogram area = ${format(area)}; bin width = ${format(result.edges[1] - result.edges[0])}.`;
+    const lo = result.edges[0], hi = result.edges.at(-1);
+    const grid = [...new Set([...Array.from({ length: 201 }, (_, i) => lo + (hi - lo) * i / 200),
+      -4, -3, -2, -1, 0, 1, 2, 3, 4])].sort((a, b) => a - b);
+    chart('means-clt-chart', [series('Empirical density', row.histogram.map(bin => ({ x: bin.x, y: bin.density })),
+      '#174ea6', { type: 'bar', backgroundColor: '#174ea680', categoryPercentage: 1, barPercentage: 1 }),
+    series('N(0,1) density', grid.map(x => ({ x, y: api.normalDensity(x) })), '#c2410c')], 'Z_n (shared bin edges)', 'Density');
+  }
+
+  function render(data) {
+    result = data;
+    const p = data.parameters, pop = data.population, last = data.statistics.at(-1);
+    byId('means-parameters').textContent = `Effective parameters: ${p.distribution === 'uniform' ? 'Uniform(0,1); Bernoulli p unused' : `Bernoulli(${p.p})`}; `
+      + `maximum n = ${p.maxN}; replicas = ${p.count}; displayed paths = ${p.paths}; ε = ${p.epsilon}; seed = ${p.seed}.`;
+    byId('means-population').textContent = `Known population parameters: μ = ${format(pop.mean)}; σ² = ${format(pop.variance)}; σ = ${format(pop.sd)}. `
+      + 'These are theoretical parameters, not estimates from the generated sample.';
+    byId('lln-results').textContent = `At n = ${p.maxN}, estimated P(|X̄_n − μ| > ε) = ${format(last.probability)}; `
+      + `raw Chebyshev bound = ${format(last.bound.raw)}; capped bound = ${format(last.bound.capped)}. `
+      + 'Monte Carlo estimates have sampling error; zero observed deviations do not establish zero probability.';
+    const rows = data.snapshots.map(s => data.statistics[s.n - 1]);
+    makeTable('means-scaling-table', `Independent sample means — ${p.count} replicas at every n`,
+      ['n', 'Theoretical variance', 'Theoretical SD', 'Empirical variance', 'Empirical SD'],
+      rows.map(r => [r.n, format(r.theory.variance), format(r.theory.sd), format(r.variance), format(r.sd)]));
+    makeTable('means-dependence-table', `Variance comparison — ${p.count} replicas in each case`,
+      ['n', 'Independent theory', 'Independent empirical', 'Dependent theory', 'Dependent empirical'],
+      rows.map(r => [r.n, format(r.theory.variance), format(r.variance), format(data.dependent.theory), format(data.dependent.variance)]));
+    byId('scaling-results').textContent = `At n = ${p.maxN}: independent variance estimate = ${format(last.variance)} `
+      + `(theory ${format(last.theory.variance)}); perfectly dependent variance estimate = ${format(data.dependent.variance)} `
+      + `(theory ${format(pop.variance)}). The dependent mean is the same Y at every n. `
+      + 'Variance and SD estimates fluctuate across finite samples; only the i.i.d. case has the stated square-root reduction.';
+    const indices = api.displayIndices(p.maxN);
+    const colors = ['#174ea6', '#047857', '#7e22ce', '#be123c', '#0e7490', '#4d7c0f', '#a16207', '#475569'];
+    chart('means-lln-chart', [...data.paths.map((path, i) => series(`Mean path ${i + 1}`, path, colors[i])),
+      series('Theoretical μ', indices.map(n => ({ x: n, y: pop.mean })), '#c2410c', { borderDash: [6, 4] })], 'n', 'Cumulative mean');
+    chart('means-probability-chart', [series('Monte Carlo probability', indices.map(n => ({ x: n, y: data.statistics[n - 1].probability }))),
+      series('min(1, Chebyshev bound)', indices.map(n => ({ x: n, y: data.statistics[n - 1].bound.capped })), '#c2410c', { borderDash: [6, 4] })],
+    'n', 'P(|X̄_n − μ| > ε)', true);
+    chart('means-scaling-chart', [series('Empirical SD', indices.map(n => ({ x: n, y: data.statistics[n - 1].sd }))),
+      series('Theoretical σ/√n', indices.map(n => ({ x: n, y: data.statistics[n - 1].theory.sd })), '#c2410c', { borderDash: [6, 4] })], 'n', 'SD of independent sample means');
+    selectN.replaceChildren(...data.snapshots.map(s => new Option(String(s.n), String(s.n))));
+    selectN.value = String(data.snapshots.some(s => s.n === 200) ? 200 : p.maxN);
+    selectN.disabled = false;
+    renderCLT();
+  }
+
+  for (const event of ['input', 'change']) form.addEventListener(event, () => invalidate('Parameters changed. Run LLN Simulation to update all three experiments.'));
+  selectN.addEventListener('change', renderCLT);
+  byId('reset-means').addEventListener('click', () => { form.reset(); invalidate('Reset complete. No sample-mean experiment has been run.'); });
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    let p;
+    try { p = api.validateParameters(Object.fromEntries(Object.entries(fields).map(([key, id]) => [key, byId(id).value]))); }
+    catch (error) { invalidate(error.message); return; }
+    invalidate('Running sample-mean experiments…');
+    const current = revision;
+    run.disabled = true;
+    form.setAttribute('aria-busy', 'true');
+    try {
+      const iterator = api.simulationSteps(p);
+      let step;
+      do {
+        await new Promise(resolve => setTimeout(resolve, 0));
+        if (current !== revision) return;
+        step = iterator.next();
+        if (!step.done) feedback.textContent = `Running sample-mean experiments… ${Math.floor(100 * step.value)}%`;
+      } while (!step.done);
+      if (current !== revision) return;
+      render(step.value);
+      feedback.textContent = 'Sample-mean experiments complete. Finite simulations illustrate, but do not prove, LLN or CLT.';
+    } catch (error) {
+      if (current === revision) invalidate(`Experiment failed: ${error.message}`);
+    } finally {
+      if (current === revision) { run.disabled = false; form.setAttribute('aria-busy', 'false'); }
+    }
+  });
+}
