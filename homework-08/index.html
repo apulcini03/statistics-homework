@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HW 7 — Modes of Convergence &amp; Bayesian Inference</title>
   <link rel="stylesheet" href="../css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js" defer></script>
   <script src="script.js" defer></script>
   <style>
     /* Page-local layout keeps the shared stylesheet and earlier homework unchanged. */
@@ -18,6 +19,19 @@
     .comparison caption { text-align: left; margin-bottom: 12px; font-weight: bold; }
     .formula { color: #253044; }
     .future-component { min-width: 0; }
+    #convergence-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 16px; }
+    #convergence-form label { display: block; font-weight: bold; }
+    #convergence-form input, #convergence-form select {
+      display: block; width: 100%; min-width: 0; max-width: none;
+      margin: 8px 0; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit;
+    }
+    .simulation-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .simulation-actions, #simulation-limits { grid-column: 1 / -1; }
+    .simulation-chart { position: relative; height: 300px; width: 100%; min-width: 0; }
+    .simulation-chart canvas { display: block; max-width: 100%; }
+    #simulation-feedback { font-weight: bold; }
+    #simulation-results dt { font-weight: bold; }
+    #simulation-results dd { margin-left: 0; margin-bottom: 12px; }
   </style>
 </head>
 <body>
@@ -34,8 +48,9 @@
       <div class="card">
         <p>Explore modes of convergence in probability theory, then conditional probability,
           Bayes' theorem and statistical inference.</p>
-        <p>This first step provides theoretical background and prepares the page structure.
-          Simulations, numerical algorithms, calculators and charts are not yet implemented.</p>
+        <p>Explore three convergence models through finite Monte Carlo simulations.
+          Experiments on sample means, LLN, CLT, square-root scaling and Bayesian inference
+          remain for later steps.</p>
         <nav aria-label="Exercises">
           <ul>
             <li><a href="#exercise-1">Exercise 1 — Modes of Convergence</a></li>
@@ -83,10 +98,56 @@
 
       <section class="card" aria-labelledby="convergence-simulations">
         <h3 id="convergence-simulations">Convergence Simulations</h3>
-        <p class="status">Not yet implemented</p>
-        <p>Future experiments will compare the different modes using random sequences.</p>
-        <div id="convergence-controls" class="future-component" data-placeholder="controls"></div>
-        <div id="convergence-chart" class="future-component" data-placeholder="chart"></div>
+        <p>The classifications below follow from the mathematical models, not from Monte Carlo observations.
+          A finite simulation cannot prove almost sure convergence or any other asymptotic claim.</p>
+        <form id="convergence-form" novalidate aria-describedby="simulation-limits">
+          <div><label for="simulation-model">Example</label>
+            <select id="simulation-model" name="model">
+              <option value="A">A — Typewriter sequence</option>
+              <option value="B">B — Shrinking normal</option>
+              <option value="C">C — Alternating normals</option>
+            </select></div>
+          <div><label for="simulation-count">Monte Carlo trajectories</label>
+            <input id="simulation-count" name="count" type="number" min="10" max="5000" step="1" value="2000"></div>
+          <div><label for="simulation-max">Maximum n</label>
+            <input id="simulation-max" name="maxN" type="number" min="15" max="1023" step="1" value="127"></div>
+          <div><label for="simulation-epsilon">Positive ε</label>
+            <input id="simulation-epsilon" name="epsilon" type="number" min="0" step="any" value="0.5"></div>
+          <div><label for="simulation-seed">Seed</label>
+            <input id="simulation-seed" name="seed" type="number" min="0" max="4294967295" step="1" value="42"></div>
+          <p id="simulation-limits">Limits: 10–5,000 trajectories; 15–1,023 indices; finite ε &gt; 0;
+            integer seed from 0 to 4,294,967,295. Computation yields between batches.
+            Statistics use every trajectory at every index. Only plots are reduced.</p>
+          <div class="simulation-actions">
+            <button type="submit" id="run-simulation">Run Simulation</button>
+            <button type="button" id="reset-simulation">Reset</button>
+          </div>
+        </form>
+        <div id="simulation-model-info" aria-live="polite"></div>
+        <p id="simulation-feedback" role="status" aria-live="polite">No simulation has been run.</p>
+        <p id="simulation-chart-warning" role="status"></p>
+        <dl id="simulation-results"></dl>
+        <p>Monte Carlo trajectories are independent replicates, but values at different n within a trajectory
+          share the same underlying random draw(s). The seed reproduces this finite pseudorandom sample.
+          Estimates have sampling error; rare typewriter intervals may have no observed hits.</p>
+        <p id="simulation-plot-note">Plots show up to eight paths, at most the first 127 indices without thinning,
+          and at most 256 indices for error curves. Distribution comparisons are empirical CDFs:
+          fractions of all sampled values ≤ x on one shared x-grid, with a common probability scale [0, 1].
+          They include the actual reference-variable sample and the theoretical reference CDF.
+          CDF curves connect grid evaluations for display. For A and B, the reference CDF jumps at 0;
+          convergence in distribution only requires convergence at continuity points, not at this jump.</p>
+        <h4 id="sample-paths-title">Sample Paths</h4>
+        <div class="simulation-chart"><canvas id="simulation-paths" role="img" aria-labelledby="sample-paths-title"
+          aria-describedby="simulation-plot-note">Run a simulation to view sample paths; textual statistics appear above.</canvas></div>
+        <h4 id="deviation-title">Probability of Deviation</h4>
+        <div class="simulation-chart"><canvas id="simulation-deviation" role="img" aria-labelledby="deviation-title"
+          aria-describedby="simulation-plot-note">Monte Carlo and theoretical P(|X_n − X| &gt; ε).</canvas></div>
+        <h4 id="mse-title">Mean-Square Error</h4>
+        <div class="simulation-chart"><canvas id="simulation-mse" role="img" aria-labelledby="mse-title"
+          aria-describedby="simulation-plot-note">Monte Carlo and theoretical E[(X_n − X)²].</canvas></div>
+        <h4 id="distribution-title">Distribution Comparison</h4>
+        <div class="simulation-chart"><canvas id="simulation-distribution" role="img" aria-labelledby="distribution-title"
+          aria-describedby="simulation-plot-note">Empirical CDFs of X_n and the reference X.</canvas></div>
       </section>
 
       <section class="card" aria-labelledby="law-large-numbers">
@@ -190,8 +251,9 @@
       <h2 id="conclusions">Conclusions</h2>
       <div class="card">
         <p>The theoretical framework distinguishes pathwise convergence, error control and
-          distributional limits, and introduces Bayesian updating. Experimental comparisons
-          and numerical conclusions remain pending.</p>
+          distributional limits, and introduces Bayesian updating. The convergence simulations
+          illustrate these distinctions with finite samples; their theoretical classifications
+          do not depend on the simulated results. Other experiments remain pending.</p>
       </div>
     </section>
   </main>

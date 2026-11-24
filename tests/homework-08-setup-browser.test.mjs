@@ -34,10 +34,10 @@ test('HW7 Step 1 browser: ordered exercises, English content and inactive future
     ['Conditional Probability', "Bayes' Theorem", 'Prior, Likelihood and Posterior',
       'Bayesian Experiments', 'Results and Conclusions']
   ]);
-  assert.equal(state.slots.length, 11);
+  assert.equal(state.slots.length, 9);
   assert.ok(state.slots.every(s => s === ''));
-  assert.equal(state.active, 0);
-  assert.equal(state.statuses.length, 5);
+  assert.equal(state.active, 11);
+  assert.equal(state.statuses.length, 4);
   assert.ok(state.statuses.every(s => /not yet implemented/i.test(s)));
   assert.match(state.header, /linear-gradient/);
   assert.ok(state.styles.some(s => s?.endsWith('/css/style.css')));

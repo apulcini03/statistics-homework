@@ -24,7 +24,10 @@ test('HW7 Step 1: files, English metadata, shared style and valid local referenc
   for (const [, ref] of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
     if (ref.startsWith('#')) assert.ok(ids.includes(ref.slice(1)), ref);
     else {
-      assert.doesNotMatch(ref, /^https?:/, 'No external dependency');
+      if (ref.startsWith('https:')) {
+        assert.equal(ref, 'https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js');
+        continue;
+      }
       assert.ok(existsSync(new URL(ref, page)), fileURLToPath(new URL(ref, page)));
     }
   }
@@ -85,16 +88,15 @@ test('HW7 Step 1: conditional events and parameter inference are distinguished',
   assert.match(text, /positive and finite/);
 });
 
-test('HW7 Step 1: inert script and empty experiment slots without fabricated results', () => {
+test('HW7 scaffold: future experiments stay empty outside the implemented convergence section', () => {
   assert.doesNotThrow(() => new vm.Script(source));
   assert.doesNotThrow(() => vm.runInNewContext(source, {}));
-  assert.equal(source.replace(/\/\/[^\n]*/g, '').replace(/'use strict';/, '').trim(), '');
-  assert.doesNotMatch(html, /<(?:canvas|input|select|button|output|iframe)\b|\bon\w+=/i);
-  const slots = [...html.matchAll(/<div id="([^"]+)" class="future-component" data-placeholder="(controls|chart|results)">([\s\S]*?)<\/div>/g)];
-  assert.equal(slots.length, 11);
+  const future = html.slice(html.indexOf('<section class="card" aria-labelledby="law-large-numbers">'));
+  assert.doesNotMatch(future, /<(?:canvas|input|select|button|output|iframe)\b|\bon\w+=/i);
+  const slots = [...future.matchAll(/<div id="([^"]+)" class="future-component" data-placeholder="(controls|chart|results)">([\s\S]*?)<\/div>/g)];
+  assert.equal(slots.length, 9);
   for (const [, id, , content] of slots) assert.equal(content.trim(), '', id);
-  assert.equal((html.match(/class="status"/g) || []).length, 5);
+  assert.equal((html.match(/class="status"/g) || []).length, 4);
   assert.match(text, /No experiments have been run/);
-  assert.match(text, /numerical conclusions remain pending/);
-  assert.doesNotMatch(text, /\b\d+\.\d+\b|\d+\s*%|p-value|observed result/i);
+  assert.match(text, /Other experiments remain pending/);
 });

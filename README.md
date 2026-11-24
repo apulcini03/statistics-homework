@@ -169,7 +169,7 @@ statistics-homework/
 ├── homework-04/    # HW 3 — Stochastic Penetration Processes
 ├── homework-05/    # HW 4 — Welford & Sampling Statistics
 ├── homework-06/    # HW 5 — Riemann, Lebesgue & Normal CDF
-├── homework-07/    # HW6 — Statistical Independence
+├── homework-07/    # HW 6 — Statistical Independence
 ├── css/            # Shared styles
 ├── js/             # Homepage scripts
 ├── index.html      # Homepage
