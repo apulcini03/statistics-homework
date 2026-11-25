@@ -27,14 +27,14 @@ test('HW7 Step 1 browser: ordered exercises, English content and inactive future
   })`);
   assert.equal(state.language, 'en');
   assert.deepEqual(state.headings, ['Assignment', 'Exercise 1 — Modes of Convergence',
-    'Exercise 2 — Conditional Probability & Bayesian Inference', 'Conclusions']);
+    'Exercise 2 — Conditional Probability & Bayesian Inference', 'Results and Conclusions']);
   assert.deepEqual(state.exercises, [
     ['Definitions and Comparison', 'Convergence Simulations', '3. Law of Large Numbers',
       '4. Central Limit Theorem', '5. Square-Root Scaling and Variance'],
     ['1. Conditional Probability', "2. Bayes' Theorem", '3. Prior, Likelihood and Posterior',
-      '4. Bayesian Experiments', 'Results and Conclusions']
+      '4. Bayesian Experiments', 'Exercise 2 Conclusions']
   ]);
-  assert.equal(state.slots.length, 1);
+  assert.equal(state.slots.length, 0);
   assert.ok(state.slots.every(s => s === ''));
   assert.equal(state.active, 54);
   assert.equal(state.statuses.length, 0);
@@ -42,6 +42,9 @@ test('HW7 Step 1 browser: ordered exercises, English content and inactive future
   assert.match(state.header, /linear-gradient/);
   assert.ok(state.styles.some(s => s?.endsWith('/css/style.css')));
   assert.ok(state.resources.includes('/homework-08/script.js'));
+  assert.equal(await browser.evaluate("document.querySelectorAll('data[data-reference]').length"), 10,
+    'All numerical citations are rendered as static scientific data');
+  assert.equal(await browser.evaluate("document.querySelectorAll('#exercise-1-conclusions, #bayesian-results-container').length"), 2);
 });
 
 for (const width of [320, 768, 1440]) {

@@ -88,15 +88,15 @@ test('HW7 Step 1: conditional events and parameter inference are distinguished',
   assert.match(text, /positive and finite/);
 });
 
-test('HW7 scaffold: final results remain pending after Bayesian experiment implementation', () => {
+test('HW7 conclusions: completed scientific text contains no new executable components or remaining placeholders', () => {
   assert.doesNotThrow(() => new vm.Script(source));
   assert.doesNotThrow(() => vm.runInNewContext(source, {}));
   const future = html.slice(html.indexOf('<section class="card" aria-labelledby="bayesian-results">'));
   assert.doesNotMatch(future, /<(?:canvas|input|select|button|output|iframe)\b|\bon\w+=/i);
   const slots = [...future.matchAll(/<div id="([^"]+)" class="future-component" data-placeholder="(controls|chart|results)">([\s\S]*?)<\/div>/g)];
-  assert.equal(slots.length, 1);
-  for (const [, id, , content] of slots) assert.equal(content.trim(), '', id);
+  assert.equal(slots.length, 0);
   assert.equal((html.match(/class="status"/g) || []).length, 0);
-  assert.match(text, /Final results and conclusions will be completed in Step 7/);
-  assert.match(text, /Other experiments remain pending/);
+  assert.ok(html.includes('id="exercise-1-conclusions"'));
+  assert.ok(html.includes('id="bayesian-results-container"'));
+  assert.doesNotMatch(text, /will be completed in Step 7|Other experiments remain pending/);
 });

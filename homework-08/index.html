@@ -110,7 +110,7 @@
           <ul>
             <li><a href="#exercise-1">Exercise 1 — Modes of Convergence</a></li>
             <li><a href="#exercise-2">Exercise 2 — Conditional Probability &amp; Bayesian Inference</a></li>
-            <li><a href="#conclusions">Conclusions</a></li>
+            <li><a href="#conclusions">Results and Conclusions</a></li>
           </ul>
         </nav>
       </div>
@@ -269,6 +269,8 @@
           instead has a non-degenerate limiting distribution:
           √n (X̄_n − μ) → N(0, σ²) in distribution.
           Dividing by σ makes this limit standard normal.</p>
+        <p>The LLN alone does not guarantee a CLT: consistency and the distribution of scaled errors
+          are distinct conclusions, each requiring its own hypotheses.</p>
         <p>For each independent replica, Z_n = √n (X̄_n − μ) / σ uses the known population μ and σ.
           The CLT describes distributions of standardized means; it does not make the original
           observations normal, nor does each standardized realization converge almost surely
@@ -298,6 +300,12 @@
           exist. Equal variances then give the sample-mean variance above.</p>
         <p>The √n factor counteracts the 1/√n decrease in sampling standard deviation,
           explaining the CLT normalization. These variance identities alone do not prove a CLT.</p>
+        <p>In this classical i.i.d. setting, σ/√n is the standard error of the sample mean.
+          With known σ &gt; 0 and a justified normal approximation, an approximate confidence interval for μ is
+          X̄_n ± z_{1−α/2} σ/√n, where 0 &lt; α &lt; 1 and z_{1−α/2} is a standard normal quantile.
+          At a fixed confidence level, its width decreases as 1/√n: greater sample size improves precision.
+          Confidence coverage concerns repeated sampling, not a posterior probability assigned to a fixed μ.
+          Dependence can change the standard error and invalidate this i.i.d. interval formula.</p>
         <p>Variance decreases as 1/n; standard deviation decreases as 1/√n. The table uses the same
           independent replicas as the LLN experiment. Empirical variances use the sample divisor R − 1,
           where R is the number of replicas, and empirical SD is their square root.</p>
@@ -316,6 +324,28 @@
           Do not apply the i.i.d. CLT automatically to this dependent case: its mean does not average
           away randomness when σ² &gt; 0.</p>
         <div id="means-dependence-table"></div>
+        <div id="exercise-1-conclusions">
+          <h4>Exercise 1 Conclusions</h4>
+          <p>These modes of convergence concern different objects, not a linear hierarchy: almost sure
+            convergence controls sample paths, L² controls expected squared error, probability controls
+            the chance of a deviation, and distribution concerns marginal laws. Model A converges in
+            probability and L² to 0 while its typewriter paths keep returning to 1. Model B, Z/n,
+            converges in all four modes. Model C keeps N(0,1) marginals but alternates Z and W:
+            convergence in distribution does not imply convergence in probability to the reference X = Z.
+            Its theoretical MSE is <data data-reference="alternating-odd-mse" value="2">2</data> at odd indices and
+            <data data-reference="alternating-even-mse" value="0">0</data> at even indices.</p>
+          <p>The WLLN gives convergence in probability of the sample mean to μ; the SLLN gives almost sure
+            convergence under its hypotheses. The CLT instead describes convergence in distribution of
+            centered, standardized means. Multiplication by √n preserves a non-degenerate limiting scale
+            when the classical positive finite variance assumptions hold.</p>
+          <p>A verified theoretical benchmark is Bernoulli(0.5) at n = 100: variance of the independent
+            sample mean is <data data-reference="bernoulli-mean-variance" value="0.0025">0.0025</data> and its standard error is
+            <data data-reference="bernoulli-mean-sd" value="0.05">0.05</data>. With perfectly dependent observations,
+            the variance remains <data data-reference="dependent-mean-variance" value="0.25">0.25</data>.
+            Covariance terms therefore matter: independence is sufficient, but not necessary, for
+            variance additivity. Finite Monte Carlo paths and estimates illustrate these theoretical
+            results; they cannot prove almost sure convergence or other asymptotic claims.</p>
+        </div>
       </section>
     </section>
 
@@ -349,6 +379,9 @@
         <p class="formula">P(A | B) = P(B | A) P(A) / P(B).</p>
         <p>Here P(B) &gt; 0; the displayed event formula also assumes P(A) &gt; 0
           so that P(B | A) is defined. Bayes' theorem reverses the direction of conditioning.</p>
+        <p>In the binary calculator, likelihoods are specified as model inputs under each hypothesis,
+          even if that hypothesis has zero prior probability. A posterior still requires positive
+          evidence probability.</p>
         <p>For a binary hypothesis H and evidence E:</p>
         <p class="formula">P(E) = P(E | H) P(H) + P(E | not H) (1 − P(H)).</p>
         <p class="formula">P(H | E) = P(E | H) P(H) / P(E), when P(E) &gt; 0.</p>
@@ -361,7 +394,8 @@
           P(E | H) is sensitivity and P(E | not H) is the false positive rate.
           This is a synthetic probability exercise, not an individual diagnostic assessment.</p>
         <p>A sensitivity of 95% does not imply a 95% probability of the condition after a positive result.
-          The prevalence and false positive rate also matter.</p>
+          The prevalence and false positive rate also matter. These probabilities describe only the
+          supplied synthetic model, not a universal result for every diagnostic test.</p>
         <form id="bayes-event-form" class="event-form" novalidate>
           <div><label for="bayes-prior">Prior P(H) / prevalence</label>
             <input id="bayes-prior" type="number" min="0" max="1" step="any" value="0.01"></div>
@@ -523,19 +557,45 @@
           not the final conclusions of the homework.</p>
       </section>
       <section class="card" aria-labelledby="bayesian-results">
-        <h3 id="bayesian-results">Results and Conclusions</h3>
-        <p>Final results and conclusions will be completed in Step 7.</p>
-        <div id="bayesian-results-container" class="future-component" data-placeholder="results"></div>
+        <h3 id="bayesian-results">Exercise 2 Conclusions</h3>
+        <div id="bayesian-results-container" class="future-component">
+          <p>Conditioning changes the reference event: P(A | B) and P(B | A) generally differ, and a zero
+            conditioning probability leaves the corresponding ratio undefined. In the synthetic diagnostic
+            model, prior 0.01, sensitivity 0.95 and false positive rate 0.05 give
+            P(H | E) ≈ <data data-reference="diagnostic-posterior" value="0.16101694915254236">0.161016949153</data>.
+            Sensitivity is P(E | H), not the posterior P(H | E). This result depends on the supplied
+            probabilities and is neither an individual medical recommendation nor a universal diagnostic probability.</p>
+          <p>For conditionally independent Bernoulli observations, Beta(a,b) updates to Beta(a+s,b+f).
+            The likelihood expresses the evidence in the data; the posterior combines it with the prior.
+            The area-normalized likelihood shown for shape comparison is not generally a posterior.
+            With the same 8 successes and 2 failures, prior Beta(1,1) gives posterior mean
+            <data data-reference="uniform-prior-posterior-mean" value="0.75">0.75</data>, Beta(20,20) gives
+            <data data-reference="informative-prior-posterior-mean" value="0.56">0.56</data>, and Beta(8,2) gives
+            <data data-reference="success-prior-posterior-mean" value="0.8">0.80</data>.
+            These differences demonstrate prior sensitivity, not a universal ranking of priors.</p>
+          <p>With fixed Beta(20,20) and observed proportion 0.8, increasing n from 10 to 500 moves the
+            posterior mean from 0.56 to approximately
+            <data data-reference="larger-sample-posterior-mean" value="0.7777777777777778">0.7777777778</data>.
+            In this regular model, increasing coherent data reduces the relative prior weight and
+            eventually concentrates the posterior; variance need not decrease at every finite n for every prior.
+            Bayesian inference makes uncertainty and initial information explicit, but its conclusions
+            remain conditional on the prior, likelihood, conditional independence and sampling assumptions.
+            Sensitivity analysis assesses prior influence; it does not repair a misspecified model or biased sampling.</p>
+        </div>
       </section>
     </section>
 
     <section class="homework-section" aria-labelledby="conclusions">
-      <h2 id="conclusions">Conclusions</h2>
+      <h2 id="conclusions">Results and Conclusions</h2>
       <div class="card">
-        <p>The theoretical framework distinguishes pathwise convergence, error control and
-          distributional limits, and introduces Bayesian updating. The convergence simulations
-          illustrate these distinctions with finite samples; their theoretical classifications
-          do not depend on the simulated results. Other experiments remain pending.</p>
+        <p>Convergence theory describes the behavior of estimators and their sampling distributions:
+          LLN supports consistency, while CLT can justify large-sample approximations and precision
+          statements under its assumptions. Conditional probability and Bayes provide a complementary
+          framework for updating uncertainty when evidence arrives.</p>
+        <p>Both exercises depend on explicit models: dependence and covariance affect sampling error,
+          while the prior and likelihood affect posterior conclusions. Finite simulations and synthetic
+          examples support interpretation, not proofs or universal guarantees. Reliable inference requires
+          checking assumptions, numerical limitations and sensitivity to modeling choices.</p>
       </div>
     </section>
   </main>

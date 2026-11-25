@@ -159,6 +159,24 @@ Explore independence and association between two categorical variables through e
 
 [Open Homework 6](https://apulcini03.github.io/statistics-homework/homework-07/)
 
+## Homework 7 — Modes of Convergence & Bayesian Inference
+
+Explore convergence of random variables and sampling means, then use conditional probability and Bayes' theorem to update uncertainty about events and an unknown Bernoulli parameter.
+
+### Features
+
+- Convergence in probability, almost surely, in mean square (L²) and in distribution
+- Three seeded Monte Carlo models illustrating convergence implications and their limits
+- WLLN, SLLN and CLT experiments with Bernoulli and Uniform observations
+- Square-root scaling, standard errors and independent versus perfectly dependent observations
+- Conditional probability and binary Bayes calculators, including undefined cases
+- Synthetic diagnostic example and a prior/posterior probability curve
+- Prior, likelihood and posterior through conjugate Beta-Bernoulli inference
+- Comparative synthetic scenarios and sensitivity to prior choice and data size
+- Scientific interpretation, conclusions, numerical safeguards and finite-simulation limitations
+
+[Open Homework 7](https://apulcini03.github.io/statistics-homework/homework-08/)
+
 ## Project Structure
 
 ```text
@@ -170,6 +188,7 @@ statistics-homework/
 ├── homework-05/    # HW 4 — Welford & Sampling Statistics
 ├── homework-06/    # HW 5 — Riemann, Lebesgue & Normal CDF
 ├── homework-07/    # HW 6 — Statistical Independence
+├── homework-08/    # HW 7 — Modes of Convergence & Bayesian Inference
 ├── css/            # Shared styles
 ├── js/             # Homepage scripts
 ├── index.html      # Homepage

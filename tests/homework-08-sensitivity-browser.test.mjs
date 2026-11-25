@@ -15,7 +15,7 @@ const rows = id => browser.evaluate(`[...document.querySelectorAll('#${id} tbody
 const count = () => browser.evaluate('Object.keys(Chart.instances).length');
 const load = async id => { await browser.set('bayes-scenario', id); await browser.click('load-bayes-scenario'); };
 
-test('HW7 sensitivity UI: synthetic initial state, no automatic graphs and no overall conclusions', async () => {
+test('HW7 sensitivity UI: synthetic initial state, no automatic graphs and scoped experimental interpretation', async () => {
   await browser.navigate(8); await browser.waitFor("typeof Chart === 'function'");
   assert.equal(await count(), 0);
   assert.match(await text('bayes-scenario-state'), /^Custom/);
@@ -25,7 +25,8 @@ test('HW7 sensitivity UI: synthetic initial state, no automatic graphs and no ov
   assert.match(content, /not automatically better or worse/);
   assert.match(content, /not a proof/);
   assert.match(content, /not the final conclusions/);
-  assert.match(await browser.evaluate("document.getElementById('bayesian-results').closest('section').textContent"), /completed in Step 7/);
+  assert.equal(await browser.evaluate("document.querySelectorAll('#bayesian-results-container input, #bayesian-results-container button, #bayesian-results-container canvas').length"), 0,
+    'Exercise conclusions add no new controls or plots');
 });
 
 test('HW7 scenario loading: A–D update Step 5 controls, moments and its three curves using computed results', async () => {
