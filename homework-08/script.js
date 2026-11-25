@@ -1200,3 +1200,195 @@ function initializeBetaInferenceUI() {
   for (const event of ['input', 'change']) form.addEventListener(event, () => clear('Inputs changed. Update Posterior to compute new results.'));
   byId('reset-beta').addEventListener('click', () => { form.reset(); clear('Reset complete. No parameter posterior has been calculated.'); });
 }
+
+// Step 6 composes the verified Beta API; no density or update algorithm is repeated.
+const BayesianSensitivityExperiments = (() => {
+  const beta = BetaBernoulliInference;
+  const scenarios = Object.freeze([
+    { id: 'A', name: 'Uniform prior', a: 1, b: 1, successes: 8, failures: 2 },
+    { id: 'B', name: 'Symmetric informative prior', a: 20, b: 20, successes: 8, failures: 2 },
+    { id: 'C', name: 'Prior favoring success', a: 8, b: 2, successes: 8, failures: 2 },
+    { id: 'D', name: 'More observations', a: 20, b: 20, successes: 80, failures: 20 }
+  ].map(Object.freeze));
+  const sampleSizes = Object.freeze([10, 50, 100, 500]);
+
+  function getScenario(id) {
+    const scenario = scenarios.find(s => s.id === id);
+    if (!scenario) throw new RangeError('Select scenario A, B, C or D.');
+    return scenario;
+  }
+
+  function updateSummary(input) {
+    const parameters = beta.validateParameters(input);
+    const posterior = beta.posteriorParameters(parameters.a, parameters.b, parameters.successes, parameters.failures);
+    return { parameters, posterior, priorMoments: beta.moments(parameters.a, parameters.b),
+      posteriorMoments: beta.moments(posterior.a, posterior.b),
+      sampleProportion: parameters.n === 0 ? null : parameters.successes / parameters.n };
+  }
+
+  function scenarioResults() {
+    return scenarios.map(s => ({ id: s.id, name: s.name, ...updateSummary(s) }));
+  }
+
+  function posteriorComparison(rows = scenarioResults()) {
+    const sameData = ['A', 'B', 'C'].map(id => rows.find(r => r.id === id));
+    const grid = beta.plottingGrid(sameData.map(r => r.posterior));
+    return { grid, curves: sameData.map(r => ({ id: r.id, name: r.name,
+      points: grid.map(x => ({ x, y: beta.density(x, r.posterior.a, r.posterior.b) })) })) };
+  }
+
+  function sampleSizeExperiment(a, b) {
+    const prior = beta.validateParameters({ a, b, successes: 0, failures: 0 });
+    return sampleSizes.map(n => {
+      const row = updateSummary({ a: prior.a, b: prior.b, successes: 4 * (n / 5), failures: n / 5 });
+      return { ...row, difference: row.posteriorMoments.mean - row.sampleProportion,
+        priorWeight: (prior.a + prior.b) / (prior.a + prior.b + n) };
+    });
+  }
+
+  return Object.freeze({ scenarios, sampleSizes, getScenario, updateSummary, scenarioResults,
+    posteriorComparison, sampleSizeExperiment });
+})();
+
+if (typeof document !== 'undefined' && document.getElementById('bayes-growth-form')) initializeBayesianExperimentsUI();
+
+function initializeBayesianExperimentsUI() {
+  const api = BayesianSensitivityExperiments, byId = id => document.getElementById(id);
+  const betaForm = byId('beta-form'), growthForm = byId('bayes-growth-form');
+  const charts = new Map();
+  let loadedScenario = null;
+  const format = value => value === 0 ? '0' : Math.abs(value) < 0.001 ? value.toExponential(7) : value.toPrecision(8);
+  const betaLabel = ({ a, b }) => `Beta(${a}, ${b})`;
+
+  function destroy(id) {
+    charts.get(id)?.destroy(); charts.delete(id);
+    if (typeof Chart !== 'undefined' && Chart.getChart) Chart.getChart(id)?.destroy();
+  }
+
+  function custom(message = 'Custom — current parameters are not attributed to a preset.') {
+    loadedScenario = null;
+    byId('bayes-scenario-state').textContent = message;
+  }
+
+  function table(container, caption, headings, rows) {
+    const t = document.createElement('table'); t.className = 'experiment-table';
+    t.createCaption().textContent = caption;
+    const head = t.createTHead().insertRow();
+    for (const label of headings) {
+      const cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = label; head.append(cell);
+    }
+    const body = t.createTBody();
+    for (const values of rows) {
+      const row = body.insertRow();
+      values.forEach((value, i) => {
+        const cell = document.createElement(i ? 'td' : 'th');
+        if (!i) cell.scope = 'row';
+        else cell.dataset.label = headings[i];
+        cell.textContent = value; row.append(cell);
+      });
+    }
+    byId(container).replaceChildren(t);
+  }
+
+  function series(label, data, color, extra = {}) {
+    return { label, data, borderColor: color, backgroundColor: color, pointRadius: 0, borderWidth: 2, ...extra };
+  }
+
+  function draw(id, datasets, xLabel, yLabel, warningId, bounded = false) {
+    destroy(id);
+    if (typeof Chart === 'undefined') {
+      byId(warningId).textContent = 'Chart.js is unavailable. Calculated tables and numerical results remain operational; run again when charts are available.';
+      return;
+    }
+    try {
+      charts.set(id, new Chart(byId(id), { type: 'line', data: { datasets }, options: {
+        responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+        scales: { x: { type: 'linear', title: { display: true, text: xLabel } },
+          y: { min: 0, max: bounded ? 1 : undefined, title: { display: true, text: yLabel } } },
+        plugins: { legend: { labels: { boxWidth: 12, font: { size: 10 } } } }
+      } }));
+    } catch {
+      destroy(id);
+      byId(warningId).textContent = 'A comparison chart could not be rendered. Calculated tables remain available; run again to retry.';
+    }
+  }
+
+  function renderComparison() {
+    byId('bayes-comparison-warning').textContent = '';
+    const rows = api.scenarioResults();
+    table('bayes-scenarios-table', 'Synthetic scenarios — derived Beta-Bernoulli results',
+      ['Scenario', 'Prior a,b', 'Successes', 'Failures', 'Posterior', 'Prior mean', 'Posterior mean', 'Posterior variance', 's/n'],
+      rows.map(r => [`${r.id} — ${r.name}`, betaLabel(r.parameters), r.parameters.successes, r.parameters.failures,
+        betaLabel(r.posterior), format(r.priorMoments.mean), format(r.posteriorMoments.mean), format(r.posteriorMoments.variance), format(r.sampleProportion)]));
+    const comparison = api.posteriorComparison(rows);
+    draw('bayes-comparison-chart', comparison.curves.map((c, i) => series(`${c.id} — ${c.name}`, c.points,
+      ['#174ea6', '#c2410c', '#047857'][i])), 'Bernoulli parameter θ', 'Posterior density', 'bayes-comparison-warning');
+    byId('bayes-experiments-feedback').textContent = 'Comparison calculated: A, B and C use the same data; D uses more observations. All counts are synthetic.';
+  }
+
+  function clearGrowth(message) {
+    for (const id of ['bayes-growth-mean-chart', 'bayes-growth-variance-chart']) destroy(id);
+    byId('bayes-growth-table').replaceChildren();
+    byId('bayes-growth-warning').textContent = '';
+    byId('bayes-growth-summary').textContent = '';
+    byId('bayes-growth-interpretation').textContent = '';
+    byId('bayes-growth-feedback').textContent = message;
+  }
+
+  byId('compare-bayes-priors').addEventListener('click', renderComparison);
+  byId('load-bayes-scenario').addEventListener('click', () => {
+    try {
+      const scenario = api.getScenario(byId('bayes-scenario').value);
+      loadedScenario = scenario.id;
+      for (const [id, key] of [['beta-a', 'a'], ['beta-b', 'b'], ['beta-successes', 'successes'], ['beta-failures', 'failures']]) byId(id).value = scenario[key];
+      // Delegate calculation and the three-curve update to the Step 5 form.
+      betaForm.requestSubmit();
+      renderComparison();
+    } catch (error) { byId('bayes-experiments-feedback').textContent = error.message; }
+  });
+
+  for (const event of ['input', 'change']) betaForm.addEventListener(event, () => custom('Custom — parameters edited. Update Posterior to calculate the current values.'));
+  betaForm.addEventListener('submit', () => {
+    if (!loadedScenario) { custom(); return; }
+    const s = api.getScenario(loadedScenario);
+    try {
+      const p = BetaBernoulliInference.validateParameters({ a: byId('beta-a').value, b: byId('beta-b').value,
+        successes: byId('beta-successes').value, failures: byId('beta-failures').value });
+      if (['a', 'b', 'successes', 'failures'].some(key => p[key] !== s[key])) custom();
+      else byId('bayes-scenario-state').textContent = `Scenario ${s.id} — ${s.name} (synthetic), loaded in the parameter calculator.`;
+    } catch { custom('Custom — invalid parameters; no preset result is attributed to them.'); }
+  });
+  byId('reset-beta').addEventListener('click', () => custom('Custom — parameter calculator reset; no scenario is loaded.'));
+
+  for (const event of ['input', 'change']) growthForm.addEventListener(event, () => clearGrowth('Prior changed. Run Sample-Size Experiment to calculate new results.'));
+  growthForm.addEventListener('submit', event => {
+    event.preventDefault(); clearGrowth('');
+    try {
+      const rows = api.sampleSizeExperiment(byId('bayes-growth-a').value, byId('bayes-growth-b').value);
+      const prior = rows[0].parameters;
+      byId('bayes-growth-summary').textContent = `Fixed prior: ${betaLabel(prior)}; synthetic observed proportion s/n = 0.8 at every n.`;
+      table('bayes-growth-table', 'Fixed prior and synthetic data with constant proportion 0.8',
+        ['n', 'Successes', 'Failures', 'Posterior', 'Posterior mean', 'Posterior variance', 'Mean − s/n', 'Prior weight'],
+        rows.map(r => [r.parameters.n, r.parameters.successes, r.parameters.failures, betaLabel(r.posterior),
+          format(r.posteriorMoments.mean), format(r.posteriorMoments.variance), format(r.difference), format(r.priorWeight)]));
+      draw('bayes-growth-mean-chart', [series('Posterior mean', rows.map(r => ({ x: r.parameters.n, y: r.posteriorMoments.mean })), '#174ea6', { pointRadius: 4 }),
+        series('Observed proportion 0.8', rows.map(r => ({ x: r.parameters.n, y: r.sampleProportion })), '#c2410c', { borderDash: [6, 4] })],
+      'Number of observations n', 'Posterior mean', 'bayes-growth-warning', true);
+      draw('bayes-growth-variance-chart', [series('Posterior variance', rows.map(r => ({ x: r.parameters.n, y: r.posteriorMoments.variance })), '#047857', { pointRadius: 4 })],
+        'Number of observations n', 'Posterior variance', 'bayes-growth-warning');
+      const decreasing = rows.every((r, i) => i === 0 || r.posteriorMoments.variance <= rows[i - 1].posteriorMoments.variance);
+      byId('bayes-growth-interpretation').textContent = decreasing
+        ? 'For this run the variance decreases across the displayed sample sizes. The posterior mean moves toward 0.8, or stays there if the prior mean is already 0.8. These are computed results for this fixed-prior experiment.'
+        : 'The variance is not decreasing at every displayed sample size for this custom prior. The plotted values are unchanged. In this fixed-prior model, concentration is asymptotic; finite comparisons do not establish a universal monotonicity theorem.';
+      byId('bayes-growth-feedback').textContent = 'Sample-size experiment calculated with the same fixed prior at every n.';
+    } catch (error) { clearGrowth(error.message); }
+  });
+
+  byId('reset-bayes-experiments').addEventListener('click', () => {
+    growthForm.reset(); clearGrowth('Reset complete. No sample-size experiment has been run.');
+    destroy('bayes-comparison-chart'); byId('bayes-scenarios-table').replaceChildren();
+    byId('bayes-comparison-warning').textContent = '';
+    byId('bayes-experiments-feedback').textContent = 'Reset complete. Run a comparison or load a scenario.';
+    byId('bayes-scenario').value = 'A'; byId('reset-beta').click();
+  });
+}

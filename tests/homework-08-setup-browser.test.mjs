@@ -32,12 +32,12 @@ test('HW7 Step 1 browser: ordered exercises, English content and inactive future
     ['Definitions and Comparison', 'Convergence Simulations', '3. Law of Large Numbers',
       '4. Central Limit Theorem', '5. Square-Root Scaling and Variance'],
     ['1. Conditional Probability', "2. Bayes' Theorem", '3. Prior, Likelihood and Posterior',
-      'Bayesian Experiments', 'Results and Conclusions']
+      '4. Bayesian Experiments', 'Results and Conclusions']
   ]);
-  assert.equal(state.slots.length, 3);
+  assert.equal(state.slots.length, 1);
   assert.ok(state.slots.every(s => s === ''));
-  assert.equal(state.active, 44);
-  assert.equal(state.statuses.length, 1);
+  assert.equal(state.active, 54);
+  assert.equal(state.statuses.length, 0);
   assert.ok(state.statuses.every(s => /not yet implemented/i.test(s)));
   assert.match(state.header, /linear-gradient/);
   assert.ok(state.styles.some(s => s?.endsWith('/css/style.css')));

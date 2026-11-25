@@ -57,6 +57,19 @@
     #beta-table th, #beta-table td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; vertical-align: top; }
     #beta-table th { background: #edf2f7; }
     #beta-table caption { text-align: left; margin: 12px 0; font-weight: bold; }
+    .experiment-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.8rem; }
+    .experiment-table th, .experiment-table td { border: 1px solid #cbd5e1; padding: 6px 4px; text-align: left; vertical-align: top; }
+    .experiment-table th { background: #edf2f7; }
+    .experiment-table caption { text-align: left; font-weight: bold; margin: 12px 0; }
+    #bayes-scenario { width: 100%; min-width: 0; padding: 10px; margin: 10px 0; font: inherit; }
+    @media (max-width: 900px) {
+      .experiment-table, .experiment-table caption, .experiment-table tbody { display: block; width: 100%; }
+      .experiment-table thead { display: none; }
+      .experiment-table tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #cbd5e1; margin-bottom: 12px; }
+      .experiment-table td, .experiment-table tbody th { display: block; min-width: 0; border: 0; padding: 8px; }
+      .experiment-table tbody th { grid-column: 1 / -1; }
+      .experiment-table td::before { content: attr(data-label); display: block; font-weight: bold; }
+    }
     @media (max-width: 600px) {
       .means-table, .means-table caption, .means-table tbody { display: block; width: 100%; }
       .means-table thead { display: none; }
@@ -92,7 +105,7 @@
           Bayes' theorem and statistical inference.</p>
         <p>Explore three convergence models, sample means, LLN, CLT and square-root scaling
           through finite Monte Carlo simulations, and update a Beta prior with Bernoulli observations.
-          Comparative Bayesian experiments remain for later steps.</p>
+          Compare synthetic Bayesian scenarios to assess sensitivity to prior assumptions and data size.</p>
         <nav aria-label="Exercises">
           <ul>
             <li><a href="#exercise-1">Exercise 1 — Modes of Convergence</a></li>
@@ -444,15 +457,74 @@
           endpoint densities are never replaced by finite plotting values.</p>
       </section>
       <section class="card" aria-labelledby="bayesian-experiments">
-        <h3 id="bayesian-experiments">Bayesian Experiments</h3>
-        <p class="status">Not yet implemented</p>
-        <p>Future controls and charts will illustrate how data update a prior distribution.</p>
-        <div id="bayesian-controls" class="future-component" data-placeholder="controls"></div>
-        <div id="bayesian-chart" class="future-component" data-placeholder="chart"></div>
+        <h3 id="bayesian-experiments">4. Bayesian Experiments</h3>
+        <p>All four scenarios use synthetic counts and the same Beta-Bernoulli model.
+          A, B and C hold the data fixed; D uses more observations at the same observed success proportion.
+          Tables and curves are calculated from the supplied priors and counts.</p>
+        <label for="bayes-scenario">Synthetic scenario to load into the parameter calculator above</label>
+        <select id="bayes-scenario">
+          <option value="A">A — Uniform prior</option>
+          <option value="B">B — Symmetric informative prior</option>
+          <option value="C">C — Prior favoring success</option>
+          <option value="D">D — More observations</option>
+        </select>
+        <div class="simulation-actions">
+          <button type="button" id="load-bayes-scenario">Load Scenario</button>
+          <button type="button" id="compare-bayes-priors">Run Prior Comparison</button>
+          <button type="button" id="reset-bayes-experiments">Reset Experiments</button>
+        </div>
+        <p id="bayes-scenario-state" role="status" aria-live="polite">Custom — no scenario has been loaded into the parameter calculator.</p>
+        <p id="bayes-experiments-feedback" role="status" aria-live="polite">Run a comparison or load a scenario to calculate the comparison table.</p>
+        <p id="bayes-comparison-warning" role="status"></p>
+        <div id="bayes-scenarios-table"></div>
+        <h4 id="bayes-comparison-title">Posterior Distributions — Same Data, Different Priors</h4>
+        <p>The posterior curves for A, B and C use one common θ grid and the same 8 successes and 2 failures.
+          D is included in the table but excluded from this plot because its data size differs.
+          No density values are rescaled to make a curve more prominent. Exact endpoints are omitted
+          using the same viewing-window convention as the parameter calculator.</p>
+        <div class="simulation-chart"><canvas id="bayes-comparison-chart" role="img" aria-labelledby="bayes-comparison-title">
+          Run Prior Comparison to compare posterior densities for A, B and C.</canvas></div>
+        <h4>Fixed Prior, Increasing Sample Size</h4>
+        <p>This controlled experiment holds the prior fixed and uses synthetic counts (8,2), (40,10),
+          (80,20) and (400,100). The observed success proportion stays 0.8.
+          Changing this prior does not alter the scenarios or the parameter calculator.</p>
+        <form id="bayes-growth-form" class="event-form" novalidate>
+          <div><label for="bayes-growth-a">Fixed prior a</label>
+            <input id="bayes-growth-a" type="number" min="0.001" max="1000" step="any" value="20"></div>
+          <div><label for="bayes-growth-b">Fixed prior b</label>
+            <input id="bayes-growth-b" type="number" min="0.001" max="1000" step="any" value="20"></div>
+          <div class="simulation-actions"><button type="submit" id="run-bayes-growth">Run Sample-Size Experiment</button></div>
+        </form>
+        <p>Prior limits: 0.001 ≤ a,b ≤ 1,000, as in the parameter calculator.
+          Tables show eight significant digits; calculations and chart values use unrounded numbers.</p>
+        <p id="bayes-growth-feedback" role="status" aria-live="polite">No sample-size experiment has been run.</p>
+        <p id="bayes-growth-warning" role="status"></p>
+        <p id="bayes-growth-summary"></p>
+        <div id="bayes-growth-table"></div>
+        <p>The signed difference is posterior mean − s/n. The prior weight (a+b)/(a+b+n) is the coefficient
+          of the prior mean in the posterior-mean weighted average; it is not a universal measure of prior influence.</p>
+        <h4 id="bayes-growth-mean-title">Posterior Mean vs Sample Size</h4>
+        <div class="simulation-chart"><canvas id="bayes-growth-mean-chart" role="img" aria-labelledby="bayes-growth-mean-title">
+          Posterior mean compared with the constant sample proportion 0.8.</canvas></div>
+        <h4 id="bayes-growth-variance-title">Posterior Variance vs Sample Size</h4>
+        <div class="simulation-chart"><canvas id="bayes-growth-variance-chart" role="img" aria-labelledby="bayes-growth-variance-title">
+          Posterior variance at the four calculated sample sizes.</canvas></div>
+        <p id="bayes-growth-interpretation"></p>
+        <h4>Experimental Interpretation</h4>
+        <p>Different priors can produce different posteriors with the same data. A more concentrated prior
+          has greater initial weight in the posterior mean and may have substantial influence with few observations;
+          informative and uniform priors are not automatically better or worse than each other.</p>
+        <p>In this regular model, with a fixed prior and increasing counts at a fixed observed proportion,
+          the posterior mean approaches that proportion and the posterior concentrates asymptotically.
+          The variance need not decrease at every finite sample size for every custom prior.
+          This computed comparison is not a proof or a claim that priors become irrelevant in every statistical model.</p>
+        <p>Assess prior influence through sensitivity analysis. The likelihood represents the data evidence;
+          the posterior combines that evidence with the prior. These observations concern the experiments above,
+          not the final conclusions of the homework.</p>
       </section>
       <section class="card" aria-labelledby="bayesian-results">
         <h3 id="bayesian-results">Results and Conclusions</h3>
-        <p>No experiments have been run. Results and their interpretation will be added in later steps.</p>
+        <p>Final results and conclusions will be completed in Step 7.</p>
         <div id="bayesian-results-container" class="future-component" data-placeholder="results"></div>
       </section>
     </section>
