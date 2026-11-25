@@ -88,10 +88,10 @@ test('HW7 Step 1: conditional events and parameter inference are distinguished',
   assert.match(text, /positive and finite/);
 });
 
-test('HW7 scaffold: parameter inference and future Bayesian experiments remain inactive', () => {
+test('HW7 scaffold: comparative Bayesian experiments remain inactive', () => {
   assert.doesNotThrow(() => new vm.Script(source));
   assert.doesNotThrow(() => vm.runInNewContext(source, {}));
-  const future = html.slice(html.indexOf('<section class="card" aria-labelledby="prior-likelihood-posterior">'));
+  const future = html.slice(html.indexOf('<section class="card" aria-labelledby="bayesian-experiments">'));
   assert.doesNotMatch(future, /<(?:canvas|input|select|button|output|iframe)\b|\bon\w+=/i);
   const slots = [...future.matchAll(/<div id="([^"]+)" class="future-component" data-placeholder="(controls|chart|results)">([\s\S]*?)<\/div>/g)];
   assert.equal(slots.length, 3);

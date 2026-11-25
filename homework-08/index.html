@@ -53,6 +53,10 @@
     .event-results dt { font-weight: bold; }
     .event-results dd { margin: 0 0 12px; }
     #conditional-visual meter { display: block; width: 100%; height: 20px; }
+    #beta-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    #beta-table th, #beta-table td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; vertical-align: top; }
+    #beta-table th { background: #edf2f7; }
+    #beta-table caption { text-align: left; margin: 12px 0; font-weight: bold; }
     @media (max-width: 600px) {
       .means-table, .means-table caption, .means-table tbody { display: block; width: 100%; }
       .means-table thead { display: none; }
@@ -64,6 +68,11 @@
       .means-table tbody th { grid-column: 1 / -1; }
       .means-table td::before { content: attr(data-label); display: block; font-weight: bold; }
       .means-table tbody th::before { content: "n = "; }
+      #beta-table, #beta-table caption, #beta-table tbody { display: block; width: 100%; }
+      #beta-table thead { display: none; }
+      #beta-table tbody tr { display: block; border: 1px solid #cbd5e1; margin-bottom: 12px; }
+      #beta-table td, #beta-table tbody th { display: block; border: 0; }
+      #beta-table td::before { content: attr(data-label) ": "; font-weight: bold; }
     }
   </style>
 </head>
@@ -82,7 +91,8 @@
         <p>Explore modes of convergence in probability theory, then conditional probability,
           Bayes' theorem and statistical inference.</p>
         <p>Explore three convergence models, sample means, LLN, CLT and square-root scaling
-          through finite Monte Carlo simulations. Bayesian experiments remain for later steps.</p>
+          through finite Monte Carlo simulations, and update a Beta prior with Bernoulli observations.
+          Comparative Bayesian experiments remain for later steps.</p>
         <nav aria-label="Exercises">
           <ul>
             <li><a href="#exercise-1">Exercise 1 — Modes of Convergence</a></li>
@@ -365,7 +375,7 @@
           impossible evidence, and logarithmic weights preserve the posterior where possible.</p>
       </section>
       <section class="card" aria-labelledby="prior-likelihood-posterior">
-        <h3 id="prior-likelihood-posterior">Prior, Likelihood and Posterior</h3>
+        <h3 id="prior-likelihood-posterior">3. Prior, Likelihood and Posterior</h3>
         <p>Conditional probabilities above concern events. Bayesian inference uses conditioning
           to update a distribution over an unknown parameter θ after observing data D.</p>
         <dl>
@@ -383,6 +393,55 @@
         <p>The evidence p(D) normalizes the posterior, provided it is positive and finite.
           For a continuous parameter, p(D) = ∫ p(D | θ) p(θ) dθ;
           for a discrete parameter, replace the integral with a sum.</p>
+        <h4>Beta Prior and Bernoulli Data</h4>
+        <p>Let θ ∈ [0,1] be the unknown Bernoulli success probability. Observations are independent
+          conditionally on θ: X_i | θ ~ Bernoulli(θ). The prior is θ ~ Beta(a,b), with a &gt; 0 and b &gt; 0.
+          The shape parameters a and b describe a distribution over θ; they are not θ itself.</p>
+        <p class="formula">L(θ; s,f) ∝ θ^s (1 − θ)^f; n = s + f.</p>
+        <p class="formula">θ | data ~ Beta(a + s, b + f).</p>
+        <p class="formula">E[θ] = a/(a+b); Var(θ) = ab/((a+b)²(a+b+1)).</p>
+        <p>The prior represents initial uncertainty about θ. The likelihood measures compatibility
+          of the observations with alternative θ values. The posterior combines both: its mean is
+          (a+b)/(a+b+n) times the prior mean plus n/(a+b+n) times s/n when n &gt; 0.
+          For a fixed prior, its influence generally decreases as informative observations accumulate.
+          An unsuitable prior can influence conclusions, especially with few data.</p>
+        <form id="beta-form" class="event-form" novalidate aria-describedby="beta-limits">
+          <div><label for="beta-a">Prior parameter a</label>
+            <input id="beta-a" type="number" min="0.001" max="1000" step="any" value="2"></div>
+          <div><label for="beta-b">Prior parameter b</label>
+            <input id="beta-b" type="number" min="0.001" max="1000" step="any" value="2"></div>
+          <div><label for="beta-successes">Number of successes s</label>
+            <input id="beta-successes" type="number" min="0" max="10000" step="1" value="8"></div>
+          <div><label for="beta-failures">Number of failures f</label>
+            <input id="beta-failures" type="number" min="0" max="10000" step="1" value="2"></div>
+          <div class="simulation-actions"><button type="submit" id="update-beta">Update Posterior</button>
+            <button type="button" id="reset-beta">Reset</button></div>
+        </form>
+        <p id="beta-limits">Interactive limits: 0.001 ≤ a,b ≤ 1,000; integer successes and failures
+          from 0 to 10,000 each. These limits bound computational cost and numerical error;
+          the mathematical Beta family permits every positive a,b. Values are displayed to 12 significant digits.</p>
+        <p id="beta-feedback" role="status" aria-live="polite">No parameter posterior has been calculated.</p>
+        <p id="beta-chart-warning" role="status"></p>
+        <dl id="beta-data-results" class="event-results"></dl>
+        <div id="beta-table-container"></div>
+        <p id="beta-update-note"></p>
+        <h4 id="beta-density-title">Prior, Normalized Likelihood and Posterior</h4>
+        <p id="beta-density-note">The original likelihood is not a probability distribution over θ.
+          For shape comparison only, divide θ^s(1−θ)^f by its full-domain integral B(s+1,f+1).
+          The resulting normalized likelihood equals the Beta(s+1,f+1) density; it is not the posterior
+          for a general prior. A binomial coefficient, constant in θ, cancels under this normalization.</p>
+        <div class="simulation-chart"><canvas id="beta-density-chart" role="img" aria-labelledby="beta-density-title"
+          aria-describedby="beta-density-note beta-grid-note">Update Posterior to compare three curves; numerical results remain available without charts.</canvas></div>
+        <p id="beta-grid-note">All three curves use the same θ grid within [0.000001, 0.999999], with
+          additional points near boundaries and distribution centers. Exact endpoints are excluded from every plot,
+          even when finite; their theoretical density values are reported below. No curve is renormalized to this
+          viewing window. For small shapes, substantial probability may lie outside the window and endpoint peaks
+          may dominate the common linear density axis. Grid interpolation is only a visual approximation.</p>
+        <dl id="beta-boundary-results" class="event-results"></dl>
+        <p>Numerical method: log-beta uses recurrence to shift both shapes to at least 8 and a Stirling
+          expansion with seven correction terms. Densities use logarithms and log(1−θ) evaluated with log1p.
+          Very small finite densities can underflow to zero; this is reported explicitly. Theoretical infinite
+          endpoint densities are never replaced by finite plotting values.</p>
       </section>
       <section class="card" aria-labelledby="bayesian-experiments">
         <h3 id="bayesian-experiments">Bayesian Experiments</h3>

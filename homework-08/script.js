@@ -974,3 +974,229 @@ function initializeEventProbabilityUI() {
     calculateBayes();
   });
 }
+
+// Step 5: conjugate parameter inference, separate from the event calculators.
+const BetaBernoulliInference = (() => {
+  const defaults = Object.freeze({ a: 2, b: 2, successes: 8, failures: 2 });
+  const plotMinimum = 1e-6, plotMaximum = 1 - plotMinimum;
+
+  function number(value, label) {
+    if (!['number', 'string'].includes(typeof value) || String(value).trim() === '' || !Number.isFinite(Number(value))) {
+      throw new RangeError(`${label} must be finite; empty values are not allowed.`);
+    }
+    return Number(value);
+  }
+
+  function validateBeta(a, b) {
+    a = number(a, 'Shape a'); b = number(b, 'Shape b');
+    if (a <= 0 || b <= 0 || a > 22000 || b > 22000) throw new RangeError('Beta shapes must be positive and at most 22,000 in the numerical API.');
+    return { a, b };
+  }
+
+  function validateCounts(successes, failures) {
+    successes = number(successes, 'Successes'); failures = number(failures, 'Failures');
+    for (const count of [successes, failures]) {
+      if (!Number.isInteger(count) || count < 0 || count > 10000) throw new RangeError('Successes and failures must each be integers from 0 to 10,000.');
+    }
+    return { successes, failures, n: successes + failures };
+  }
+
+  function validateParameters(raw) {
+    const p = { ...validateBeta(raw.a, raw.b), ...validateCounts(raw.successes, raw.failures) };
+    if (p.a < 0.001 || p.b < 0.001 || p.a > 1000 || p.b > 1000) throw new RangeError('Interactive prior shapes must be between 0.001 and 1,000.');
+    return p;
+  }
+
+  function moments(a, b) {
+    ({ a, b } = validateBeta(a, b));
+    const total = a + b, mean = a / total;
+    // Algebraically equivalent to ab / ((a+b)^2 (a+b+1)), without ab underflow.
+    return { mean, variance: mean * (b / total) / (total + 1) };
+  }
+
+  function posteriorParameters(a, b, successes, failures) {
+    ({ a, b } = validateBeta(a, b));
+    const counts = validateCounts(successes, failures);
+    return validateBeta(a + counts.successes, b + counts.failures);
+  }
+
+  function stirlingCorrection(x) {
+    const inverse = 1 / x, q = inverse * inverse;
+    return inverse * (1 / 12 + q * (-1 / 360 + q * (1 / 1260 + q * (-1 / 1680
+      + q * (1 / 1188 + q * (-691 / 360360 + q * (7 / 1092)))))));
+  }
+
+  function logBeta(a, b) {
+    ({ a, b } = validateBeta(a, b));
+    if (a === 1) return -Math.log(b);
+    if (b === 1) return -Math.log(a);
+    if (a > b) [a, b] = [b, a];
+    let shift = 0;
+    // B(a,b) = (a+b)/a * B(a+1,b), and the analogous identity for b.
+    while (a < 8) { shift += Math.log(a + b) - Math.log(a); a++; }
+    while (b < 8) { shift += Math.log(a + b) - Math.log(b); b++; }
+    const total = a + b;
+    // Combine Stirling terms as log ratios rather than subtracting three large
+    // log-gamma values. For x>=8 the next correction term is below 9e-16;
+    // floating-point rounding, especially at large shapes, is tested separately.
+    return shift + 0.5 * Math.log(2 * Math.PI) - 0.5 * Math.log(total)
+      + (a - 0.5) * Math.log(a / total) + (b - 0.5) * Math.log1p(-a / total)
+      + stirlingCorrection(a) + stirlingCorrection(b) - stirlingCorrection(total);
+  }
+
+  function thetaValue(theta) {
+    theta = number(theta, 'θ');
+    if (theta < 0 || theta > 1) throw new RangeError('θ must be between 0 and 1.');
+    return theta;
+  }
+
+  function logDensity(theta, a, b) {
+    theta = thetaValue(theta); ({ a, b } = validateBeta(a, b));
+    if (theta === 0) return a < 1 ? Infinity : a > 1 ? -Infinity : Math.log(b);
+    if (theta === 1) return b < 1 ? Infinity : b > 1 ? -Infinity : Math.log(a);
+    return (a - 1) * Math.log(theta) + (b - 1) * Math.log1p(-theta) - logBeta(a, b);
+  }
+
+  function density(theta, a, b) {
+    const logarithm = logDensity(theta, a, b), value = Math.exp(logarithm);
+    if (Number.isFinite(logarithm) && !Number.isFinite(value)) throw new RangeError('Finite density exceeds floating-point range; use logDensity instead.');
+    return value;
+  }
+
+  function logLikelihood(theta, successes, failures) {
+    theta = thetaValue(theta);
+    ({ successes, failures } = validateCounts(successes, failures));
+    // Omit theta-independent binomial coefficients; 0^0 is the empty factor 1.
+    if (theta === 0) return successes === 0 ? 0 : -Infinity;
+    if (theta === 1) return failures === 0 ? 0 : -Infinity;
+    return successes * Math.log(theta) + failures * Math.log1p(-theta);
+  }
+
+  function likelihoodGrid(grid, successes, failures) {
+    validateCounts(successes, failures);
+    return grid.map(theta => ({ x: thetaValue(theta), y: Math.exp(logLikelihood(theta, successes, failures)) }));
+  }
+
+  function plottingGrid(shapes) {
+    const points = new Set([plotMinimum, plotMaximum, 0.5]);
+    for (let i = 1; i < 1000; i++) points.add(i / 1000);
+    for (let i = 0; i <= 120; i++) {
+      const x = plotMinimum * (0.5 / plotMinimum) ** (i / 120);
+      points.add(x); points.add(1 - x);
+    }
+    for (const { a, b } of shapes) {
+      const { mean, variance } = moments(a, b), sd = Math.sqrt(variance);
+      points.add(mean);
+      if (a > 1 && b > 1) points.add((a - 1) / (a + b - 2));
+      for (let i = -80; i <= 80; i++) points.add(mean + i * sd / 10);
+    }
+    return [...points].filter(x => x >= plotMinimum && x <= plotMaximum).sort((x, y) => x - y);
+  }
+
+  function analyze(raw) {
+    const p = validateParameters(raw);
+    const posterior = posteriorParameters(p.a, p.b, p.successes, p.failures);
+    const shapes = [{ a: p.a, b: p.b }, { a: p.successes + 1, b: p.failures + 1 }, posterior];
+    const grid = plottingGrid(shapes);
+    let underflowCount = 0;
+    const curves = shapes.map(({ a, b }) => {
+      const normalization = logBeta(a, b);
+      return grid.map(x => {
+        const logY = (a - 1) * Math.log(x) + (b - 1) * Math.log1p(-x) - normalization;
+        const y = Math.exp(logY);
+        if (!Number.isFinite(y)) throw new RangeError('An interior density exceeded the supported finite numerical range.');
+        if (y === 0 && Number.isFinite(logY)) underflowCount++;
+        return { x, y };
+      });
+    });
+    return { parameters: p, posterior, priorMoments: moments(p.a, p.b),
+      posteriorMoments: moments(posterior.a, posterior.b), sampleProportion: p.n === 0 ? null : p.successes / p.n,
+      curves, underflowCount, boundaries: shapes.map(({ a, b }) => ({ atZero: density(0, a, b), atOne: density(1, a, b) })) };
+  }
+
+  return Object.freeze({ defaults, validateBeta, validateCounts, validateParameters, moments,
+    posteriorParameters, logBeta, logDensity, density, logLikelihood, likelihoodGrid, plottingGrid, analyze });
+})();
+
+if (typeof document !== 'undefined' && document.getElementById('beta-form')) initializeBetaInferenceUI();
+
+function initializeBetaInferenceUI() {
+  const api = BetaBernoulliInference, byId = id => document.getElementById(id), form = byId('beta-form');
+  let chart = null;
+  const format = value => value === null ? 'Undefined: no observations (n = 0).' : value === Infinity
+    ? '∞ (theoretical endpoint singularity)' : EventProbabilityCalculators.formatResult(value);
+
+  function clear(message) {
+    chart?.destroy(); chart = null;
+    if (typeof Chart !== 'undefined' && Chart.getChart) Chart.getChart('beta-density-chart')?.destroy();
+    for (const id of ['beta-data-results', 'beta-table-container', 'beta-boundary-results']) byId(id).replaceChildren();
+    byId('beta-update-note').textContent = '';
+    byId('beta-chart-warning').textContent = '';
+    byId('beta-feedback').textContent = message;
+  }
+
+  function add(container, label, value) {
+    const dt = document.createElement('dt'), dd = document.createElement('dd');
+    dt.textContent = label; dd.textContent = value; container.append(dt, dd);
+  }
+
+  form.addEventListener('submit', event => {
+    event.preventDefault(); clear('');
+    try {
+      const r = api.analyze({ a: byId('beta-a').value, b: byId('beta-b').value,
+        successes: byId('beta-successes').value, failures: byId('beta-failures').value });
+      const p = r.parameters;
+      add(byId('beta-data-results'), 'Observed data', `s = ${p.successes}; f = ${p.failures}; n = ${p.n}.`);
+      add(byId('beta-data-results'), 'Sample proportion s/n', format(r.sampleProportion));
+      const table = document.createElement('table'); table.id = 'beta-table';
+      table.createCaption().textContent = 'Theoretical moments of the parameter distributions';
+      const header = table.createTHead().insertRow();
+      for (const text of ['Quantity', 'Prior', 'Posterior']) {
+        const cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = text; header.append(cell);
+      }
+      const body = table.createTBody();
+      for (const values of [
+        ['Distribution', `Beta(${p.a}, ${p.b})`, `Beta(${r.posterior.a}, ${r.posterior.b})`],
+        ['Mean', format(r.priorMoments.mean), format(r.posteriorMoments.mean)],
+        ['Variance', format(r.priorMoments.variance), format(r.posteriorMoments.variance)]
+      ]) {
+        const row = body.insertRow();
+        values.forEach((text, i) => {
+          const cell = document.createElement(i ? 'td' : 'th');
+          if (!i) cell.scope = 'row';
+          else cell.dataset.label = i === 1 ? 'Prior' : 'Posterior';
+          cell.textContent = text; row.append(cell);
+        });
+      }
+      byId('beta-table-container').append(table);
+      byId('beta-update-note').textContent = p.n === 0 ? 'With no observations, the posterior equals the prior; the likelihood is constant.'
+        : `Adding ${p.successes} successes to a and ${p.failures} failures to b gives the posterior. `
+          + `The prior weight in the posterior mean is ${format((p.a + p.b) / (p.a + p.b + p.n))}.`;
+      ['Prior', 'Normalized likelihood', 'Posterior'].forEach((label, i) => add(byId('beta-boundary-results'),
+        `${label} — exact endpoint densities`, `θ = 0: ${format(r.boundaries[i].atZero)}; θ = 1: ${format(r.boundaries[i].atOne)}.`));
+      byId('beta-feedback').textContent = 'Posterior updated from the supplied prior and counts.'
+        + (r.underflowCount ? ` ${r.underflowCount} very small interior density values underflowed to zero; no infinite endpoints were plotted.` : '');
+      if (typeof Chart === 'undefined') {
+        byId('beta-chart-warning').textContent = 'Chart.js is unavailable. The posterior, moments and endpoint results remain operational; update again when charts are available.';
+        return;
+      }
+      try {
+        chart = new Chart(byId('beta-density-chart'), { type: 'line', data: { datasets: r.curves.map((data, i) => ({
+          label: ['Prior density', 'Normalized likelihood (shape only)', 'Posterior density'][i], data,
+          borderColor: ['#174ea6', '#047857', '#c2410c'][i], borderWidth: 2, pointRadius: 0,
+          borderDash: i === 1 ? [6, 4] : [], spanGaps: false
+        })) }, options: { animation: false, responsive: true, maintainAspectRatio: false, parsing: false,
+          scales: { x: { type: 'linear', min: 0, max: 1, title: { display: true, text: 'Bernoulli parameter θ' } },
+            y: { min: 0, title: { display: true, text: 'Density (full-domain normalization)' } } },
+          plugins: { legend: { labels: { boxWidth: 12, font: { size: 10 } } } }
+        } });
+      } catch {
+        chart?.destroy(); chart = null;
+        if (Chart.getChart) Chart.getChart('beta-density-chart')?.destroy();
+        byId('beta-chart-warning').textContent = 'The density chart could not be rendered. Numerical results remain available.';
+      }
+    } catch (error) { clear(error.message); }
+  });
+  for (const event of ['input', 'change']) form.addEventListener(event, () => clear('Inputs changed. Update Posterior to compute new results.'));
+  byId('reset-beta').addEventListener('click', () => { form.reset(); clear('Reset complete. No parameter posterior has been calculated.'); });
+}
